@@ -1,0 +1,11 @@
+<div>
+  <div>
+    <textarea (input)="input($event)" [(ngModel)]="userInput" class="user-input" rows="20">
+
+    </textarea>
+  </div>
+  <div>
+    <app-backup-configuration-tree [backupConfiguration]="backupConfiguration">
+    </app-backup-configuration-tree>
+  </div>
+</div>
