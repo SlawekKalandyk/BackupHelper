@@ -59,4 +59,9 @@ export class AppComponent implements OnInit {
   input(event: Event) {
     this._backupConfiguration.next(JSON.parse(this.userInput));
   }
+
+  onBackupConfigurationChange(backupConfiguration: BackupConfiguration) {
+    this.userInput = JSON.stringify(backupConfiguration);
+    this._backupConfiguration.next(backupConfiguration);
+  }
 }

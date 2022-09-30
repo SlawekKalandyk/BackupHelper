@@ -5,7 +5,7 @@
     </textarea>
   </div>
   <div>
-    <app-backup-configuration-tree [backupConfiguration]="backupConfiguration">
+    <app-backup-configuration-tree [backupConfiguration]="backupConfiguration" (backupConfigurationChange)="onBackupConfigurationChange($event)">
     </app-backup-configuration-tree>
   </div>
 </div>

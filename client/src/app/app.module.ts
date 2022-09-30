@@ -13,11 +13,17 @@ import {DragDropModule} from "@angular/cdk/drag-drop";
 import {CdkTreeModule} from "@angular/cdk/tree";
 import {FormsModule} from "@angular/forms";
 import {MatButtonModule} from "@angular/material/button";
+import { AddBackupConfigNodeDialogComponent } from './components/add-backup-config-node-dialog/add-backup-config-node-dialog.component';
+import {MatFormFieldModule} from "@angular/material/form-field";
+import {MatDialogModule} from "@angular/material/dialog";
+import {MatInputModule} from "@angular/material/input";
+import {MatTooltipModule} from "@angular/material/tooltip";
 
 @NgModule({
   declarations: [
     AppComponent,
     BackupConfigurationTreeComponent,
+    AddBackupConfigNodeDialogComponent,
   ],
   imports: [
     BrowserModule,
@@ -28,7 +34,11 @@ import {MatButtonModule} from "@angular/material/button";
     DragDropModule,
     CdkTreeModule,
     FormsModule,
-    MatButtonModule
+    MatButtonModule,
+    MatFormFieldModule,
+    MatDialogModule,
+    MatInputModule,
+    MatTooltipModule
   ],
   providers: [],
   bootstrap: [AppComponent]
