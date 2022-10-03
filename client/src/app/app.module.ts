@@ -38,7 +38,7 @@ import {MatTooltipModule} from "@angular/material/tooltip";
     MatFormFieldModule,
     MatDialogModule,
     MatInputModule,
-    MatTooltipModule
+    MatTooltipModule,
   ],
   providers: [],
   bootstrap: [AppComponent]

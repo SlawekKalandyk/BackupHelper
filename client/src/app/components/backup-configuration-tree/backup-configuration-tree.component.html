@@ -1,0 +1,60 @@
+<div>
+  <div>
+    <!--add file button-->
+    <button mat-button (click)="addFile()">
+      <mat-icon>note_add</mat-icon>
+    </button>
+    <!--add directory button-->
+    <button mat-button (click)="addDirectory()">
+      <mat-icon>create_new_folder</mat-icon>
+    </button>
+  </div>
+  <div [id]="'main'" cdkDropList
+       [cdkDropListData]="this.dataSource"
+       [cdkDropListConnectedTo]="dropTargetIds"
+       (cdkDropListDropped)="drop($event)"
+       [cdkDropListSortingDisabled]="true">
+    <div *ngFor="let node of this.dataSource" class="backup-tree-node"
+         cdkDrag [cdkDragData]="node" (cdkDragMoved)="dragMoved($event)">
+      <ng-container *ngTemplateOutlet="treeListNode; context:{ node: node }"></ng-container>
+    </div>
+  </div>
+</div>
+
+<ng-template #treeListNode let-node="node">
+  <div class="node-item" [attr.data-id]="node.id" [attr.id]="'node-'+node.id">
+    <div class="node-title">
+      <!--expand/collapse button-->
+      <button mat-button *ngIf="node.hasChildren()" (click)="node.isExpanded = !node.isExpanded">
+        <mat-icon>
+          {{node.isExpanded ? 'keyboard_arrow_down' : 'keyboard_arrow_right'}}
+        </mat-icon>
+      </button>
+      {{node.displayName}}
+      <!--add file button-->
+      <button mat-button [style.display]="displayAdd(node)" (click)="addFile(node)">
+        <mat-icon>note_add</mat-icon>
+      </button>
+      <!--add directory button-->
+      <button mat-button [style.display]="displayAdd(node)" (click)="addDirectory(node)">
+        <mat-icon>create_new_folder</mat-icon>
+      </button>
+      <!--remove button-->
+      <button mat-button (click)="remove(node)">
+        <mat-icon>remove_circle</mat-icon>
+      </button>
+    </div>
+    <!--children nodes-->
+    <div *ngIf="node.hasChildren() && node.isExpanded" class="node-children" id="{{node.id}}"
+         cdkDropList
+         [cdkDropListData]="node.children"
+         [cdkDropListConnectedTo]="dropTargetIds"
+         (cdkDropListDropped)="drop($event)"
+         [cdkDropListSortingDisabled]="true">
+      <div *ngFor="let childNode of node.children" class="backup-tree-node"
+           cdkDrag [cdkDragData]="childNode" (cdkDragMoved)="dragMoved($event)">
+        <ng-container *ngTemplateOutlet="treeListNode; context: { node: childNode }"></ng-container>
+      </div>
+    </div>
+  </div>
+</ng-template>
