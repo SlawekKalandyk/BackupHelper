@@ -15,7 +15,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "BackupHelper.Api", "BackupH
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "interfaces", "interfaces", "{E22D1EE7-D361-41E3-AC1D-B286DA20D527}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BackupHelper.ConsoleApp", "BackupHelper.ConsoleApp\BackupHelper.ConsoleApp.csproj", "{6CBFDFEA-102C-4B60-B455-EA97FB78BA29}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "BackupHelper.ConsoleApp", "BackupHelper.ConsoleApp\BackupHelper.ConsoleApp.csproj", "{6CBFDFEA-102C-4B60-B455-EA97FB78BA29}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
