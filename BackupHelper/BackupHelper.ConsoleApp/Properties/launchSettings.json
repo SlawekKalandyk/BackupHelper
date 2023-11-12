@@ -1,0 +1,9 @@
+{
+  "profiles": {
+    "BackupHelper.ConsoleApp": {
+      "commandName": "Project",
+      "commandLineArgs": "\".\\backupZips\" \".\\backup.json\"",
+      "workingDirectory": "E:\\backups"
+    }
+  }
+}

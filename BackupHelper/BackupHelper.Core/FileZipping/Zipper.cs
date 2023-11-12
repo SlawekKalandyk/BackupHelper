@@ -24,7 +24,14 @@ namespace BackupHelper.Core.FileZipping
         {
             var fileInfo = new FileInfo(filePath);
             var newZipPath = Path.Combine(zipPath, fileInfo.Name);
-            _zipArchive.CreateEntryFromFile(filePath, newZipPath, CompressionLevel.Optimal);
+            try
+            {
+                _zipArchive.CreateEntryFromFile(filePath, newZipPath, CompressionLevel.Optimal);
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine($"Failed to add file {filePath} to zip file: {e.Message}");
+            }
         }
 
         public void AddDirectory(string directoryPath, string zipPath = "")
