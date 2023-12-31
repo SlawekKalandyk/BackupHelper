@@ -18,9 +18,10 @@ namespace BackupHelper.ConfigEditor.ConsoleApp.ConsoleCommands
                 return;
             }
 
-            if (!int.TryParse(parameters.First(), out var index))
+            var rawIndex = parameters.First();
+            if (!int.TryParse(rawIndex, out var index))
             {
-                Console.WriteLine("Invalid index.");
+                Console.WriteLine($"Invalid index: {rawIndex}.");
                 return;
             }
 

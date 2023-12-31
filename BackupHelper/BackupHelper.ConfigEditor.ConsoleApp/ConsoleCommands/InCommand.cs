@@ -16,7 +16,7 @@ namespace BackupHelper.ConfigEditor.ConsoleApp.ConsoleCommands
             {
                 if (!int.TryParse(parameter, out var directoryIndex))
                 {
-                    Console.WriteLine("Invalid directory index.");
+                    Console.WriteLine($"Invalid directory index: {directoryIndex}.");
                     return;
                 }
 

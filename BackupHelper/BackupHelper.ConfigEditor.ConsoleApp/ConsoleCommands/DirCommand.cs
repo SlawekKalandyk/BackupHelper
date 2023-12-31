@@ -30,7 +30,7 @@ namespace BackupHelper.ConfigEditor.ConsoleApp.ConsoleCommands
             if (currentNode is BackupDirectoryNode directoryNode && directoryNode.Directories.Any(dir => dir.Value.Name == name)
                 || currentNode is BackupConfigurationTree configurationTree && configurationTree.Directories.Any(dir => dir.Value.Name == name))
             {
-                Console.WriteLine("Directory already exists.");
+                Console.WriteLine($"Directory {name} already exists.");
                 return;
             }
 

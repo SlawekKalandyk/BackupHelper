@@ -16,9 +16,10 @@ namespace BackupHelper.ConfigEditor.ConsoleApp.ConsoleCommands
                 return;
             }
 
-            if (parameters.Count == 1 && !int.TryParse(parameters.First(), out levelCount))
+            var rawLevelCount = parameters.First();
+            if (parameters.Count == 1 && !int.TryParse(rawLevelCount, out levelCount))
             {
-                Console.WriteLine("Invalid level count.");
+                Console.WriteLine($"Invalid level count: {rawLevelCount}.");
                 return;
             }
 

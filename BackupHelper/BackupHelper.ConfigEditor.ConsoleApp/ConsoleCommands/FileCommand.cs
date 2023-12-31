@@ -28,7 +28,7 @@ namespace BackupHelper.ConfigEditor.ConsoleApp.ConsoleCommands
             var filePath = parameters.First();
             if (!File.Exists(filePath) && !Directory.Exists(filePath))
             {
-                Console.WriteLine("File (or directory) does not exist.");
+                Console.WriteLine($"File (or directory) {filePath} does not exist.");
                 return;
             }
 

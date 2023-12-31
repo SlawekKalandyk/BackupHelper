@@ -8,17 +8,16 @@ namespace BackupHelper.ConfigEditor.ConsoleApp
         {
         }
 
-        public string OriginalFilePath { get; init; }
+        public string SaveFilePath { get; set; }
         public IReadOnlyCollection<BackupDirectoryNode> Directories => Children.OfType<BackupDirectoryNode>().ToList();
         public IReadOnlyCollection<BackupFileNode> Files => Children.OfType<BackupFileNode>().ToList();
 
         public static BackupConfigurationTree FromBackupConfiguration(BackupConfiguration backupConfiguration, string filePath)
         {
-            var root = new BackupConfigurationTree(backupConfiguration)
-            {
-                OriginalFilePath = filePath
-            };
-
+            var root = new BackupConfigurationTree(backupConfiguration);
+            if (!string.IsNullOrWhiteSpace(filePath))
+                root.SaveFilePath = filePath;
+            
             foreach (var directory in backupConfiguration.Directories)
             {
                 var directoryNode = BackupDirectoryNode.FromBackupDirectory(directory);

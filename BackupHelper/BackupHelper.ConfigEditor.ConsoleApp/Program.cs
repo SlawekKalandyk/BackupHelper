@@ -11,7 +11,7 @@ namespace BackupHelper.ConfigEditor.ConsoleApp
             if (backupConfiguration == null)
                 return;
 
-            var backupConfigurationTree = BackupConfigurationTree.FromBackupConfiguration(backupConfiguration, args[0]);
+            var backupConfigurationTree = BackupConfigurationTree.FromBackupConfiguration(backupConfiguration, args.Length > 0 ? args[0] : null);
             TreeNode currentNode = backupConfigurationTree;
             string lastInput;
             var commandHandler = new CommandHandler();
@@ -38,8 +38,8 @@ namespace BackupHelper.ConfigEditor.ConsoleApp
         {
             if (args.Length == 0)
             {
-                Console.WriteLine("No configuration file specified.");
-                return null;
+                Console.WriteLine("No configuration file specified. Creating new backup configuration tree.");
+                return new BackupConfiguration();
             }
             var backupConfiguration = args[0];
             if (!File.Exists(backupConfiguration))

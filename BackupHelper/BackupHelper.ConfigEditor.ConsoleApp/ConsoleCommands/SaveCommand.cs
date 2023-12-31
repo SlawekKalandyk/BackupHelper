@@ -23,22 +23,43 @@ namespace BackupHelper.ConfigEditor.ConsoleApp.ConsoleCommands
                 var filePath = parameters.First();
                 if (File.Exists(filePath))
                 {
-                    Console.WriteLine("File already exists. Overwrite? (y/n)");
+                    Console.WriteLine($"File {filePath} already exists. Overwrite? (y/n)");
 
                     var key = Console.ReadKey(true);
 
                     if (key.Key == ConsoleKey.Y)
                     {
-                        File.WriteAllText(filePath, configurationTree.Value.ToJson());
+                        SaveFile(filePath, configurationTree, true);
                     }
+                }
+                else
+                {
+                    SaveFile(filePath, configurationTree, true);
                 }
             }
             else
             {
-                File.WriteAllText(configurationTree.OriginalFilePath, configurationTree.Value.ToJson());
+                if (string.IsNullOrEmpty(configurationTree.SaveFilePath))
+                {
+                    Console.WriteLine("No save file path specified.");
+                    return;
+                }
+
+                SaveFile(configurationTree.SaveFilePath, configurationTree, false);
             }
-            
+
             currentNode = originalNode;
+        }
+
+        private void SaveFile(string filePath, BackupConfigurationTree configurationTree, bool setBackupConfigOriginalFilePath)
+        {
+            File.WriteAllText(filePath, configurationTree.Value.ToJson());
+            Console.WriteLine($"Saved backup config to {filePath}.");
+            if (setBackupConfigOriginalFilePath && string.IsNullOrEmpty(configurationTree.SaveFilePath))
+            {
+                configurationTree.SaveFilePath = filePath;
+                Console.WriteLine($"Set backup config save file path to {filePath}.");
+            }
         }
     }
 }
