@@ -48,6 +48,7 @@ namespace BackupHelper.ConfigEditor.ConsoleApp
                 return null;
             }
             var json = File.ReadAllText(backupConfiguration);
+            Console.WriteLine($"Loaded configuration file '{backupConfiguration}'.");
             return BackupConfiguration.FromJson(json);
         }
     }
