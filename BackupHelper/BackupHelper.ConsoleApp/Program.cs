@@ -4,6 +4,9 @@ using BackupHelper.Core.FileZipping;
 using MediatR;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
+using Serilog;
+using Serilog.Events;
 
 namespace BackupHelper.ConsoleApp
 {
@@ -11,13 +14,6 @@ namespace BackupHelper.ConsoleApp
     {
         static async Task Main(string[] args)
         {
-            var configuration = new ConfigurationBuilder()
-                .AddCommandLine(args)
-                .Build();
-            var services = new ServiceCollection()
-                .AddCoreServices(configuration)
-                .BuildServiceProvider();
-
             //first arg - save paths separated by semicolon, e.g. "C:\Users\user\Documents;C:\Users\user\Pictures"
             //second arg - path to backup configuration file, e.g. "C:\Users\user\Documents\backup.json"
 
@@ -31,6 +27,17 @@ namespace BackupHelper.ConsoleApp
             var backupConfigPath = args[1];
             var backupConfiguration = BackupConfiguration.FromJsonFile(backupConfigPath);
 
+            var configuration = new ConfigurationBuilder()
+                .AddCommandLine(args)
+                .Build();
+            var serviceCollection = new ServiceCollection()
+                .AddCoreServices(configuration);
+
+            if (!string.IsNullOrEmpty(backupConfiguration.LogFilePath))
+            {
+                serviceCollection.AddLogging(LogLevel.Information, backupConfiguration.LogFilePath);
+            }
+            var services = serviceCollection.BuildServiceProvider();
             var mediator = services.GetRequiredService<IMediator>();
             await mediator.Send(new CreateBackupCommand(backupConfiguration, firstBackupSavePath)).ContinueWith(x =>
             {
@@ -84,6 +91,23 @@ namespace BackupHelper.ConsoleApp
                 ++i;
             }
             return fileName;
+        }
+    }
+
+    internal static class Logging
+    {
+        public static void AddLogging(this IServiceCollection services, LogLevel logLevel, string logFilePath)
+        {
+            var logger = new LoggerConfiguration()
+                .MinimumLevel.Debug()
+                .WriteTo.File(logFilePath, LogEventLevel.Information)
+                .WriteTo.Console(LogEventLevel.Debug)
+                .CreateLogger();
+
+            services.AddLogging(builder =>
+            {
+                builder.SetMinimumLevel(logLevel);
+            });
         }
     }
 }

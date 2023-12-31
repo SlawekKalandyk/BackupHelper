@@ -1,17 +1,21 @@
-﻿namespace BackupHelper.Core.FileZipping
+﻿using Microsoft.Extensions.Logging;
+
+namespace BackupHelper.Core.FileZipping
 {
     public class BackupFileZipper
     {
         private readonly BackupConfiguration _backupConfiguration;
+        private readonly ILogger? _logger;
 
-        public BackupFileZipper(BackupConfiguration backupConfiguration)
+        public BackupFileZipper(BackupConfiguration backupConfiguration, ILogger? logger = null)
         {
             _backupConfiguration = backupConfiguration;
+            _logger = logger;
         }
 
         public void CreateZipFile(string savePath)
         {
-            using var zipper = new Zipper(savePath, true);
+            using var zipper = new Zipper(savePath, true, _logger);
             var filePathMapping = MapFilePathsToZipPaths(_backupConfiguration.Directories, _backupConfiguration.Files);
             ZipBackupFiles(zipper, filePathMapping);
         }

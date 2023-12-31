@@ -6,6 +6,7 @@ namespace BackupHelper.Core.FileZipping
     {
         public ICollection<BackupDirectory> Directories { get; set; } = new List<BackupDirectory>();
         public ICollection<BackupFile> Files { get; set; } = new List<BackupFile>();
+        public string LogFilePath { get; set; }
 
         public static BackupConfiguration FromJson(string json)
         {

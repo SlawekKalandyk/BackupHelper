@@ -17,6 +17,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "interfaces", "interfaces", 
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "BackupHelper.ConsoleApp", "BackupHelper.ConsoleApp\BackupHelper.ConsoleApp.csproj", "{6CBFDFEA-102C-4B60-B455-EA97FB78BA29}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BackupHelper.ConfigEditor.ConsoleApp", "BackupHelper.ConfigEditor.ConsoleApp\BackupHelper.ConfigEditor.ConsoleApp.csproj", "{247839CA-34C9-4315-A0D3-83DF3D0FB5C6}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -46,6 +48,12 @@ Global
 		{6CBFDFEA-102C-4B60-B455-EA97FB78BA29}.Release|Any CPU.Build.0 = Release|Any CPU
 		{6CBFDFEA-102C-4B60-B455-EA97FB78BA29}.Release-ConsoleApp|Any CPU.ActiveCfg = Release|Any CPU
 		{6CBFDFEA-102C-4B60-B455-EA97FB78BA29}.Release-ConsoleApp|Any CPU.Build.0 = Release|Any CPU
+		{247839CA-34C9-4315-A0D3-83DF3D0FB5C6}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{247839CA-34C9-4315-A0D3-83DF3D0FB5C6}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{247839CA-34C9-4315-A0D3-83DF3D0FB5C6}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{247839CA-34C9-4315-A0D3-83DF3D0FB5C6}.Release|Any CPU.Build.0 = Release|Any CPU
+		{247839CA-34C9-4315-A0D3-83DF3D0FB5C6}.Release-ConsoleApp|Any CPU.ActiveCfg = Release|Any CPU
+		{247839CA-34C9-4315-A0D3-83DF3D0FB5C6}.Release-ConsoleApp|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -56,6 +64,7 @@ Global
 		{D7D08E53-11D5-431A-96A1-D304522EC8B8} = {036A0814-F4D4-4054-BEA1-22F562BCA9C1}
 		{E22D1EE7-D361-41E3-AC1D-B286DA20D527} = {036A0814-F4D4-4054-BEA1-22F562BCA9C1}
 		{6CBFDFEA-102C-4B60-B455-EA97FB78BA29} = {E22D1EE7-D361-41E3-AC1D-B286DA20D527}
+		{247839CA-34C9-4315-A0D3-83DF3D0FB5C6} = {E22D1EE7-D361-41E3-AC1D-B286DA20D527}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {3309D9DD-FDBD-4E48-87FB-70CE42F87EF4}

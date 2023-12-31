@@ -1,5 +1,6 @@
 ﻿using System.Diagnostics.CodeAnalysis;
 using System.IO.Compression;
+using Microsoft.Extensions.Logging;
 
 namespace BackupHelper.Core.FileZipping
 {
@@ -7,11 +8,13 @@ namespace BackupHelper.Core.FileZipping
     {
         private readonly FileStream _zipFileStream;
         private readonly ZipArchive _zipArchive;
+        private readonly ILogger? _logger;
 
-        public Zipper(string zipFilePath, bool overwriteIfExists = false) 
+        public Zipper(string zipFilePath, bool overwriteIfExists = false, ILogger? logger = null) 
             : this(File.Open(zipFilePath, overwriteIfExists ? FileMode.Create : FileMode.OpenOrCreate, FileAccess.ReadWrite)
         )
         {
+            _logger = logger;
         }
 
         public Zipper(FileStream zipFileStream)
@@ -30,7 +33,7 @@ namespace BackupHelper.Core.FileZipping
             }
             catch (Exception e)
             {
-                Console.WriteLine($"Failed to add file {filePath} to zip file: {e.Message}");
+                _logger?.LogError($"Failed to add file {filePath} to zip file: {e.Message}");
             }
         }
 
