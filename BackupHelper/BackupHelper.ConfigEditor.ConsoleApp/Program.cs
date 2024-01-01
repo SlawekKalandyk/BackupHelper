@@ -76,19 +76,20 @@ namespace BackupHelper.ConfigEditor.ConsoleApp
             var insideDoubleQuoteMarks = false;
             foreach (var c in input)
             {
-                switch (c)
+                if (c == '"')
                 {
-                    case '"':
-                        insideDoubleQuoteMarks = !insideDoubleQuoteMarks;
-                        continue;
-                    case ' ' when !insideDoubleQuoteMarks:
-                        args.Add(currentArg.ToString());
-                        currentArg.Clear();
-                        continue;
-                    default:
-                        currentArg.Append(c);
-                        break;
+                    insideDoubleQuoteMarks = !insideDoubleQuoteMarks;
+                    continue;
                 }
+
+                if (c == ' ' && !insideDoubleQuoteMarks)
+                {
+                    args.Add(currentArg.ToString());
+                    currentArg.Clear();
+                    continue;
+                }
+
+                currentArg.Append(c);
             }
 
             if (currentArg.Length > 0)
