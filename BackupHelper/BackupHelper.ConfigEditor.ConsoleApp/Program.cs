@@ -1,4 +1,5 @@
-﻿using BackupHelper.ConfigEditor.ConsoleApp.ConsoleCommands;
+﻿using System.Text;
+using BackupHelper.ConfigEditor.ConsoleApp.ConsoleCommands;
 using BackupHelper.Core.FileZipping;
 
 namespace BackupHelper.ConfigEditor.ConsoleApp
@@ -29,8 +30,15 @@ namespace BackupHelper.ConfigEditor.ConsoleApp
                     continue;
                 }
 
-                var parameters = lastInput.Split(' ');
-                commandHandler.Handle(parameters, ref currentNode);
+                try
+                {
+                    var parameters = SplitCommandInput(lastInput).ToArray();
+                    commandHandler.Handle(parameters, ref currentNode);
+                }
+                catch (Exception e)
+                {
+                    Console.WriteLine(e.Message);
+                }
             } while (lastInput != "exit");
         }
 
@@ -56,6 +64,37 @@ namespace BackupHelper.ConfigEditor.ConsoleApp
         {
             var fileInfo = new FileInfo(filePath);
             return fileInfo.FullName;
+        }
+
+        private static IEnumerable<string> SplitCommandInput(string input)
+        {
+            if (input.Contains('\"') && input.Count(c => c == '"') % 2 != 0)
+                throw new ArgumentException("Invalid input. Double quote marks are not closed properly.");
+
+            var args = new List<string>();
+            var currentArg = new StringBuilder();
+            var insideDoubleQuoteMarks = false;
+            foreach (var c in input)
+            {
+                switch (c)
+                {
+                    case '"':
+                        insideDoubleQuoteMarks = !insideDoubleQuoteMarks;
+                        continue;
+                    case ' ' when !insideDoubleQuoteMarks:
+                        args.Add(currentArg.ToString());
+                        currentArg.Clear();
+                        continue;
+                    default:
+                        currentArg.Append(c);
+                        break;
+                }
+            }
+
+            if (currentArg.Length > 0)
+                args.Add(currentArg.ToString());
+
+            return args;
         }
     }
 }
