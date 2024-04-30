@@ -15,9 +15,10 @@ namespace BackupHelper.Core.FileZipping
 
         public void CreateZipFile(string savePath)
         {
-            using var zipper = new Zipper(savePath, true, _logger);
+            using var zipper = new Zipper(_logger);
             var filePathMapping = MapFilePathsToZipPaths(_backupConfiguration.Directories, _backupConfiguration.Files);
             ZipBackupFiles(zipper, filePathMapping);
+            zipper.Save(savePath, true);
         }
 
         private void ZipBackupFiles(Zipper zipper, IDictionary<string, string> filePathMapping)

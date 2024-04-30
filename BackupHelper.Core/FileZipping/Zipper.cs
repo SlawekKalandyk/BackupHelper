@@ -1,35 +1,44 @@
-﻿using System.Diagnostics.CodeAnalysis;
+﻿using Microsoft.Extensions.Logging;
 using System.IO.Compression;
-using Microsoft.Extensions.Logging;
 
 namespace BackupHelper.Core.FileZipping
 {
     public class Zipper : IDisposable
     {
-        private readonly FileStream _zipFileStream;
-        private readonly ZipArchive _zipArchive;
         private readonly ILogger? _logger;
+        private readonly Stream _zipFileStream;
+        private ZipArchive? _zipArchive;
 
-        public Zipper(string zipFilePath, bool overwriteIfExists = false, ILogger? logger = null) 
-            : this(File.Open(zipFilePath, overwriteIfExists ? FileMode.Create : FileMode.OpenOrCreate, FileAccess.ReadWrite)
-        )
+        public Zipper(ILogger? logger = null) 
         {
             _logger = logger;
+            _zipFileStream = new MemoryStream();
+            _zipArchive = new ZipArchive(_zipFileStream, ZipArchiveMode.Create, true);
         }
 
-        public Zipper(FileStream zipFileStream)
+        public void Save(string zipFilePath, bool overwriteIfExists = false)
         {
-            _zipFileStream = zipFileStream;
-            _zipArchive = new ZipArchive(_zipFileStream, ZipArchiveMode.Update);
+            if (overwriteIfExists && File.Exists(zipFilePath))
+                File.Delete(zipFilePath);
+
+            // ZipArchive has to be disposed before underlying stream can be copied to a file
+            _zipArchive?.Dispose();
+            _zipArchive = null;
+
+            using var fileStream = File.Open(zipFilePath, FileMode.Create, FileAccess.ReadWrite);
+            _zipFileStream.Seek(0, SeekOrigin.Begin);
+            _zipFileStream.CopyTo(fileStream);
         }
 
         public void AddFile(string filePath, string zipPath = "")
         {
+            EnsureZipArchiveIsOpen();
+
             var fileInfo = new FileInfo(filePath);
             var newZipPath = Path.Combine(zipPath, fileInfo.Name);
             try
             {
-                _zipArchive.CreateEntryFromFile(filePath, newZipPath, CompressionLevel.Optimal);
+                _zipArchive?.CreateEntryFromFile(filePath, newZipPath, CompressionLevel.Optimal);
             }
             catch (Exception e)
             {
@@ -51,6 +60,8 @@ namespace BackupHelper.Core.FileZipping
 
         private void AddDirectoryCore(string directoryPath, string zipPath)
         {
+            EnsureZipArchiveIsOpen();
+
             var subDirectories = Directory.GetDirectories(directoryPath);
             var files = Directory.GetFiles(directoryPath);
 
@@ -65,10 +76,15 @@ namespace BackupHelper.Core.FileZipping
             }
         }
 
+        private void EnsureZipArchiveIsOpen()
+        {
+            _zipArchive ??= new ZipArchive(_zipFileStream, ZipArchiveMode.Update, true);
+        }
+
         public void Dispose()
         {
             _zipArchive?.Dispose();
-            _zipFileStream?.Dispose();
+            _zipFileStream.Dispose();
         }
     }
 }
