@@ -24,7 +24,6 @@ namespace BackupHelper.Core.FileZipping
             // ZipArchive has to be disposed before underlying stream can be copied to a file
             _zipArchive?.Dispose();
             _zipArchive = null;
-
             using var fileStream = File.Open(zipFilePath, FileMode.Create, FileAccess.ReadWrite);
             _zipFileStream.Seek(0, SeekOrigin.Begin);
             _zipFileStream.CopyTo(fileStream);

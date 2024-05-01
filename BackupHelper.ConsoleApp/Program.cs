@@ -23,7 +23,6 @@ namespace BackupHelper.ConsoleApp
             }
 
             var splitSavePaths = args[0].Split(';');
-            var firstBackupSavePath = GetBackupSavePath(splitSavePaths[0]);
             var backupConfigPath = args[1];
             var backupConfiguration = BackupConfiguration.FromJsonFile(backupConfigPath);
 
@@ -33,27 +32,11 @@ namespace BackupHelper.ConsoleApp
             var serviceCollection = new ServiceCollection()
                 .AddCoreServices(configuration);
 
-            if (!string.IsNullOrEmpty(backupConfiguration.LogFilePath))
-            {
-                serviceCollection.AddLogging(LogLevel.Information, backupConfiguration.LogFilePath);
-            }
+            serviceCollection.AddLogging(LogLevel.Information, backupConfiguration.LogFilePath);
             var services = serviceCollection.BuildServiceProvider();
             var mediator = services.GetRequiredService<IMediator>();
-            await mediator.Send(new CreateBackupCommand(backupConfiguration, firstBackupSavePath)).ContinueWith(x =>
-            {
-                var restOfSplitSavePaths = splitSavePaths.Skip(1);
-                foreach (var savePath in restOfSplitSavePaths)
-                {
-                    try
-                    {
-                        File.Copy(firstBackupSavePath, GetBackupSavePath(savePath));
-                    }
-                    catch (Exception e)
-                    {
-                        Console.WriteLine($"Failed to copy backup file to {savePath}: {e.Message}");
-                    }
-                }
-            });
+            var savePaths = splitSavePaths.Select(GetBackupSavePath).ToArray();
+            await mediator.Send(new CreateBackupCommand(backupConfiguration, savePaths));
         }
 
         private static string GetBackupSavePath(string argPath)
@@ -71,6 +54,11 @@ namespace BackupHelper.ConsoleApp
             if (Path.HasExtension(argPath))
             {
                 var directories = Path.GetDirectoryName(argPath);
+                if (string.IsNullOrEmpty(directories))
+                {
+                    return argPath;
+                }
+
                 Directory.CreateDirectory(directories);
                 return argPath;
             }
@@ -96,17 +84,21 @@ namespace BackupHelper.ConsoleApp
 
     internal static class Logging
     {
-        public static void AddLogging(this IServiceCollection services, LogLevel logLevel, string logFilePath)
+        public static void AddLogging(this IServiceCollection services, LogLevel logLevel, string? logFilePath)
         {
-            var logger = new LoggerConfiguration()
-                .MinimumLevel.Debug()
-                .WriteTo.File(logFilePath, LogEventLevel.Information)
-                .WriteTo.Console(LogEventLevel.Debug)
+            var loggerConfig = new LoggerConfiguration()
+                .MinimumLevel.Debug();
+
+            if (!string.IsNullOrEmpty(logFilePath))
+                loggerConfig = loggerConfig.WriteTo.File(logFilePath, LogEventLevel.Information);
+
+            var logger = loggerConfig.WriteTo.Console(LogEventLevel.Debug)
                 .CreateLogger();
 
             services.AddLogging(builder =>
             {
-                builder.SetMinimumLevel(logLevel);
+                builder.SetMinimumLevel(logLevel)
+                    .AddSerilog(logger);
             });
         }
     }

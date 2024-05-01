@@ -2,10 +2,11 @@
 
 namespace BackupHelper.Core.FileZipping
 {
-    public class BackupFileZipper
+    public class BackupFileZipper : IDisposable
     {
         private readonly BackupConfiguration _backupConfiguration;
         private readonly ILogger? _logger;
+        private Zipper? _zipper;
 
         public BackupFileZipper(BackupConfiguration backupConfiguration, ILogger? logger = null)
         {
@@ -13,12 +14,16 @@ namespace BackupHelper.Core.FileZipping
             _logger = logger;
         }
 
-        public void CreateZipFile(string savePath)
+
+        public void SaveZipFile(string savePath)
         {
-            using var zipper = new Zipper(_logger);
-            var filePathMapping = MapFilePathsToZipPaths(_backupConfiguration.Directories, _backupConfiguration.Files);
-            ZipBackupFiles(zipper, filePathMapping);
-            zipper.Save(savePath, true);
+            if (_zipper == null)
+            {
+                _zipper = new Zipper(_logger);
+                var filePathMapping = MapFilePathsToZipPaths(_backupConfiguration.Directories, _backupConfiguration.Files);
+                ZipBackupFiles(_zipper, filePathMapping);
+            }
+            _zipper.Save(savePath, true);
         }
 
         private void ZipBackupFiles(Zipper zipper, IDictionary<string, string> filePathMapping)
@@ -57,6 +62,11 @@ namespace BackupHelper.Core.FileZipping
             {
                 paths[backupFile.FilePath] = zipPath;
             }
+        }
+
+        public void Dispose()
+        {
+            _zipper?.Dispose();
         }
     }
 }
