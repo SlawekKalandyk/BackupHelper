@@ -6,7 +6,7 @@ namespace BackupHelper.Core.FileZipping
     {
         private readonly BackupConfiguration _backupConfiguration;
         private readonly ILogger? _logger;
-        private Zipper? _zipper;
+        private IFileZipper? _zipper;
 
         public BackupFileZipper(BackupConfiguration backupConfiguration, ILogger? logger = null)
         {
@@ -14,19 +14,22 @@ namespace BackupHelper.Core.FileZipping
             _logger = logger;
         }
 
-
         public void SaveZipFile(string savePath)
         {
             if (_zipper == null)
             {
-                _zipper = new Zipper(_logger);
+                _zipper = new InMemoryFileZipper(_logger);
                 var filePathMapping = MapFilePathsToZipPaths(_backupConfiguration.Directories, _backupConfiguration.Files);
                 ZipBackupFiles(_zipper, filePathMapping);
             }
-            _zipper.Save(savePath, true);
+
+            if (_zipper.HasToBeSaved)
+            {
+                _zipper.Save(savePath, true);
+            }
         }
 
-        private void ZipBackupFiles(Zipper zipper, IDictionary<string, string> filePathMapping)
+        private void ZipBackupFiles(IFileZipper zipper, IDictionary<string, string> filePathMapping)
         {
             foreach (var pair in filePathMapping)
             {

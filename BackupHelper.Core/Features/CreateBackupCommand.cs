@@ -23,6 +23,7 @@ namespace BackupHelper.Core.Features
                 try
                 {
                     fileZipper.SaveZipFile(backupFilePath);
+                    _logger.LogInformation($"Backup created at {backupFilePath}");
                 }
                 catch (Exception ex)
                 {

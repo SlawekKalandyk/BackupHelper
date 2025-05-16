@@ -3,22 +3,22 @@ using System.IO.Compression;
 
 namespace BackupHelper.Core.FileZipping
 {
-    public class Zipper : IDisposable
+    public class InMemoryFileZipper : IFileZipper
     {
         private readonly ILogger? _logger;
         private readonly Stream _zipFileStream;
         private ZipArchive? _zipArchive;
 
-        public Zipper(ILogger? logger = null) 
+        public InMemoryFileZipper(ILogger? logger = null) 
         {
             _logger = logger;
             _zipFileStream = new MemoryStream();
             _zipArchive = new ZipArchive(_zipFileStream, ZipArchiveMode.Create, true);
         }
 
-        public void Save(string zipFilePath, bool overwriteIfExists = false)
+        public void Save(string zipFilePath, bool overwrite)
         {
-            if (overwriteIfExists && File.Exists(zipFilePath))
+            if (overwrite && File.Exists(zipFilePath))
                 File.Delete(zipFilePath);
 
             // ZipArchive has to be disposed before underlying stream can be copied to a file
@@ -29,7 +29,9 @@ namespace BackupHelper.Core.FileZipping
             _zipFileStream.CopyTo(fileStream);
         }
 
-        public void AddFile(string filePath, string zipPath = "")
+        public bool HasToBeSaved => false;
+
+        public void AddFile(string filePath, string zipPath)
         {
             EnsureZipArchiveIsOpen();
 
@@ -45,14 +47,14 @@ namespace BackupHelper.Core.FileZipping
             }
         }
 
-        public void AddDirectory(string directoryPath, string zipPath = "")
+        public void AddDirectory(string directoryPath, string zipPath)
         {
             var directoryInfo = new DirectoryInfo(directoryPath);
             var newZipPath = Path.Combine(zipPath, directoryInfo.Name);
             AddDirectoryCore(directoryPath, newZipPath);
         }
 
-        public void AddDirectoryContent(string directoryPath, string zipPath = "")
+        public void AddDirectoryContent(string directoryPath, string zipPath)
         {
             AddDirectoryCore(directoryPath, zipPath);
         }
