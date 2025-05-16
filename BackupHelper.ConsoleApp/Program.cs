@@ -12,7 +12,7 @@ namespace BackupHelper.ConsoleApp
 {
     internal class Program
     {
-        static async Task Main(string[] args)
+        internal static async Task Main(string[] args)
         {
             //first arg - save paths separated by semicolon, e.g. "C:\Users\user\Documents;C:\Users\user\Pictures"
             //second arg - path to backup configuration file, e.g. "C:\Users\user\Documents\backup.json"
