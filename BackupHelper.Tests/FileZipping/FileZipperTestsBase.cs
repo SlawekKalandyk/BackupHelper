@@ -63,7 +63,7 @@ public abstract class FileZipperTestsBase
     }
 
     [Test]
-    public void GivenFile_WhenAddingToFileZipper_ThenUnzippedFilesDirectoryShouldContainAddedFile()
+    public void GivenSingleFile_WhenAddedToZip_ThenUnzippedDirectoryContainsThatFile()
     {
         var testFile = new TestFile("file1");
         using var testFileStructure = new TestFileStructure(
@@ -81,7 +81,7 @@ public abstract class FileZipperTestsBase
     }
 
     [Test]
-    public void GivenFileWithCustomZipPath_WhenAddingToFileZipper_ThenUnzippedFilesDirectoryShouldContainAddedFileUnderGivenZipPath()
+    public void GivenFileWithCustomZipPath_WhenAddedToZip_ThenUnzippedFileIsInSpecifiedSubdirectory()
     {
         var testFile = new TestFile("file1", "zip-dir1");
         using var testFileStructure = new TestFileStructure([testFile], []);
@@ -97,7 +97,7 @@ public abstract class FileZipperTestsBase
     }
 
     [Test]
-    public void GivenEmptyDirectory_WhenAddingToFileZipper_ThenUnzippedFilesDirectoryShouldContainAddedEmptyDirectory()
+    public void GivenEmptyDirectory_WhenAddedToZip_ThenUnzippedDirectoryContainsEmptySubdirectory()
     {
         var testDirectory = new TestDirectory("dir1", [], []);
         using var testFileStructure = new TestFileStructure([], [testDirectory]);
@@ -113,7 +113,7 @@ public abstract class FileZipperTestsBase
     }
 
     [Test]
-    public void GivenEmptyDirectory_WhenAddingToFileZipper_ThenUnzippedFilesDirectoryShouldContainAddedEmptyDirectoryUnderGivenZipPath()
+    public void GivenEmptyDirectoryWithCustomZipPath_WhenAddedToZip_ThenUnzippedDirectoryContainsSpecifiedEmptySubdirectory()
     {
         var testDirectory = new TestDirectory("dir1", [], [], "zip-dir1");
         using var testFileStructure = new TestFileStructure([], [testDirectory]);
@@ -129,7 +129,7 @@ public abstract class FileZipperTestsBase
     }
 
     [Test]
-    public void GivenMultipleFiles_WhenAddingDirectoryContent_ThenUnzippedFilesDirectoryShouldContainAddedFiles()
+    public void GivenMultipleFiles_WhenDirectoryContentAddedToZip_ThenUnzippedDirectoryContainsAllFiles()
     {
         var testFile1 = new TestFile("file1");
         var testFile2 = new TestFile("file2");
@@ -146,7 +146,7 @@ public abstract class FileZipperTestsBase
     }
 
     [Test]
-    public void GivenComplexFileStructure_WhenAddingDirectoryContent_ThenUnzippedFilesDirectoryShouldContainExactSameFileStructure()
+    public void GivenNestedDirectoriesAndFiles_WhenDirectoryContentAddedToZip_ThenUnzippedDirectoryMatchesFullStructure()
     {
         var testFile1 = new TestFile("file1");
         var testFile2 = new TestFile("file2");
@@ -168,7 +168,7 @@ public abstract class FileZipperTestsBase
     }
 
     [Test]
-    public void GivenComplexFileStructureWithCustomZipPaths_WhenAddingFileStructure_ThenUnzippedFilesDirectoryShouldContainFileStructureIncludingAddedZipPaths()
+    public void GivenFilesAndDirectoriesWithCustomZipPaths_WhenAddedSeparatelyToZip_ThenUnzippedStructureMatchesCustomPaths()
     {
         var testFile1 = new TestFile("file1");
         var testFile2 = new TestFile("file2", "zip-dir1");
