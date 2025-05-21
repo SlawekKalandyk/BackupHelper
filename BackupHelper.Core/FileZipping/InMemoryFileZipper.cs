@@ -29,7 +29,7 @@ namespace BackupHelper.Core.FileZipping
             _zipFileStream.CopyTo(fileStream);
         }
 
-        public bool HasToBeSaved => false;
+        public bool HasToBeSaved => true;
 
         public void AddFile(string filePath, string zipPath)
         {
@@ -39,7 +39,7 @@ namespace BackupHelper.Core.FileZipping
             var newZipPath = Path.Combine(zipPath, fileInfo.Name);
             try
             {
-                _zipArchive?.CreateEntryFromFile(filePath, newZipPath, CompressionLevel.Optimal);
+                _zipArchive!.CreateEntryFromFile(filePath, newZipPath, CompressionLevel.Optimal);
             }
             catch (Exception e)
             {
@@ -51,15 +51,12 @@ namespace BackupHelper.Core.FileZipping
         {
             var directoryInfo = new DirectoryInfo(directoryPath);
             var newZipPath = Path.Combine(zipPath, directoryInfo.Name);
-            AddDirectoryCore(directoryPath, newZipPath);
+
+            _zipArchive!.CreateEntry(newZipPath + '/');
+            AddDirectoryContent(directoryPath, newZipPath);
         }
 
         public void AddDirectoryContent(string directoryPath, string zipPath)
-        {
-            AddDirectoryCore(directoryPath, zipPath);
-        }
-
-        private void AddDirectoryCore(string directoryPath, string zipPath)
         {
             EnsureZipArchiveIsOpen();
 
