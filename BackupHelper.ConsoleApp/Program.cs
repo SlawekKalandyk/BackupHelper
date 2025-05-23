@@ -23,8 +23,8 @@ namespace BackupHelper.ConsoleApp
             }
 
             var splitSavePaths = args[0].Split(';');
-            var backupConfigPath = args[1];
-            var backupConfiguration = BackupConfiguration.FromJsonFile(backupConfigPath);
+            var backupPlanFilePath = args[1];
+            var backupPlan = BackupPlan.FromJsonFile(backupPlanFilePath);
 
             var configuration = new ConfigurationBuilder()
                 .AddCommandLine(args)
@@ -32,11 +32,15 @@ namespace BackupHelper.ConsoleApp
             var serviceCollection = new ServiceCollection()
                 .AddCoreServices(configuration);
 
-            serviceCollection.AddLogging(LogLevel.Information, backupConfiguration.LogFilePath);
+            if (!string.IsNullOrEmpty(backupPlan.LogDirectory))
+            {
+                serviceCollection.AddLogging(LogLevel.Debug, backupPlan.LogDirectory);
+            }
+            
             var services = serviceCollection.BuildServiceProvider();
             var mediator = services.GetRequiredService<IMediator>();
             var savePaths = splitSavePaths.Select(GetBackupSavePath).ToArray();
-            await mediator.Send(new CreateBackupCommand(backupConfiguration, savePaths));
+            await mediator.Send(new CreateBackupCommand(backupPlan, savePaths));
         }
 
         private static string GetBackupSavePath(string argPath)
@@ -84,22 +88,31 @@ namespace BackupHelper.ConsoleApp
 
     internal static class Logging
     {
-        public static void AddLogging(this IServiceCollection services, LogLevel logLevel, string? logFilePath)
+        public static void AddLogging(this IServiceCollection services, LogLevel logLevel, string logDirectory)
         {
-            var loggerConfig = new LoggerConfiguration()
-                .MinimumLevel.Debug();
+            services.AddScoped(typeof(ILogger<>), typeof(NullLogger<>));
+        }
+    }
 
-            if (!string.IsNullOrEmpty(logFilePath))
-                loggerConfig = loggerConfig.WriteTo.File(logFilePath, LogEventLevel.Information);
+    // Temporarily using a null logger to avoid logging issues
+    public class NullLogger<T> : ILogger<T>
+    {
+        public IDisposable BeginScope<TState>(TState state) where TState : notnull
+            => NullScope.Instance;
 
-            var logger = loggerConfig.WriteTo.Console(LogEventLevel.Debug)
-                .CreateLogger();
+        public bool IsEnabled(LogLevel logLevel)
+            => false;
 
-            services.AddLogging(builder =>
-            {
-                builder.SetMinimumLevel(logLevel)
-                    .AddSerilog(logger);
-            });
+        public void Log<TState>(LogLevel logLevel,
+                                EventId eventId,
+                                TState state,
+                                Exception? exception,
+                                Func<TState, Exception, string> formatter) { }
+
+        private class NullScope : IDisposable
+        {
+            public static NullScope Instance { get; } = new();
+            public void Dispose() { }
         }
     }
 }

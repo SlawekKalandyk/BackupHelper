@@ -35,4 +35,9 @@
         /// <param name="overwrite">Overwrite a file if one already exists at the same <see cref="filePath"/></param>
         void Save(string filePath, bool overwrite);
     }
+
+    public interface IFileZipperFactory
+    {
+        IFileZipper Create();
+    }
 }

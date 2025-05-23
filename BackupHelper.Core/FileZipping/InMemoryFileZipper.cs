@@ -3,13 +3,28 @@ using System.IO.Compression;
 
 namespace BackupHelper.Core.FileZipping
 {
+    public class InMemoryFileZipperFactory : IFileZipperFactory
+    {
+        private readonly ILogger<InMemoryFileZipper>? _logger;
+
+        public InMemoryFileZipperFactory(ILogger<InMemoryFileZipper>? logger = null)
+        {
+            _logger = logger;
+        }
+        
+        public IFileZipper Create()
+        {
+            return new InMemoryFileZipper(_logger);
+        }
+    }
+
     public class InMemoryFileZipper : IFileZipper
     {
         private readonly ILogger? _logger;
         private readonly Stream _zipFileStream;
         private ZipArchive? _zipArchive;
 
-        public InMemoryFileZipper(ILogger? logger = null) 
+        public InMemoryFileZipper(ILogger? logger = null)
         {
             _logger = logger;
             _zipFileStream = new MemoryStream();
