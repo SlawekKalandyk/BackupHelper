@@ -5,9 +5,9 @@ namespace BackupHelper.Core.FileZipping
 {
     public class InMemoryFileZipperFactory : IFileZipperFactory
     {
-        private readonly ILogger<InMemoryFileZipper>? _logger;
+        private readonly ILogger<InMemoryFileZipper> _logger;
 
-        public InMemoryFileZipperFactory(ILogger<InMemoryFileZipper>? logger = null)
+        public InMemoryFileZipperFactory(ILogger<InMemoryFileZipper> logger)
         {
             _logger = logger;
         }
@@ -20,11 +20,11 @@ namespace BackupHelper.Core.FileZipping
 
     public class InMemoryFileZipper : IFileZipper
     {
-        private readonly ILogger? _logger;
+        private readonly ILogger<InMemoryFileZipper> _logger;
         private readonly Stream _zipFileStream;
         private ZipArchive? _zipArchive;
 
-        public InMemoryFileZipper(ILogger? logger = null)
+        public InMemoryFileZipper(ILogger<InMemoryFileZipper> logger)
         {
             _logger = logger;
             _zipFileStream = new MemoryStream();
@@ -34,7 +34,10 @@ namespace BackupHelper.Core.FileZipping
         public void Save(string zipFilePath, bool overwrite)
         {
             if (overwrite && File.Exists(zipFilePath))
+            {
+                _logger.LogWarning("Overwriting existing file: {ZipFilePath}", zipFilePath);
                 File.Delete(zipFilePath);
+            }
 
             // ZipArchive has to be disposed before underlying stream can be copied to a file
             _zipArchive?.Dispose();
@@ -58,7 +61,7 @@ namespace BackupHelper.Core.FileZipping
             }
             catch (Exception e)
             {
-                _logger?.LogError($"Failed to add file {filePath} to zip file: {e.Message}");
+                _logger.LogError("Failed to add file {FilePath} to zip file: {ExMessage}", filePath, e.Message);
             }
         }
 

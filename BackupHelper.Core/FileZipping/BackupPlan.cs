@@ -86,57 +86,5 @@ namespace BackupHelper.Core.FileZipping
             var json = JsonConvert.SerializeObject(this, Formatting.Indented);
             File.WriteAllText(outputPath, json);
         }
-
-        public void CreateZipFile(string outputPath, IFileZipper fileZipper)
-        {
-            foreach (var entry in Items)
-            {
-                AddEntryToZip(fileZipper, entry, string.Empty);
-            }
-
-            if (fileZipper.HasToBeSaved)
-            {
-                fileZipper.Save(outputPath, overwrite: true);
-            }
-        }
-
-        private void AddEntryToZip(IFileZipper zipper, BackupEntry entry, string zipPath)
-        {
-            switch (entry)
-            {
-                case BackupFileEntry fileEntry:
-                    AddBackupFileEntryToZip(zipper, fileEntry, zipPath);
-                    break;
-                case BackupDirectoryEntry dirEntry:
-                    AddBackupDirectoryEntryToZip(zipper, dirEntry, zipPath);
-                    break;
-            }
-        }
-
-        private void AddBackupFileEntryToZip(IFileZipper zipper, BackupFileEntry fileEntry, string zipPath)
-        {
-            if (File.Exists(fileEntry.FilePath))
-            {
-                zipper.AddFile(fileEntry.FilePath, zipPath);
-            }
-            else if (Directory.Exists(fileEntry.FilePath))
-            {
-                zipper.AddDirectory(fileEntry.FilePath, zipPath);
-            }
-            else
-            {
-                throw new FileNotFoundException($"File or directory not found: {fileEntry.FilePath}");
-            }
-        }
-
-        private void AddBackupDirectoryEntryToZip(IFileZipper zipper, BackupDirectoryEntry dirEntry, string zipPath)
-        {
-            var newZipPath = string.IsNullOrEmpty(zipPath) ? dirEntry.DirectoryName : Path.Combine(zipPath, dirEntry.DirectoryName);
-
-            foreach (var subEntry in dirEntry.Items)
-            {
-                AddEntryToZip(zipper, subEntry, newZipPath);
-            }
-        }
     }
 }

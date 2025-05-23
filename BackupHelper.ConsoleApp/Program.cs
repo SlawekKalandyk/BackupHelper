@@ -34,7 +34,8 @@ namespace BackupHelper.ConsoleApp
 
             if (!string.IsNullOrEmpty(backupPlan.LogDirectory))
             {
-                serviceCollection.AddLogging(LogLevel.Debug, backupPlan.LogDirectory);
+                Directory.CreateDirectory(backupPlan.LogDirectory);
+                serviceCollection.AddLogging(backupPlan.LogDirectory);
             }
             
             var services = serviceCollection.BuildServiceProvider();
@@ -88,31 +89,25 @@ namespace BackupHelper.ConsoleApp
 
     internal static class Logging
     {
-        public static void AddLogging(this IServiceCollection services, LogLevel logLevel, string logDirectory)
+        public static void AddLogging(this IServiceCollection services, string logDirectory)
         {
-            services.AddScoped(typeof(ILogger<>), typeof(NullLogger<>));
-        }
-    }
+            services.AddLogging(builder =>
+            {
+                builder.ClearProviders();
 
-    // Temporarily using a null logger to avoid logging issues
-    public class NullLogger<T> : ILogger<T>
-    {
-        public IDisposable BeginScope<TState>(TState state) where TState : notnull
-            => NullScope.Instance;
-
-        public bool IsEnabled(LogLevel logLevel)
-            => false;
-
-        public void Log<TState>(LogLevel logLevel,
-                                EventId eventId,
-                                TState state,
-                                Exception? exception,
-                                Func<TState, Exception, string> formatter) { }
-
-        private class NullScope : IDisposable
-        {
-            public static NullScope Instance { get; } = new();
-            public void Dispose() { }
+                var logFilePath = Path.Combine(logDirectory, "backup-.log");
+                var logger = new LoggerConfiguration()
+                             .MinimumLevel.Is(LogEventLevel.Information)
+                             .WriteTo.File(
+                                 logFilePath,
+                                 rollingInterval: RollingInterval.Month,
+                                 fileSizeLimitBytes: 1_000_000,
+                                 rollOnFileSizeLimit: true,
+                                 retainedFileCountLimit: 12,
+                                 shared: true)
+                             .CreateLogger();
+                builder.AddSerilog(logger, dispose: true);
+            });
         }
     }
 }

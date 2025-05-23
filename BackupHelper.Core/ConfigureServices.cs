@@ -12,6 +12,7 @@ namespace BackupHelper.Core
             services.AddMediatR(serviceConfiguration => serviceConfiguration.RegisterServicesFromAssembly(Assembly.GetExecutingAssembly()));
             services.AddSingleton<IFileZipperFactory, InMemoryFileZipperFactory>();
             services.AddTransient<IFileZipper>(sp => sp.GetRequiredService<IFileZipperFactory>().Create());
+            services.AddSingleton<IBackupPlanZipper, BackupPlanZipper>();
             return services;
         }
     }

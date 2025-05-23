@@ -10,12 +10,12 @@ namespace BackupHelper.Core.Features
     public class CreateBackupCommandHandler : IRequestHandler<CreateBackupCommand, CreateBackupCommandResult>
     {
         private readonly ILogger<CreateBackupCommandHandler> _logger;
-        private readonly IFileZipperFactory _fileZipperFactory;
+        private readonly IBackupPlanZipper _backupPlanZipper;
 
-        public CreateBackupCommandHandler(ILogger<CreateBackupCommandHandler> logger, IFileZipperFactory fileZipperFactory)
+        public CreateBackupCommandHandler(ILogger<CreateBackupCommandHandler> logger, IBackupPlanZipper backupPlanZipper)
         {
             _logger = logger;
-            _fileZipperFactory = fileZipperFactory;
+            _backupPlanZipper = backupPlanZipper;
         }
 
         public Task<CreateBackupCommandResult> Handle(CreateBackupCommand request, CancellationToken cancellationToken)
@@ -24,13 +24,12 @@ namespace BackupHelper.Core.Features
             {
                 try
                 {
-                    using var fileZipper = _fileZipperFactory.Create();
-                    request.BackupPlan.CreateZipFile(backupFilePath, fileZipper);
-                    _logger.LogInformation($"Backup created at {backupFilePath}");
+                    _backupPlanZipper.CreateZipFile(request.BackupPlan, backupFilePath);
+                    _logger.LogInformation("Backup created at {BackupFilePath}", backupFilePath);
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogError(ex, $"Failed to create backup at {backupFilePath}");
+                    _logger.LogError(ex, "Failed to create backup at {BackupFilePath}", backupFilePath);
                 }
             }
 
