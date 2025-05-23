@@ -24,7 +24,7 @@ public abstract class FileZipperTestsBase
             throw new ArgumentNullException($"Failed deserializing {nameof(TestSettings)}");
         }
 
-        FileZipperTestRootPath = testSettings.ZipperTestsDirectory;
+        FileZipperTestRootPath = testSettings.FileZipperTestsDirectory;
     }
 
     [SetUp]

@@ -4,25 +4,28 @@ using Microsoft.Extensions.Logging;
 
 namespace BackupHelper.Core.Features
 {
-    public record CreateBackupCommand(BackupConfiguration BackupConfiguration, params string[] BackupFilePaths) : IRequest<CreateBackupCommandResult>;
+    public record CreateBackupCommand(BackupPlan BackupPlan, params string[] BackupFilePaths) : IRequest<CreateBackupCommandResult>;
     public record CreateBackupCommandResult;
 
     public class CreateBackupCommandHandler : IRequestHandler<CreateBackupCommand, CreateBackupCommandResult>
     {
         private readonly ILogger<CreateBackupCommandHandler> _logger;
-        public CreateBackupCommandHandler(ILogger<CreateBackupCommandHandler> logger)
+        private readonly IFileZipperFactory _fileZipperFactory;
+
+        public CreateBackupCommandHandler(ILogger<CreateBackupCommandHandler> logger, IFileZipperFactory fileZipperFactory)
         {
             _logger = logger;
+            _fileZipperFactory = fileZipperFactory;
         }
 
         public Task<CreateBackupCommandResult> Handle(CreateBackupCommand request, CancellationToken cancellationToken)
         {
-            using var fileZipper = new BackupFileZipper(request.BackupConfiguration);
             foreach (var backupFilePath in request.BackupFilePaths)
             {
                 try
                 {
-                    fileZipper.SaveZipFile(backupFilePath);
+                    using var fileZipper = _fileZipperFactory.Create();
+                    request.BackupPlan.CreateZipFile(backupFilePath, fileZipper);
                     _logger.LogInformation($"Backup created at {backupFilePath}");
                 }
                 catch (Exception ex)
