@@ -1,5 +1,6 @@
 ﻿using System.IO.Compression;
 using BackupHelper.Core.FileZipping;
+using BackupHelper.Tests.Utilities;
 
 namespace BackupHelper.Tests.FileZipping;
 
@@ -7,5 +8,5 @@ namespace BackupHelper.Tests.FileZipping;
 public class InMemoryFileZipperTests : FileZipperTestsBase
 {
     protected override IFileZipper CreateFileZipper()
-        => new InMemoryFileZipper();
+        => new InMemoryFileZipper(new NullLogger<InMemoryFileZipper>());
 }
