@@ -12,44 +12,45 @@ namespace BackupHelper.Core.FileZipping
             _logger = logger;
         }
         
-        public IFileZipper Create()
+        public IFileZipper Create(string zipFilePath, bool overwriteFileIfExists)
         {
-            return new InMemoryFileZipper(_logger);
+            return new InMemoryFileZipper(_logger, zipFilePath, overwriteFileIfExists);
         }
     }
 
-    public class InMemoryFileZipper : IFileZipper
+    public class InMemoryFileZipper : FileZipperBase
     {
         private readonly ILogger<InMemoryFileZipper> _logger;
-        private readonly Stream _zipFileStream;
+        private readonly Stream _zipMemoryStream;
         private ZipArchive? _zipArchive;
 
-        public InMemoryFileZipper(ILogger<InMemoryFileZipper> logger)
+        public InMemoryFileZipper(ILogger<InMemoryFileZipper> logger, string zipFilePath, bool overwriteFileIfExists)
+            : base(zipFilePath, overwriteFileIfExists)
         {
             _logger = logger;
-            _zipFileStream = new MemoryStream();
-            _zipArchive = new ZipArchive(_zipFileStream, ZipArchiveMode.Create, true);
+            _zipMemoryStream = new MemoryStream();
+            _zipArchive = new ZipArchive(_zipMemoryStream, ZipArchiveMode.Create, leaveOpen: true);
         }
 
-        public void Save(string zipFilePath, bool overwrite)
+        public override void Save()
         {
-            if (overwrite && File.Exists(zipFilePath))
+            if (OverwriteFileIfExists && File.Exists(ZipFilePath))
             {
-                _logger.LogWarning("Overwriting existing file: {ZipFilePath}", zipFilePath);
-                File.Delete(zipFilePath);
+                _logger.LogWarning("Overwriting existing file: {ZipFilePath}", ZipFilePath);
+                File.Delete(ZipFilePath);
             }
 
             // ZipArchive has to be disposed before underlying stream can be copied to a file
             _zipArchive?.Dispose();
             _zipArchive = null;
-            using var fileStream = File.Open(zipFilePath, FileMode.Create, FileAccess.ReadWrite);
-            _zipFileStream.Seek(0, SeekOrigin.Begin);
-            _zipFileStream.CopyTo(fileStream);
+            using var fileStream = File.Open(ZipFilePath, FileMode.Create, FileAccess.ReadWrite);
+            _zipMemoryStream.Seek(0, SeekOrigin.Begin);
+            _zipMemoryStream.CopyTo(fileStream);
         }
 
-        public bool HasToBeSaved => true;
+        public override bool HasToBeSaved => true;
 
-        public void AddFile(string filePath, string zipPath)
+        public override void AddFile(string filePath, string zipPath = "")
         {
             EnsureZipArchiveIsOpen();
 
@@ -65,7 +66,7 @@ namespace BackupHelper.Core.FileZipping
             }
         }
 
-        public void AddDirectory(string directoryPath, string zipPath)
+        public override void AddDirectory(string directoryPath, string zipPath = "")
         {
             var directoryInfo = new DirectoryInfo(directoryPath);
             var newZipPath = Path.Combine(zipPath, directoryInfo.Name);
@@ -74,7 +75,7 @@ namespace BackupHelper.Core.FileZipping
             AddDirectoryContent(directoryPath, newZipPath);
         }
 
-        public void AddDirectoryContent(string directoryPath, string zipPath)
+        public override void AddDirectoryContent(string directoryPath, string zipPath = "")
         {
             EnsureZipArchiveIsOpen();
 
@@ -94,13 +95,13 @@ namespace BackupHelper.Core.FileZipping
 
         private void EnsureZipArchiveIsOpen()
         {
-            _zipArchive ??= new ZipArchive(_zipFileStream, ZipArchiveMode.Update, true);
+            _zipArchive ??= new ZipArchive(_zipMemoryStream, ZipArchiveMode.Update, true);
         }
 
-        public void Dispose()
+        public override void Dispose()
         {
             _zipArchive?.Dispose();
-            _zipFileStream.Dispose();
+            _zipMemoryStream.Dispose();
         }
     }
 }

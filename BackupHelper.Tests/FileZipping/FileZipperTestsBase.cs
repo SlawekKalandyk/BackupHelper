@@ -44,16 +44,22 @@ public abstract class FileZipperTestsBase
         Directory.Delete(FileZipperTestRootPath, true);
     }
 
-    protected abstract IFileZipper CreateFileZipper();
+    protected abstract IFileZipper CreateFileZipperCore(string outputPath, bool overwriteFileIfExists);
+
+    private IFileZipper CreateFileZipper()
+        => CreateFileZipperCore(ZipFilePath, overwriteFileIfExists: true);
 
     protected void PrepareFileStructure(TestFileStructure testFileStructure, Action<IFileZipper> addFilesToFileZipper)
     {
         testFileStructure.Generate(ZippedFilesDirectoryPath, UnzippedFilesDirectoryPath);
 
-        using var fileZipper = CreateFileZipper();
-        addFilesToFileZipper(fileZipper);
-        if (fileZipper.HasToBeSaved)
-            fileZipper.Save(ZipFilePath, true);
+        using (var fileZipper = CreateFileZipper())
+        {
+            addFilesToFileZipper(fileZipper);
+            if (fileZipper.HasToBeSaved)
+                fileZipper.Save();
+        }
+
         UnzipFile();
     }
 

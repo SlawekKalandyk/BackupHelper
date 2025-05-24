@@ -31,13 +31,11 @@
         /// <summary>
         /// Save created zip archive
         /// </summary>
-        /// <param name="filePath">Path where zip archive will be saved</param>
-        /// <param name="overwrite">Overwrite a file if one already exists at the same <see cref="filePath"/></param>
-        void Save(string filePath, bool overwrite);
+        void Save();
     }
 
     public interface IFileZipperFactory
     {
-        IFileZipper Create();
+        IFileZipper Create(string zipFilePath, bool overwriteFileIfExists);
     }
 }

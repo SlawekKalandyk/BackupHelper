@@ -4,8 +4,8 @@ using BackupHelper.Tests.Utilities;
 namespace BackupHelper.Tests.FileZipping;
 
 [TestFixture]
-public class InMemoryFileZipperTests : FileZipperTestsBase
+public class OnDiskFileZipperTests : FileZipperTestsBase
 {
     protected override IFileZipper CreateFileZipperCore(string outputPath, bool overwriteFileIfExists)
-        => new InMemoryFileZipper(new NullLogger<InMemoryFileZipper>(), outputPath, overwriteFileIfExists);
+        => new OnDiskFileZipper(new NullLogger<OnDiskFileZipper>(), outputPath, overwriteFileIfExists);
 }
