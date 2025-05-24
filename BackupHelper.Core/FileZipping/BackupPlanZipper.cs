@@ -17,7 +17,7 @@ public class BackupPlanZipper : IBackupPlanZipper
     {
         _logger.LogInformation("Creating backup file at {OutputPath}", outputPath);
 
-        using var fileZipper = _fileZipperFactory.Create();
+        using var fileZipper = _fileZipperFactory.Create(outputPath, overwriteFileIfExists: true);
         foreach (var entry in plan.Items)
         {
             AddEntryToZip(fileZipper, entry, string.Empty);
@@ -26,7 +26,7 @@ public class BackupPlanZipper : IBackupPlanZipper
         if (fileZipper.HasToBeSaved)
         {
             _logger.LogInformation("Saving zip to {OutputPath}", outputPath);
-            fileZipper.Save(outputPath, overwrite: true);
+            fileZipper.Save();
         }
     }
 
