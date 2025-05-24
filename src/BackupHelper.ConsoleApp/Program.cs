@@ -59,16 +59,19 @@ internal class Program
         if (Path.HasExtension(argPath))
         {
             var directories = Path.GetDirectoryName(argPath);
+
             if (string.IsNullOrEmpty(directories))
             {
                 return argPath;
             }
 
             Directory.CreateDirectory(directories);
+
             return argPath;
         }
 
         Directory.CreateDirectory(argPath);
+
         return Path.Combine(argPath, CreateDateTimeBasedZipFileName());
     }
 
@@ -78,11 +81,13 @@ internal class Program
         var baseFileName = $"{time:yyyy-MM-dd_HH-mm-ss}_backup";
         var fileName = $"{baseFileName}.zip";
         var i = 1;
+
         while (File.Exists(fileName))
         {
             fileName = baseFileName + $".{i}.zip";
             ++i;
         }
+
         return fileName;
     }
 }
@@ -91,22 +96,23 @@ internal static class Logging
 {
     public static void AddLogging(this IServiceCollection services, string logDirectory)
     {
-        services.AddLogging(builder =>
-                            {
-                                builder.ClearProviders();
+        services.AddLogging(
+            builder =>
+            {
+                builder.ClearProviders();
 
-                                var logFilePath = Path.Combine(logDirectory, "backup-.log");
-                                var logger = new LoggerConfiguration()
-                                             .MinimumLevel.Is(LogEventLevel.Information)
-                                             .WriteTo.File(
-                                                 logFilePath,
-                                                 rollingInterval: RollingInterval.Month,
-                                                 fileSizeLimitBytes: 1_000_000,
-                                                 rollOnFileSizeLimit: true,
-                                                 retainedFileCountLimit: 12,
-                                                 shared: true)
-                                             .CreateLogger();
-                                builder.AddSerilog(logger, dispose: true);
-                            });
+                var logFilePath = Path.Combine(logDirectory, "backup-.log");
+                var logger = new LoggerConfiguration()
+                             .MinimumLevel.Is(LogEventLevel.Information)
+                             .WriteTo.File(
+                                 logFilePath,
+                                 rollingInterval: RollingInterval.Month,
+                                 fileSizeLimitBytes: 1_000_000,
+                                 rollOnFileSizeLimit: true,
+                                 retainedFileCountLimit: 12,
+                                 shared: true)
+                             .CreateLogger();
+                builder.AddSerilog(logger, dispose: true);
+            });
     }
 }
