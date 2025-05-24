@@ -1,6 +1,7 @@
+using BackupHelper.Core.FileZipping;
 using Microsoft.Extensions.Logging;
 
-namespace BackupHelper.Core.FileZipping;
+namespace BackupHelper.Core.BackupZipping;
 
 public class BackupPlanZipper : IBackupPlanZipper
 {

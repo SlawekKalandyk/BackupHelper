@@ -1,9 +1,9 @@
 ﻿using System.IO.Compression;
 using BackupHelper.Core.FileZipping;
-using BackupHelper.Tests.Utilities;
+using BackupHelper.Core.Tests.Utilities;
 using Newtonsoft.Json;
 
-namespace BackupHelper.Tests.FileZipping;
+namespace BackupHelper.Core.Tests.FileZipping;
 
 [TestFixture]
 public abstract class FileZipperTestsBase

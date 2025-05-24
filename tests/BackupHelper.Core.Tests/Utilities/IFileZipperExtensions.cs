@@ -1,6 +1,6 @@
 ﻿using BackupHelper.Core.FileZipping;
 
-namespace BackupHelper.Tests.Utilities;
+namespace BackupHelper.Core.Tests.Utilities;
 
 public static class IFileZipperExtensions
 {
