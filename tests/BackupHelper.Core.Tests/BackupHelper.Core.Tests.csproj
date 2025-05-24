@@ -19,13 +19,13 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\BackupHelper.Core\BackupHelper.Core.csproj" />
-  </ItemGroup>
-
-  <ItemGroup>
     <None Update="testSettings.json">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\BackupHelper.Core\BackupHelper.Core.csproj" />
   </ItemGroup>
 
 </Project>

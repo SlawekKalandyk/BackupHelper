@@ -1,7 +1,7 @@
 ﻿using BackupHelper.Core.FileZipping;
-using BackupHelper.Tests.Utilities;
+using BackupHelper.Core.Tests.Utilities;
 
-namespace BackupHelper.Tests.FileZipping;
+namespace BackupHelper.Core.Tests.FileZipping;
 
 [TestFixture]
 public class InMemoryFileZipperTests : FileZipperTestsBase

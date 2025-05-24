@@ -3,17 +3,17 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.3.32825.248
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "BackupHelper.Core", "BackupHelper.Core\BackupHelper.Core.csproj", "{42D793F2-D0C0-4808-93FC-E45FE0BD3861}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "BackupHelper.Core", "src\BackupHelper.Core\BackupHelper.Core.csproj", "{42D793F2-D0C0-4808-93FC-E45FE0BD3861}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{036A0814-F4D4-4054-BEA1-22F562BCA9C1}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{D1E4C4F2-71F9-4C60-A090-213BB9107928}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "BackupHelper.Tests", "BackupHelper.Tests\BackupHelper.Tests.csproj", "{2703B2B8-D7C3-4592-B0A8-E1D1133A2AEF}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "BackupHelper.Core.Tests", "tests\BackupHelper.Core.Tests\BackupHelper.Core.Tests.csproj", "{2703B2B8-D7C3-4592-B0A8-E1D1133A2AEF}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "interfaces", "interfaces", "{E22D1EE7-D361-41E3-AC1D-B286DA20D527}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "BackupHelper.ConsoleApp", "BackupHelper.ConsoleApp\BackupHelper.ConsoleApp.csproj", "{6CBFDFEA-102C-4B60-B455-EA97FB78BA29}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "BackupHelper.ConsoleApp", "src\BackupHelper.ConsoleApp\BackupHelper.ConsoleApp.csproj", "{6CBFDFEA-102C-4B60-B455-EA97FB78BA29}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

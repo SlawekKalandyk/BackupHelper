@@ -1,4 +1,4 @@
-﻿namespace BackupHelper.Tests;
+﻿namespace BackupHelper.Core.Tests;
 
 public class TestDirectory : IDisposable
 {

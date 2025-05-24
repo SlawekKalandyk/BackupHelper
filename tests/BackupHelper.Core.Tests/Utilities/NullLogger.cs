@@ -1,6 +1,6 @@
 ﻿using Microsoft.Extensions.Logging;
 
-namespace BackupHelper.Tests.Utilities;
+namespace BackupHelper.Core.Tests.Utilities;
 
 public class NullLogger<T> : ILogger<T>
 {
