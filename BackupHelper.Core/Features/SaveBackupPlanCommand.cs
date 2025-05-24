@@ -9,11 +9,11 @@ namespace BackupHelper.Core.Features
 
     public class SaveBackupPlanCommandHandler : IRequestHandler<SaveBackupPlanCommand, SaveBackupPlanCommandResult>
     {
-        public async Task<SaveBackupPlanCommandResult> Handle(SaveBackupPlanCommand request, CancellationToken cancellationToken)
+        public Task<SaveBackupPlanCommandResult> Handle(SaveBackupPlanCommand request, CancellationToken cancellationToken)
         {
             request.BackupPlan.ToJsonFile(request.ConfigurationSavePath);
 
-            return new SaveBackupPlanCommandResult();
+            return Task.FromResult(new SaveBackupPlanCommandResult());
         }
     }
 }
