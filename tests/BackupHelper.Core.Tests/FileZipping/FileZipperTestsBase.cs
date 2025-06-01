@@ -1,6 +1,10 @@
 ﻿using System.IO.Compression;
 using BackupHelper.Core.FileZipping;
 using BackupHelper.Core.Tests.Utilities;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 using Newtonsoft.Json;
 
 namespace BackupHelper.Core.Tests.FileZipping;
@@ -8,10 +12,13 @@ namespace BackupHelper.Core.Tests.FileZipping;
 [TestFixture]
 public abstract class FileZipperTestsBase
 {
-    private string FileZipperTestRootPath { get; set; }
-    private string ZippedFilesDirectoryPath => Path.Combine(FileZipperTestRootPath, "file-zipper-tests-zipped");
-    private string UnzippedFilesDirectoryPath => Path.Combine(FileZipperTestRootPath, "file-zipper-tests-unzipped");
+    protected IServiceScope ServiceScope { get; private set; }
+    private ServiceProvider ServiceProvider { get; set; }
+
+    protected string ZippedFilesDirectoryPath => Path.Combine(FileZipperTestRootPath, "file-zipper-tests-zipped");
+    protected string UnzippedFilesDirectoryPath => Path.Combine(FileZipperTestRootPath, "file-zipper-tests-unzipped");
     private string ZipFilePath => Path.Combine(FileZipperTestRootPath, "file-zipper-tests-zipped-file.zip");
+    private string FileZipperTestRootPath { get; set; }
 
     [OneTimeSetUp]
     public void OneTimeSetup()
@@ -25,6 +32,13 @@ public abstract class FileZipperTestsBase
         }
 
         FileZipperTestRootPath = testSettings.FileZipperTestsDirectory;
+        ServiceProvider = CreateServiceProvider();
+    }
+
+    [OneTimeTearDown]
+    public void OneTimeCleanup()
+    {
+        ServiceProvider?.Dispose();
     }
 
     [SetUp]
@@ -36,18 +50,24 @@ public abstract class FileZipperTestsBase
         Directory.CreateDirectory(FileZipperTestRootPath);
         Directory.CreateDirectory(ZippedFilesDirectoryPath);
         Directory.CreateDirectory(UnzippedFilesDirectoryPath);
+
+        ServiceScope = ServiceProvider.CreateScope();
     }
 
     [TearDown]
     public void Cleanup()
     {
+        ServiceScope.Dispose();
         Directory.Delete(FileZipperTestRootPath, true);
     }
 
-    protected abstract IFileZipper CreateFileZipperCore(string outputPath, bool overwriteFileIfExists);
+    protected abstract void OverrideServices(IServiceCollection serviceCollection);
 
-    private IFileZipper CreateFileZipper()
-        => CreateFileZipperCore(ZipFilePath, overwriteFileIfExists: true);
+    protected IFileZipper CreateFileZipper()
+    {
+        var fileZipperFactory = ServiceScope.ServiceProvider.GetRequiredService<IFileZipperFactory>();
+        return fileZipperFactory.Create(ZipFilePath, true);
+    }
 
     protected void PrepareFileStructure(TestFileStructure testFileStructure, Action<IFileZipper> addFilesToFileZipper)
     {
@@ -68,13 +88,24 @@ public abstract class FileZipperTestsBase
         ZipFile.ExtractToDirectory(ZipFilePath, UnzippedFilesDirectoryPath);
     }
 
+    private ServiceProvider CreateServiceProvider()
+    {
+        var configuration = new ConfigurationBuilder()
+            .Build();
+        var serviceCollection = new ServiceCollection()
+                                .AddCoreServices(configuration)
+                                .AddLogging(builder => builder.AddProvider(NullLoggerProvider.Instance));
+
+        OverrideServices(serviceCollection);
+
+        return serviceCollection.BuildServiceProvider();
+    }
+
     [Test]
     public void GivenSingleFile_WhenAddedToZip_ThenUnzippedDirectoryContainsThatFile()
     {
         var testFile = new TestFile("file1");
-        using var testFileStructure = new TestFileStructure(
-            new() { testFile },
-            new());
+        using var testFileStructure = new TestFileStructure([testFile], []);
 
         PrepareFileStructure(
             testFileStructure,

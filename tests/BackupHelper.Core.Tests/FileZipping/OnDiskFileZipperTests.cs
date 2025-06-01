@@ -1,11 +1,13 @@
 ﻿using BackupHelper.Core.FileZipping;
-using BackupHelper.Core.Tests.Utilities;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace BackupHelper.Core.Tests.FileZipping;
 
 [TestFixture]
 public class OnDiskFileZipperTests : FileZipperTestsBase
 {
-    protected override IFileZipper CreateFileZipperCore(string outputPath, bool overwriteFileIfExists)
-        => new OnDiskFileZipper(new NullLogger<OnDiskFileZipper>(), outputPath, overwriteFileIfExists);
+    protected override void OverrideServices(IServiceCollection serviceCollection)
+    {
+        serviceCollection.AddTransient<IFileZipperFactory, OnDiskFileZipperFactory>();
+    }
 }

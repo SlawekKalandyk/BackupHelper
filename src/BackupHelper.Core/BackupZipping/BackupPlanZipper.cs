@@ -1,4 +1,5 @@
 using BackupHelper.Core.FileZipping;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 
 namespace BackupHelper.Core.BackupZipping;
@@ -6,19 +7,22 @@ namespace BackupHelper.Core.BackupZipping;
 public class BackupPlanZipper : IBackupPlanZipper
 {
     private readonly ILogger<BackupPlanZipper> _logger;
-    private readonly IFileZipperFactory _fileZipperFactory;
+    private readonly IServiceScopeFactory _serviceScopeFactory;
 
-    public BackupPlanZipper(ILogger<BackupPlanZipper> logger, IFileZipperFactory fileZipperFactory)
+    public BackupPlanZipper(ILogger<BackupPlanZipper> logger, IServiceScopeFactory serviceScopeFactory)
     {
         _logger = logger;
-        _fileZipperFactory = fileZipperFactory;
+        _serviceScopeFactory = serviceScopeFactory;
     }
 
     public void CreateZipFile(BackupPlan plan, string outputPath)
     {
         _logger.LogInformation("Creating backup file at {OutputPath}", outputPath);
 
-        using var fileZipper = _fileZipperFactory.Create(outputPath, overwriteFileIfExists: true);
+        using var scope = _serviceScopeFactory.CreateScope();
+        var fileZipperFactory = scope.ServiceProvider.GetRequiredService<IFileZipperFactory>();
+        using var fileZipper = fileZipperFactory.Create(outputPath, overwriteFileIfExists: true);
+
         foreach (var entry in plan.Items)
         {
             AddEntryToZip(fileZipper, entry, string.Empty);
