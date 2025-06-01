@@ -16,7 +16,6 @@ public static class ConfigureServices
         services.AddTransient<IFileZipperFactory, OnDiskFileZipperFactory>();
         services.AddTransient<IFileInUseZipEntryHandlerManager, FileInUseZipEntryHandlerManager>();
         services.AddTransient<VssFileInUseZipEntryHandlerFactory>();
-        services.AddTransient<DefaultFileInUseZipEntryHandlerFactory>();
 
         return services;
     }
