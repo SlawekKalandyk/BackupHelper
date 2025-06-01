@@ -25,8 +25,7 @@ public class TestDirectory : IDisposable
 
     public void Generate(string parentZipPath, string parentDirectoryPath)
     {
-        Check.IsNull(parentZipPath);
-        Check.IsNull(parentDirectoryPath);
+        Check.IsNullOrEmpty(parentDirectoryPath);
 
         GeneratedDirectoryPath = Path.Combine(parentDirectoryPath, Name);
         UnzippedFilesDirectoryPath = Path.Combine(parentZipPath, ZipPath ?? string.Empty, Name);
@@ -82,8 +81,7 @@ public class TestFile : IDisposable
 
     public void Generate(string parentZipPath, string parentDirectoryPath)
     {
-        Check.IsNull(parentZipPath);
-        Check.IsNull(parentDirectoryPath);
+        Check.IsNullOrEmpty(parentDirectoryPath);
 
         GeneratedFilePath = Path.Combine(parentDirectoryPath, Name);
         UnzippedFilePath = Path.Combine(parentZipPath, ZipPath ?? string.Empty, Name);

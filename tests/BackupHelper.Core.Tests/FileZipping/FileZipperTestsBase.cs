@@ -1,53 +1,18 @@
 ﻿using System.IO.Compression;
 using BackupHelper.Core.FileZipping;
 using BackupHelper.Core.Tests.Utilities;
-using Newtonsoft.Json;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace BackupHelper.Core.Tests.FileZipping;
 
 [TestFixture]
-public abstract class FileZipperTestsBase
+public abstract class FileZipperTestsBase : ZipTestsBase
 {
-    private string FileZipperTestRootPath { get; set; }
-    private string ZippedFilesDirectoryPath => Path.Combine(FileZipperTestRootPath, "file-zipper-tests-zipped");
-    private string UnzippedFilesDirectoryPath => Path.Combine(FileZipperTestRootPath, "file-zipper-tests-unzipped");
-    private string ZipFilePath => Path.Combine(FileZipperTestRootPath, "file-zipper-tests-zipped-file.zip");
-
-    [OneTimeSetUp]
-    public void OneTimeSetup()
+    protected IFileZipper CreateFileZipper()
     {
-        var jsonTestSettings = File.ReadAllText("testSettings.json");
-        var testSettings = JsonConvert.DeserializeObject<TestSettings>(jsonTestSettings);
-
-        if (testSettings == null)
-        {
-            throw new ArgumentNullException($"Failed deserializing {nameof(TestSettings)}");
-        }
-
-        FileZipperTestRootPath = testSettings.FileZipperTestsDirectory;
+        var fileZipperFactory = ServiceScope.ServiceProvider.GetRequiredService<IFileZipperFactory>();
+        return fileZipperFactory.Create(ZipFilePath, true);
     }
-
-    [SetUp]
-    public void Setup()
-    {
-        if (string.IsNullOrEmpty(FileZipperTestRootPath))
-            throw new ArgumentNullException($"{nameof(FileZipperTestRootPath)} cannot be null");
-
-        Directory.CreateDirectory(FileZipperTestRootPath);
-        Directory.CreateDirectory(ZippedFilesDirectoryPath);
-        Directory.CreateDirectory(UnzippedFilesDirectoryPath);
-    }
-
-    [TearDown]
-    public void Cleanup()
-    {
-        Directory.Delete(FileZipperTestRootPath, true);
-    }
-
-    protected abstract IFileZipper CreateFileZipperCore(string outputPath, bool overwriteFileIfExists);
-
-    private IFileZipper CreateFileZipper()
-        => CreateFileZipperCore(ZipFilePath, overwriteFileIfExists: true);
 
     protected void PrepareFileStructure(TestFileStructure testFileStructure, Action<IFileZipper> addFilesToFileZipper)
     {
@@ -72,9 +37,7 @@ public abstract class FileZipperTestsBase
     public void GivenSingleFile_WhenAddedToZip_ThenUnzippedDirectoryContainsThatFile()
     {
         var testFile = new TestFile("file1");
-        using var testFileStructure = new TestFileStructure(
-            new() { testFile },
-            new());
+        using var testFileStructure = new TestFileStructure([testFile], []);
 
         PrepareFileStructure(
             testFileStructure,
