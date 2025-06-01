@@ -6,8 +6,8 @@ namespace BackupHelper.Core.Tests.FileZipping;
 [TestFixture]
 public class OnDiskFileZipperTests : FileZipperTestsBase
 {
-    protected override void OverrideServices(IServiceCollection serviceCollection)
+    protected override void OverrideServices(IServiceCollection services)
     {
-        serviceCollection.AddTransient<IFileZipperFactory, OnDiskFileZipperFactory>();
+        services.AddTransient<IFileZipperFactory, OnDiskFileZipperFactory>();
     }
 }

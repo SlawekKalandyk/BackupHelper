@@ -19,7 +19,7 @@ public class VssFileInUseZipEntryHandlerFactory : IFileInUseZipEntryHandlerFacto
     }
 }
 
-internal class VssFileInUseZipEntryHandler : IFileInUseZipEntryHandler
+public class VssFileInUseZipEntryHandler : IFileInUseZipEntryHandler
 {
     private readonly ILogger<VssBackup> _logger;
     private readonly IDictionary<string, VssBackup> _vssBackups = new Dictionary<string, VssBackup>();

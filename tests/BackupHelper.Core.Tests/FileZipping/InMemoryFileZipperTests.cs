@@ -7,8 +7,8 @@ namespace BackupHelper.Core.Tests.FileZipping;
 [TestFixture]
 public class InMemoryFileZipperTests : FileZipperTestsBase
 {
-    protected override void OverrideServices(IServiceCollection serviceCollection)
+    protected override void OverrideServices(IServiceCollection services)
     {
-        serviceCollection.AddTransient<IFileZipperFactory, InMemoryFileZipperFactory>();
+        services.AddTransient<IFileZipperFactory, InMemoryFileZipperFactory>();
     }
 }
