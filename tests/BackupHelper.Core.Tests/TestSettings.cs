@@ -2,10 +2,10 @@
 
 public class TestSettings
 {
-    public TestSettings(string fileZipperTestsDirectory)
+    public TestSettings(string testsDirectory)
     {
-        FileZipperTestsDirectory = fileZipperTestsDirectory;
+        TestsDirectory = testsDirectory;
     }
 
-    public string FileZipperTestsDirectory { get; }
+    public string TestsDirectory { get; }
 }

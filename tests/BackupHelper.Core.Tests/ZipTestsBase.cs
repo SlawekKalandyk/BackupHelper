@@ -7,85 +7,38 @@ using Newtonsoft.Json;
 namespace BackupHelper.Core.Tests;
 
 [TestFixture]
-public abstract class ZipTestsBase
+public abstract class ZipTestsBase : TestsBase
 {
-    /// <summary>
-    /// Scope for services used in tests.
-    /// </summary>
-    protected IServiceScope ServiceScope { get; private set; }
-
-    private ServiceProvider _serviceProvider { get; set; }
-
     /// <summary>
     /// Directory where files to be zipped will be stored during tests.
     /// </summary>
-    protected string ZippedFilesDirectoryPath => Path.Combine(_fileZipperTestRootPath, "file-zipper-tests-zipped");
+    protected string ZippedFilesDirectoryPath => Path.Combine(TestsDirectoryRootPath, "file-zipper-tests-zipped");
 
     /// <summary>
     /// Directory where unzipped files will be stored during tests.
     /// </summary>
-    protected string UnzippedFilesDirectoryPath => Path.Combine(_fileZipperTestRootPath, "file-zipper-tests-unzipped");
+    protected string UnzippedFilesDirectoryPath => Path.Combine(TestsDirectoryRootPath, "file-zipper-tests-unzipped");
 
     /// <summary>
     /// File path for the zip file used in tests.
     /// </summary>
-    protected string ZipFilePath => Path.Combine(_fileZipperTestRootPath, "file-zipper-tests-zipped-file.zip");
-
-    private string _fileZipperTestRootPath { get; set; }
-
-    [OneTimeSetUp]
-    public void OneTimeSetup()
-    {
-        var jsonTestSettings = File.ReadAllText("testSettings.json");
-        var testSettings = JsonConvert.DeserializeObject<TestSettings>(jsonTestSettings);
-
-        if (testSettings == null)
-        {
-            throw new ArgumentNullException($"Failed deserializing {nameof(TestSettings)}");
-        }
-
-        _fileZipperTestRootPath = testSettings.FileZipperTestsDirectory;
-        _serviceProvider = CreateServiceProvider();
-    }
-
-    [OneTimeTearDown]
-    public void OneTimeCleanup()
-    {
-        _serviceProvider?.Dispose();
-    }
+    protected string ZipFilePath => Path.Combine(TestsDirectoryRootPath, "file-zipper-tests-zipped-file.zip");
 
     [SetUp]
-    public void Setup()
+    protected override void Setup()
     {
-        if (string.IsNullOrEmpty(_fileZipperTestRootPath))
-            throw new ArgumentNullException($"{nameof(_fileZipperTestRootPath)} cannot be null");
+        base.Setup();
 
-        Directory.CreateDirectory(_fileZipperTestRootPath);
         Directory.CreateDirectory(ZippedFilesDirectoryPath);
         Directory.CreateDirectory(UnzippedFilesDirectoryPath);
-
-        ServiceScope = _serviceProvider.CreateScope();
     }
 
     [TearDown]
-    public void Cleanup()
+    protected override void Cleanup()
     {
-        ServiceScope.Dispose();
-        Directory.Delete(_fileZipperTestRootPath, true);
-    }
+        Directory.Delete(ZippedFilesDirectoryPath, true);
+        Directory.Delete(UnzippedFilesDirectoryPath, true);
 
-    protected abstract void OverrideServices(IServiceCollection services);
-
-    private ServiceProvider CreateServiceProvider()
-    {
-        var configuration = new ConfigurationBuilder()
-            .Build();
-        var serviceCollection = new ServiceCollection()
-                                .AddCoreServices(configuration)
-                                .AddLogging(builder => builder.AddProvider(NullLoggerProvider.Instance));
-
-        OverrideServices(serviceCollection);
-
-        return serviceCollection.BuildServiceProvider();
+        base.Cleanup();
     }
 }
