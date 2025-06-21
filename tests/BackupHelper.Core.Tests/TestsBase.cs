@@ -59,7 +59,9 @@ public abstract class TestsBase
         Directory.Delete(TestsDirectoryRootPath, true);
     }
 
-    protected abstract void OverrideServices(IServiceCollection services);
+    protected virtual void OverrideServices(IServiceCollection services)
+    {
+    }
 
     private ServiceProvider CreateServiceProvider()
     {

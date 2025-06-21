@@ -1,10 +1,4 @@
-﻿using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Logging.Abstractions;
-using Newtonsoft.Json;
-
-namespace BackupHelper.Core.Tests;
+﻿namespace BackupHelper.Core.Tests;
 
 [TestFixture]
 public abstract class ZipTestsBase : TestsBase

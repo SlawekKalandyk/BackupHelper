@@ -11,16 +11,20 @@ public abstract class FileInUseZipEntryHandlerTestsBase : ZipTestsBase
     protected abstract IFileInUseZipEntryHandlerFactory CreateFileInUseZipEntryHandlerFactory();
 
     [SetUp]
-    public void SetUp()
+    protected override void Setup()
     {
+        base.Setup();
+
         var fileInUseZipEntryHandlerFactory = CreateFileInUseZipEntryHandlerFactory();
         _fileInUseZipEntryHandler = fileInUseZipEntryHandlerFactory.Create();
     }
 
     [TearDown]
-    public void CleanUp()
+    protected override void Cleanup()
     {
         _fileInUseZipEntryHandler.Dispose();
+
+        base.Cleanup();
     }
 
     [Test]
