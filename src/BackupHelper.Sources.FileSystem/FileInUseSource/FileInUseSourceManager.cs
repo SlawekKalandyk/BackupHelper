@@ -1,30 +1,30 @@
 ﻿using System.Security.Principal;
 
-namespace BackupHelper.Core.FileInUseZipEntryHandler;
+namespace BackupHelper.Sources.FileSystem.FileInUseSource;
 
-public interface IFileInUseZipEntryHandlerManager : IDisposable
+public interface IFileInUseSourceManager : IDisposable
 {
-    IFileInUseZipEntryHandler GetFileInUseZipEntryHandler(string filepath);
+    IFileInUseSource GetFileInUseSource(string filepath);
 }
 
-public class FileInUseZipEntryHandlerManager : IFileInUseZipEntryHandlerManager
+public class FileInUseSourceManager : IFileInUseSourceManager
 {
-    private readonly VssFileInUseZipEntryHandlerFactory _vssFileInUseZipEntryHandlerFactory;
-    private IDictionary<string, IFileInUseZipEntryHandler> _handlers = new Dictionary<string, IFileInUseZipEntryHandler>();
+    private readonly VssFileInUseSourceFactory _vssFileInUseSourceFactory;
+    private IDictionary<string, IFileInUseSource> _sources = new Dictionary<string, IFileInUseSource>();
 
-    public FileInUseZipEntryHandlerManager(VssFileInUseZipEntryHandlerFactory vssFileInUseZipEntryHandlerFactory)
+    public FileInUseSourceManager(VssFileInUseSourceFactory vssFileInUseSourceFactory)
     {
-        _vssFileInUseZipEntryHandlerFactory = vssFileInUseZipEntryHandlerFactory;
+        _vssFileInUseSourceFactory = vssFileInUseSourceFactory;
     }
 
-    public IFileInUseZipEntryHandler GetFileInUseZipEntryHandler(string filepath)
+    public IFileInUseSource GetFileInUseSource(string filepath)
     {
         var absolutePath = Path.GetFullPath(filepath);
         var volume = Path.GetPathRoot(absolutePath)!;
 
-        if (_handlers.TryGetValue(volume, out var handler))
+        if (_sources.TryGetValue(volume, out var source))
         {
-            return handler;
+            return source;
         }
 
         var driveInfo = new DriveInfo(volume);
@@ -37,12 +37,12 @@ public class FileInUseZipEntryHandlerManager : IFileInUseZipEntryHandlerManager
                 .IsInRole(WindowsBuiltInRole.Administrator);
             #pragma warning restore CA1416
 
-            switch ((hasWindowsAdminRights, driveFormat))
+            switch (hasWindowsAdminRights, driveFormat)
             {
                 case (true, "ntfs"):
-                    handler = _vssFileInUseZipEntryHandlerFactory.Create();
-                    _handlers[volume] = handler;
-                    return handler;
+                    source = _vssFileInUseSourceFactory.Create();
+                    _sources[volume] = source;
+                    return source;
                 case (false, "ntfs"):
                     throw new UnauthorizedAccessException("You need administrative rights to safely copy files in use on NTFS volumes.");
                 case (_, _):
@@ -55,7 +55,7 @@ public class FileInUseZipEntryHandlerManager : IFileInUseZipEntryHandlerManager
 
     public void Dispose()
     {
-        foreach (var handler in _handlers.Values)
+        foreach (var handler in _sources.Values)
         {
             handler.Dispose();
         }

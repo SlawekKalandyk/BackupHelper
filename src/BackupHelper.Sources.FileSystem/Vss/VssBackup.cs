@@ -2,7 +2,7 @@
 using Alphaleonis.Win32.Vss;
 using Microsoft.Extensions.Logging;
 
-namespace BackupHelper.Core.Vss;
+namespace BackupHelper.Sources.FileSystem.Vss;
 
 // Copied from AlphaVSS samples https://github.com/alphaleonis/AlphaVSS-Samples/blob/develop/src/VssBackup/VssBackup.cs
 

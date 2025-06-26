@@ -1,33 +1,38 @@
 ﻿using Microsoft.Extensions.Logging;
 using System.IO.Compression;
+using BackupHelper.Core.Sources;
 
 namespace BackupHelper.Core.FileZipping;
 
 public class InMemoryFileZipperFactory : IFileZipperFactory
 {
     private readonly ILogger<InMemoryFileZipper> _logger;
+    private readonly ISourceManager _sourceManager;
 
-    public InMemoryFileZipperFactory(ILogger<InMemoryFileZipper> logger)
+    public InMemoryFileZipperFactory(ILogger<InMemoryFileZipper> logger, ISourceManager sourceManager)
     {
         _logger = logger;
+        _sourceManager = sourceManager;
     }
 
     public IFileZipper Create(string zipFilePath, bool overwriteFileIfExists)
     {
-        return new InMemoryFileZipper(_logger, zipFilePath, overwriteFileIfExists);
+        return new InMemoryFileZipper(_logger, _sourceManager, zipFilePath, overwriteFileIfExists);
     }
 }
 
 public class InMemoryFileZipper : FileZipperBase
 {
     private readonly ILogger<InMemoryFileZipper> _logger;
+    private readonly ISourceManager _sourceManager;
     private readonly Stream _zipMemoryStream;
     private ZipArchive? _zipArchive;
 
-    public InMemoryFileZipper(ILogger<InMemoryFileZipper> logger, string zipFilePath, bool overwriteFileIfExists)
+    public InMemoryFileZipper(ILogger<InMemoryFileZipper> logger, ISourceManager sourceManager, string zipFilePath, bool overwriteFileIfExists)
         : base(zipFilePath, overwriteFileIfExists)
     {
         _logger = logger;
+        _sourceManager = sourceManager;
         _zipMemoryStream = new MemoryStream();
         _zipArchive = new ZipArchive(_zipMemoryStream, ZipArchiveMode.Create, leaveOpen: true);
     }
@@ -58,7 +63,10 @@ public class InMemoryFileZipper : FileZipperBase
         var newZipPath = Path.Combine(zipPath, fileInfo.Name);
         try
         {
-            _zipArchive!.CreateEntryFromFile(filePath, newZipPath, CompressionLevel.Optimal);
+            var entry = _zipArchive!.CreateEntry(newZipPath, CompressionLevel.Optimal);
+            using var entryStream = entry.Open();
+            using var fileStream = _sourceManager.GetStream(filePath);
+            fileStream.CopyTo(entryStream);
         }
         catch (Exception e)
         {
