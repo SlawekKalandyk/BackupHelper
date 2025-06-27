@@ -1,11 +1,11 @@
 ﻿using SMBLibrary;
 using SMBLibrary.Client;
 
-namespace BackupHelper.Sources.SMB;
+namespace BackupHelper.Sources.SMB.IO;
 
-public abstract class SMBFileSystemComponentBase : IDisposable
+public abstract class SMBIOComponentBase : IDisposable
 {
-    protected SMBFileSystemComponentBase(ISMBFileStore fileStore, object handle, FilePurpose filePurpose)
+    protected SMBIOComponentBase(ISMBFileStore fileStore, object handle, FilePurpose filePurpose)
     {
         SMBFileStore = fileStore;
         Handle = handle;
@@ -19,7 +19,7 @@ public abstract class SMBFileSystemComponentBase : IDisposable
 
     public void Delete()
     {
-        if (FilePurpose != FilePurpose.Delete)
+        if ((FilePurpose & FilePurpose.Delete) != FilePurpose.Delete)
             throw new InvalidOperationException("This file cannot be deleted. It was not opened for deletion.");
 
         var fileDispositionInformation = new FileDispositionInformation

@@ -1,4 +1,5 @@
 ﻿using System.Net;
+using BackupHelper.Sources.SMB.IO;
 using SMBLibrary;
 using SMBLibrary.Client;
 
@@ -58,6 +59,17 @@ public class SMBConnection : IDisposable
     {
         using var smbDirectory = SMBDirectory.OpenDirectoryForReading(_smbFileStore, directoryPath);
         smbDirectory.ClearDirectory();
+    }
+
+    public void CreateDirectory(string directoryPath)
+    {
+        using var _ = SMBDirectory.CreateDirectory(_smbFileStore, directoryPath);
+    }
+
+    public void DeleteDirectory(string directoryPath)
+    {
+        using var smbDirectory = SMBDirectory.OpenDirectoryForDeletion(_smbFileStore, directoryPath);
+        smbDirectory.Delete();
     }
 
     public void Dispose()

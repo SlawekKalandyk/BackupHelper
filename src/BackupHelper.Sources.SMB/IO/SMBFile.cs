@@ -2,9 +2,9 @@
 using SMBLibrary.Client;
 using FileAttributes = SMBLibrary.FileAttributes;
 
-namespace BackupHelper.Sources.SMB;
+namespace BackupHelper.Sources.SMB.IO;
 
-public class SMBFile : SMBFileSystemComponentBase
+public class SMBFile : SMBIOComponentBase
 {
     private SMBFile(ISMBFileStore smbFileStore, object fileHandle, FileAllInformation fileInfo, FilePurpose filePurpose)
         : base(smbFileStore, fileHandle, filePurpose)
@@ -14,12 +14,20 @@ public class SMBFile : SMBFileSystemComponentBase
 
     public FileAllInformation FileInfo { get; }
 
-    public Stream GetStream()
+    public Stream GetReadStream()
     {
-        if (FilePurpose != FilePurpose.Read)
+        if ((FilePurpose & FilePurpose.Read) != FilePurpose.Read)
             throw new InvalidOperationException("This file cannot be read. It was not opened for reading.");
 
         return new SMBReadOnlyFileStream(SMBFileStore, this);
+    }
+
+    public Stream GetWriteStream()
+    {
+        if ((FilePurpose & FilePurpose.Write) != FilePurpose.Write)
+            throw new InvalidOperationException("This file cannot be written to. It was not opened for writing.");
+
+        return new SMBWriteOnlyFileStream(SMBFileStore, this);
     }
 
     public static SMBFile OpenFileForReading(ISMBFileStore fileStore, string filePath)
@@ -35,9 +43,7 @@ public class SMBFile : SMBFileSystemComponentBase
             CreateOptions.FILE_NON_DIRECTORY_FILE | CreateOptions.FILE_SYNCHRONOUS_IO_NONALERT,
             null);
         SMBHelper.ThrowIfStatusNotSuccess(status, nameof(fileStore.CreateFile));
-
-        if (fileStatus != FileStatus.FILE_OPENED)
-            throw new InvalidOperationException($"Failed to open file '{filePath}' with status: {fileStatus}");
+        SMBHelper.ThrowIfFileStatusNotFileOpened(fileStatus, filePath, nameof(fileStore.CreateFile));
 
         var fileInfo = GetFileInfo(fileStore, filePath, fileHandle);
         return new SMBFile(fileStore, fileHandle, fileInfo, FilePurpose.Read);
@@ -56,12 +62,29 @@ public class SMBFile : SMBFileSystemComponentBase
             CreateOptions.FILE_NON_DIRECTORY_FILE | CreateOptions.FILE_SYNCHRONOUS_IO_ALERT,
             null);
         SMBHelper.ThrowIfStatusNotSuccess(status, nameof(fileStore.CreateFile));
-
-        if (fileStatus != FileStatus.FILE_OPENED)
-            throw new InvalidOperationException($"Failed to open file '{filePath}' with status: {fileStatus}");
+        SMBHelper.ThrowIfFileStatusNotFileOpened(fileStatus, filePath, nameof(fileStore.CreateFile));
 
         var fileInfo = GetFileInfo(fileStore, filePath, fileHandle);
         return new SMBFile(fileStore, fileHandle, fileInfo, FilePurpose.Delete);
+    }
+
+    public static SMBFile CreateFile(ISMBFileStore fileStore, string filePath)
+    {
+        var status = fileStore.CreateFile(
+            out var fileHandle,
+            out var fileStatus,
+            filePath,
+            AccessMask.GENERIC_WRITE | AccessMask.SYNCHRONIZE,
+            FileAttributes.Normal,
+            ShareAccess.None,
+            CreateDisposition.FILE_CREATE,
+            CreateOptions.FILE_NON_DIRECTORY_FILE | CreateOptions.FILE_SYNCHRONOUS_IO_NONALERT,
+            null);
+        SMBHelper.ThrowIfStatusNotSuccess(status, nameof(fileStore.CreateFile));
+        SMBHelper.ThrowIfFileStatusNotFileCreated(fileStatus, filePath, nameof(fileStore.CreateFile));
+
+        var fileInfo = GetFileInfo(fileStore, filePath, fileHandle);
+        return new SMBFile(fileStore, fileHandle, fileInfo, FilePurpose.Write);
     }
 
     private static FileAllInformation GetFileInfo(ISMBFileStore fileStore, string filePath, object fileHandle)

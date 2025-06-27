@@ -2,9 +2,9 @@
 using SMBLibrary.Client;
 using FileAttributes = SMBLibrary.FileAttributes;
 
-namespace BackupHelper.Sources.SMB;
+namespace BackupHelper.Sources.SMB.IO;
 
-public class SMBDirectory : SMBFileSystemComponentBase
+public class SMBDirectory : SMBIOComponentBase
 {
     private SMBDirectory(ISMBFileStore fileStore, object handle, FilePurpose filePurpose)
         : base(fileStore, handle, filePurpose) { }
@@ -48,7 +48,7 @@ public class SMBDirectory : SMBFileSystemComponentBase
 
     private IEnumerable<FileFullDirectoryInformation> GetFileInfos()
     {
-        if (FilePurpose != FilePurpose.Read)
+        if ((FilePurpose & FilePurpose.Read) != FilePurpose.Read)
             throw new InvalidOperationException("This directory cannot be read. It was not opened for reading.");
 
         var status = SMBFileStore.QueryDirectory(
@@ -90,9 +90,7 @@ public class SMBDirectory : SMBFileSystemComponentBase
             CreateOptions.FILE_DIRECTORY_FILE | CreateOptions.FILE_SYNCHRONOUS_IO_NONALERT,
             null);
         SMBHelper.ThrowIfStatusNotSuccess(status, nameof(fileStore.CreateFile));
-
-        if (fileStatus != FileStatus.FILE_OPENED)
-            throw new InvalidOperationException($"Failed to open directory '{directoryPath}' with status: {fileStatus}");
+        SMBHelper.ThrowIfFileStatusNotFileOpened(fileStatus, directoryPath, nameof(fileStore.CreateFile));
 
         return new SMBDirectory(fileStore, fileHandle, FilePurpose.Read);
     }
@@ -110,10 +108,26 @@ public class SMBDirectory : SMBFileSystemComponentBase
             CreateOptions.FILE_DIRECTORY_FILE | CreateOptions.FILE_SYNCHRONOUS_IO_ALERT,
             null);
         SMBHelper.ThrowIfStatusNotSuccess(status, nameof(fileStore.CreateFile));
-
-        if (fileStatus != FileStatus.FILE_OPENED)
-            throw new InvalidOperationException($"Failed to open directory '{directoryPath}' with status: {fileStatus}");
+        SMBHelper.ThrowIfFileStatusNotFileOpened(fileStatus, directoryPath, nameof(fileStore.CreateFile));
 
         return new SMBDirectory(fileStore, fileHandle, FilePurpose.Delete);
+    }
+
+    public static SMBDirectory CreateDirectory(ISMBFileStore fileStore, string directoryPath)
+    {
+        var status = fileStore.CreateFile(
+            out var fileHandle,
+            out var fileStatus,
+            directoryPath,
+            AccessMask.GENERIC_WRITE | AccessMask.SYNCHRONIZE,
+            FileAttributes.Directory,
+            ShareAccess.None,
+            CreateDisposition.FILE_CREATE,
+            CreateOptions.FILE_DIRECTORY_FILE | CreateOptions.FILE_SYNCHRONOUS_IO_NONALERT,
+            null);
+        SMBHelper.ThrowIfStatusNotSuccess(status, nameof(fileStore.CreateFile));
+        SMBHelper.ThrowIfFileStatusNotFileCreated(fileStatus, directoryPath, nameof(fileStore.CreateFile));
+
+        return new SMBDirectory(fileStore, fileHandle, FilePurpose.Write);
     }
 }
