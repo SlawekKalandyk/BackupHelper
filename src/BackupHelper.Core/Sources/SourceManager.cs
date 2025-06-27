@@ -26,10 +26,51 @@ public class SourceManager : ISourceManager
             return defaultSource.GetStream(path);
         }
 
-        var prefix = scheme + "://";
         var source = GetSource(scheme);
+        var prefix = source.GetSchemePrefix();
         var pathWithoutScheme = path[prefix.Length..];
         return source.GetStream(pathWithoutScheme);
+    }
+
+    public IEnumerable<string> GetSubDirectories(string path)
+    {
+        var scheme = GetScheme(path);
+
+        if (string.IsNullOrEmpty(scheme))
+        {
+            if (!_sources.TryGetValue(DefaultScheme, out var defaultSource))
+            {
+                throw new NotSupportedException("No default file source is registered.");
+            }
+
+            return defaultSource.GetSubDirectories(path);
+        }
+
+        var source = GetSource(scheme);
+        var prefix = source.GetSchemePrefix();
+        var pathWithoutScheme = path[prefix.Length..];
+        return source.GetSubDirectories(pathWithoutScheme);
+    }
+
+    public IEnumerable<string> GetFiles(string path)
+    {
+        var scheme = GetScheme(path);
+
+        if (string.IsNullOrEmpty(scheme))
+        {
+            if (!_sources.TryGetValue(DefaultScheme, out var defaultSource))
+            {
+                throw new NotSupportedException("No default file source is registered.");
+            }
+
+            return defaultSource.GetFiles(path);
+        }
+
+        var source = GetSource(scheme);
+        var prefix = source.GetSchemePrefix();
+        var pathWithoutScheme = path[prefix.Length..];
+
+        return source.GetFiles(pathWithoutScheme);
     }
 
     private ISource GetSource(string scheme)
@@ -44,7 +85,7 @@ public class SourceManager : ISourceManager
 
     private string GetScheme(string filePath)
     {
-        var idx = filePath.IndexOf("://", StringComparison.Ordinal);
+        var idx = filePath.IndexOf(ISource.PrefixSeparator, StringComparison.Ordinal);
         return idx < 0 ? string.Empty : filePath[..idx];
     }
 }

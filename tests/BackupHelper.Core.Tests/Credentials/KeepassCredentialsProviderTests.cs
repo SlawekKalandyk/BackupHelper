@@ -3,16 +3,16 @@
 namespace BackupHelper.Core.Tests.Credentials;
 
 [TestFixture]
-public class KeepassCredentialsManagerTests : TestsBase
+public class KeepassCredentialsProviderTests : TestsBase
 {
     [Test]
-    public void GivenNoDatabase_WhenKeepassCredentialsManagerIsCreated_ThenDatabaseIsCreated()
+    public void GivenNoDatabase_WhenKeepassCredentialsProviderIsCreated_ThenDatabaseIsCreated()
     {
         var testDatabasePath = Path.Combine(TestsDirectoryRootPath, "test.kdbx");
 
         Assert.That(!File.Exists(testDatabasePath));
 
-        using (_ = new KeepassCredentialsManager(testDatabasePath, "testPassword"))
+        using (_ = new KeepassCredentialsProvider(testDatabasePath, "testPassword"))
         {
         }
 
@@ -27,11 +27,11 @@ public class KeepassCredentialsManagerTests : TestsBase
         var expectedPassword = "TestPass";
 
         var testDatabasePath = Path.Combine(TestsDirectoryRootPath, "test.kdbx");
-        using var manager = new KeepassCredentialsManager(testDatabasePath, "testPassword");
+        using var provider = new KeepassCredentialsProvider(testDatabasePath, "testPassword");
 
-        manager.SetCredential(credentialName, expectedUsername, expectedPassword);
+        provider.SetCredential(credentialName, expectedUsername, expectedPassword);
 
-        var (actualUsername, actualPassword) = manager.GetCredential(credentialName);
+        var (actualUsername, actualPassword) = provider.GetCredential(credentialName);
 
         Assert.That(actualUsername, Is.EqualTo(expectedUsername));
         Assert.That(actualPassword, Is.EqualTo(expectedPassword));
@@ -45,11 +45,11 @@ public class KeepassCredentialsManagerTests : TestsBase
         var expectedPassword = "TestPass";
 
         var testDatabasePath = Path.Combine(TestsDirectoryRootPath, "test.kdbx");
-        using var manager = new KeepassCredentialsManager(testDatabasePath, "testPassword");
+        using var provider = new KeepassCredentialsProvider(testDatabasePath, "testPassword");
 
-        manager.SetCredential(credentialName, expectedUsername, expectedPassword);
+        provider.SetCredential(credentialName, expectedUsername, expectedPassword);
 
-        Assert.Throws<CredentialAlreadyExists>(() => manager.SetCredential(credentialName, expectedUsername, expectedPassword));
+        Assert.Throws<CredentialAlreadyExists>(() => provider.SetCredential(credentialName, expectedUsername, expectedPassword));
     }
 
     [Test]
@@ -60,14 +60,14 @@ public class KeepassCredentialsManagerTests : TestsBase
         var expectedPassword = "TestPass";
 
         var testDatabasePath = Path.Combine(TestsDirectoryRootPath, "test.kdbx");
-        using (var manager = new KeepassCredentialsManager(testDatabasePath, "testPassword"))
+        using (var provider = new KeepassCredentialsProvider(testDatabasePath, "testPassword"))
         {
-            manager.SetCredential(credentialName, expectedUsername, expectedPassword);
+            provider.SetCredential(credentialName, expectedUsername, expectedPassword);
         }
 
-        using (var manager = new KeepassCredentialsManager(testDatabasePath, "testPassword"))
+        using (var provider = new KeepassCredentialsProvider(testDatabasePath, "testPassword"))
         {
-            var (actualUsername, actualPassword) = manager.GetCredential(credentialName);
+            var (actualUsername, actualPassword) = provider.GetCredential(credentialName);
 
             Assert.That(actualUsername, Is.EqualTo(expectedUsername));
             Assert.That(actualPassword, Is.EqualTo(expectedPassword));

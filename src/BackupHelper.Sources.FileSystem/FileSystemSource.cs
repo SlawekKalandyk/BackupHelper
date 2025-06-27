@@ -42,4 +42,15 @@ public class FileSystemSource : ISource
         #endif
         }
     }
+
+    public IEnumerable<string> GetSubDirectories(string path)
+        => Directory.GetDirectories(path);
+
+    public IEnumerable<string> GetFiles(string path)
+        => Directory.GetFiles(path);
+
+    public void Dispose()
+    {
+
+    }
 }
