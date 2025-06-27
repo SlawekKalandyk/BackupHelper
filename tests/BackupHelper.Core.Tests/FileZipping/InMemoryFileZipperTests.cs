@@ -8,6 +8,7 @@ public class InMemoryFileZipperTests : FileZipperTestsBase
 {
     protected override void OverrideServices(IServiceCollection services)
     {
+        base.OverrideServices(services);
         services.AddTransient<IFileZipperFactory, InMemoryFileZipperFactory>();
     }
 }

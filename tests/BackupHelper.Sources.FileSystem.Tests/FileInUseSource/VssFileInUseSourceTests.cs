@@ -8,6 +8,7 @@ public class VssFileInUseSourceTests : FileInUseSourceTestsBase
 {
     protected override void OverrideServices(IServiceCollection services)
     {
+        base.OverrideServices(services);
         services.AddTransient<VssFileInUseSourceFactory>();
     }
 
