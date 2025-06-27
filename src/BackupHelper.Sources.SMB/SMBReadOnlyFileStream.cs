@@ -5,17 +5,28 @@ namespace BackupHelper.Sources.SMB;
 
 public class SMBReadOnlyFileStream : Stream
 {
+    private readonly SMBFile? _file;
     private readonly ISMBFileStore _fileStore;
     private readonly object _fileHandle;
     private readonly long _length;
     private long _position;
     private bool _disposed;
 
-    public SMBReadOnlyFileStream(ISMBFileStore fileStore, object fileHandle, long length)
+    public SMBReadOnlyFileStream(ISMBFileStore fileStore, SMBFile file)
     {
         _fileStore = fileStore;
-        _fileHandle = fileHandle;
-        _length = length;
+        _fileHandle = file.Handle;
+        _length = file.FileInfo.StandardInformation.EndOfFile;
+        _position = 0;
+    }
+
+    public SMBReadOnlyFileStream(ISMBFileStore fileStore, string filePath)
+    {
+        var file = SMBFile.OpenFileForReading(fileStore, filePath);
+        _file = file;
+        _fileStore = fileStore;
+        _fileHandle = file.Handle;
+        _length = file.FileInfo.StandardInformation.EndOfFile;
         _position = 0;
     }
 
@@ -63,7 +74,7 @@ public class SMBReadOnlyFileStream : Stream
     {
         if (!_disposed)
         {
-            _fileStore.CloseFile(_fileHandle);
+            _file?.Dispose();
             _disposed = true;
         }
         base.Dispose(disposing);
