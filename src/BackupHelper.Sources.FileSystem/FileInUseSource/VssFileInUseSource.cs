@@ -1,30 +1,30 @@
 ﻿using System.IO.Compression;
-using BackupHelper.Core.Vss;
+using BackupHelper.Sources.FileSystem.Vss;
 using Microsoft.Extensions.Logging;
 
-namespace BackupHelper.Core.FileInUseZipEntryHandler;
+namespace BackupHelper.Sources.FileSystem.FileInUseSource;
 
-public class VssFileInUseZipEntryHandlerFactory : IFileInUseZipEntryHandlerFactory
+public class VssFileInUseSourceFactory : IFileInUseSourceFactory
 {
     private readonly ILogger<VssBackup> _logger;
 
-    public VssFileInUseZipEntryHandlerFactory(ILogger<VssBackup> logger)
+    public VssFileInUseSourceFactory(ILogger<VssBackup> logger)
     {
         _logger = logger;
     }
 
-    public IFileInUseZipEntryHandler Create()
+    public IFileInUseSource Create()
     {
-        return new VssFileInUseZipEntryHandler(_logger);
+        return new VssFileInUseSource(_logger);
     }
 }
 
-public class VssFileInUseZipEntryHandler : IFileInUseZipEntryHandler
+public class VssFileInUseSource : IFileInUseSource
 {
     private readonly ILogger<VssBackup> _logger;
     private readonly IDictionary<string, VssBackup> _vssBackups = new Dictionary<string, VssBackup>();
 
-    public VssFileInUseZipEntryHandler(ILogger<VssBackup> logger)
+    public VssFileInUseSource(ILogger<VssBackup> logger)
     {
         _logger = logger;
     }
@@ -52,5 +52,21 @@ public class VssFileInUseZipEntryHandler : IFileInUseZipEntryHandler
             vssBackup.Dispose();
         }
         _vssBackups.Clear();
+    }
+
+    public Stream GetStream(string path)
+    {
+        var volume = Path.GetPathRoot(path);
+
+        if (!_vssBackups.TryGetValue(volume, out var vssBackup))
+        {
+            vssBackup = new VssBackup(_logger);
+            _vssBackups[volume] = vssBackup;
+        }
+
+        vssBackup.Setup(volume);
+        var snapshotPath = vssBackup.GetSnapshotPath(path);
+
+        return new FileStream(snapshotPath, FileMode.Open, FileAccess.Read, FileShare.Read);
     }
 }

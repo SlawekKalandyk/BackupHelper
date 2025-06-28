@@ -1,7 +1,11 @@
 ﻿using System.Reflection;
 using BackupHelper.Core.BackupZipping;
-using BackupHelper.Core.FileInUseZipEntryHandler;
 using BackupHelper.Core.FileZipping;
+using BackupHelper.Core.Sources;
+using BackupHelper.Sources.Abstractions;
+using BackupHelper.Sources.FileSystem;
+using BackupHelper.Sources.FileSystem.FileInUseSource;
+using BackupHelper.Sources.SMB;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -12,10 +16,21 @@ public static class ConfigureServices
     public static IServiceCollection AddCoreServices(this IServiceCollection services, IConfiguration configuration)
     {
         services.AddMediatR(serviceConfiguration => serviceConfiguration.RegisterServicesFromAssembly(Assembly.GetExecutingAssembly()));
+        services.AddSources();
         services.AddSingleton<IBackupPlanZipper, BackupPlanZipper>();
         services.AddTransient<IFileZipperFactory, OnDiskFileZipperFactory>();
-        services.AddTransient<IFileInUseZipEntryHandlerManager, FileInUseZipEntryHandlerManager>();
-        services.AddTransient<VssFileInUseZipEntryHandlerFactory>();
+
+        return services;
+    }
+
+    private static IServiceCollection AddSources(this IServiceCollection services)
+    {
+        services.AddTransient<ISourceManager, SourceManager>();
+        services.AddTransient<ISource, FileSystemSource>();
+        services.AddTransient<ISource, SMBSource>();
+
+        services.AddTransient<IFileInUseSourceManager, FileInUseSourceManager>();
+        services.AddTransient<VssFileInUseSourceFactory>();
 
         return services;
     }

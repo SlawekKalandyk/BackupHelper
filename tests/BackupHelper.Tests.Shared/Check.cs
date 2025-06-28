@@ -1,6 +1,6 @@
 ﻿using System.Runtime.CompilerServices;
 
-namespace BackupHelper.Core.Tests;
+namespace BackupHelper.Tests.Shared;
 
 public static class Check
 {

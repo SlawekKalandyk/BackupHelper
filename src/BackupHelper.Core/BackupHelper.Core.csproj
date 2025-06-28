@@ -2,18 +2,26 @@
 
   <PropertyGroup>
     <OutputType>Library</OutputType>
-    <TargetFramework>net8.0</TargetFramework>
+    <TargetFramework>net9.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
   </PropertyGroup>
 
   <ItemGroup>
     <PackageReference Include="AlphaVSS" Version="2.0.3" />
+    <PackageReference Include="KeePassLib" Version="2.57.0" />
     <PackageReference Include="MediatR" Version="12.2.0" />
-    <PackageReference Include="Microsoft.Extensions.Configuration" Version="8.0.0" />
-    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="8.0.0" />
-    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="8.0.1" />
+    <PackageReference Include="Microsoft.Extensions.Configuration" Version="9.0.6" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="9.0.6" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="9.0.6" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\BackupHelper.Abstractions\BackupHelper.Abstractions.csproj" />
+    <ProjectReference Include="..\BackupHelper.Sources.Abstractions\BackupHelper.Sources.Abstractions.csproj" />
+    <ProjectReference Include="..\BackupHelper.Sources.FileSystem\BackupHelper.Sources.FileSystem.csproj" />
+    <ProjectReference Include="..\BackupHelper.Sources.SMB\BackupHelper.Sources.SMB.csproj" />
   </ItemGroup>
 
 </Project>

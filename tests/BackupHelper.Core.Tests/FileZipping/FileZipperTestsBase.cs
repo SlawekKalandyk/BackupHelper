@@ -1,6 +1,7 @@
 ﻿using System.IO.Compression;
 using BackupHelper.Core.FileZipping;
-using BackupHelper.Core.Tests.Utilities;
+using BackupHelper.Core.Tests.Extensions;
+using BackupHelper.Tests.Shared;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace BackupHelper.Core.Tests.FileZipping;
