@@ -1,4 +1,8 @@
-﻿namespace BackupHelper.Core.Tests;
+﻿using BackupHelper.Tests.Shared;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
+
+namespace BackupHelper.Core.Tests;
 
 [TestFixture]
 public abstract class ZipTestsBase : TestsBase

@@ -1,4 +1,6 @@
-﻿namespace BackupHelper.Core.Tests.Utilities;
+﻿using NUnit.Framework;
+
+namespace BackupHelper.Tests.Shared;
 
 public class TestDirectory : IDisposable
 {
@@ -51,7 +53,7 @@ public class TestDirectory : IDisposable
         {
             Files.ForEach(file => file.Dispose());
             Directories.ForEach(directory => directory.Dispose());
-            Directory.Delete(GeneratedDirectoryPath);
+            Directory.Delete(GeneratedDirectoryPath, recursive: true);
         }
     }
 }

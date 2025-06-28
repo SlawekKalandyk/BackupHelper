@@ -21,7 +21,7 @@
     </ItemGroup>
 
     <ItemGroup>
-      <ProjectReference Include="..\BackupHelper.Core.Tests\BackupHelper.Core.Tests.csproj" />
+      <ProjectReference Include="..\BackupHelper.Tests.Shared\BackupHelper.Tests.Shared.csproj" />
     </ItemGroup>
 
 </Project>

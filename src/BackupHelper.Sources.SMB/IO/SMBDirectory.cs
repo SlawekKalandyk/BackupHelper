@@ -55,7 +55,7 @@ public class SMBDirectory : SMBIOComponentBase
         foreach (var subDirectory in subDirectories)
         {
             using var subDir = OpenDirectoryForDeletion(SMBFileStore, subDirectory);
-            subDir.Delete();
+            subDir.Delete(recursive: true);
         }
 
         var files = GetFiles();

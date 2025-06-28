@@ -1,10 +1,12 @@
-﻿using Microsoft.Extensions.Configuration;
+﻿using BackupHelper.Abstractions;
+using BackupHelper.Core;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
-using Newtonsoft.Json;
+using NUnit.Framework;
 
-namespace BackupHelper.Core.Tests;
+namespace BackupHelper.Tests.Shared;
 
 [TestFixture]
 public abstract class TestsBase
@@ -24,16 +26,19 @@ public abstract class TestsBase
     [OneTimeSetUp]
     protected virtual void OneTimeSetup()
     {
-        var jsonTestSettings = File.ReadAllText("testSettings.json");
-        var testSettings = JsonConvert.DeserializeObject<TestSettings>(jsonTestSettings);
+        var configuration = new ConfigurationBuilder()
+                            .AddUserSecrets<TestsBase>()
+                            .Build();
 
-        if (testSettings == null)
+        var testsDirectoryPath = configuration["TestsDirectory"];
+
+        if (string.IsNullOrEmpty(testsDirectoryPath))
         {
-            throw new ArgumentNullException($"Failed deserializing {nameof(TestSettings)}");
+            throw new ArgumentNullException($"{nameof(testsDirectoryPath)} cannot be null or empty");
         }
 
-        TestsDirectoryRootPath = testSettings.TestsDirectory;
-        ServiceProvider = CreateServiceProvider()!;
+        TestsDirectoryRootPath = testsDirectoryPath;
+        ServiceProvider = CreateServiceProvider(configuration)!;
     }
 
     [OneTimeTearDown]
@@ -59,19 +64,18 @@ public abstract class TestsBase
         Directory.Delete(TestsDirectoryRootPath, true);
     }
 
-    protected virtual void OverrideServices(IServiceCollection services)
+    protected virtual void OverrideServices(IServiceCollection services, IConfiguration configuration)
     {
     }
 
-    private ServiceProvider CreateServiceProvider()
+    private ServiceProvider CreateServiceProvider(IConfiguration configuration)
     {
-        var configuration = new ConfigurationBuilder()
-            .Build();
         var serviceCollection = new ServiceCollection()
                                 .AddCoreServices(configuration)
+                                .AddSingleton<ICredentialsProvider>(new TestCredentialsProvider())
                                 .AddLogging(builder => builder.AddProvider(NullLoggerProvider.Instance));
 
-        OverrideServices(serviceCollection);
+        OverrideServices(serviceCollection, configuration);
 
         return serviceCollection.BuildServiceProvider();
     }

@@ -19,28 +19,30 @@ public class SMBSource : ISource
 
     public Stream GetStream(string path)
     {
-        var connection = GetConnection(path);
+        var shareInfo = SMBShareInfo.FromFilePath(path);
+        var connection = GetConnection(shareInfo, path);
         var smbPath = SMBHelper.StripShareInfo(path);
         return connection.GetStream(smbPath);
     }
 
     public IEnumerable<string> GetSubDirectories(string path)
     {
-        var connection = GetConnection(path);
+        var shareInfo = SMBShareInfo.FromFilePath(path);
+        var connection = GetConnection(shareInfo, path);
         var smbPath = SMBHelper.StripShareInfo(path);
-        return connection.GetSubDirectories(smbPath);
+        return connection.GetSubDirectories(smbPath).Select(dir => Path.Join(shareInfo.ToString(), dir));
     }
 
     public IEnumerable<string> GetFiles(string path)
     {
-        var connection = GetConnection(path);
+        var shareInfo = SMBShareInfo.FromFilePath(path);
+        var connection = GetConnection(shareInfo, path);
         var smbPath = SMBHelper.StripShareInfo(path);
-        return connection.GetFiles(smbPath);
+        return connection.GetFiles(smbPath).Select(file => Path.Join(shareInfo.ToString(), file));
     }
 
-    private SMBConnection GetConnection(string path)
+    private SMBConnection GetConnection(SMBShareInfo shareInfo, string path)
     {
-        var shareInfo = SMBShareInfo.FromFilePath(path);
         if (_connections.TryGetValue(shareInfo, out var connection))
         {
             if (connection.IsConnected)
@@ -48,7 +50,7 @@ public class SMBSource : ISource
 
             connection.Dispose();
             _connections.Remove(shareInfo);
-            return GetConnection(path);
+            return GetConnection(shareInfo, path);
         }
 
         var credential = GetCredential(shareInfo);

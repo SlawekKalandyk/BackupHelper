@@ -1,6 +1,7 @@
 ﻿using BackupHelper.Core.Tests;
-using BackupHelper.Core.Tests.Utilities;
 using BackupHelper.Sources.FileSystem.FileInUseSource;
+using BackupHelper.Tests.Shared;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace BackupHelper.Sources.FileSystem.Tests.FileInUseSource;
 

@@ -1,4 +1,5 @@
 ﻿using BackupHelper.Core.Credentials;
+using BackupHelper.Tests.Shared;
 
 namespace BackupHelper.Core.Tests.Credentials;
 
