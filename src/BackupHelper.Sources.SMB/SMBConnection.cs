@@ -69,7 +69,21 @@ public class SMBConnection : IDisposable
     public void DeleteDirectory(string directoryPath)
     {
         using var smbDirectory = SMBDirectory.OpenDirectoryForDeletion(_smbFileStore, directoryPath);
-        smbDirectory.Delete();
+        smbDirectory.Delete(recursive: true);
+    }
+
+    public Stream CreateFile(string filePath)
+    {
+        using (var _ = SMBFile.CreateFile(_smbFileStore, filePath))
+        {
+        }
+        return new SMBWriteOnlyFileStream(_smbFileStore, filePath);
+    }
+
+    public void DeleteFile(string filePath)
+    {
+        using var smbFile = SMBFile.OpenFileForDeletion(_smbFileStore, filePath);
+        smbFile.Delete();
     }
 
     public void Dispose()

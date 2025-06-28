@@ -6,12 +6,22 @@ namespace BackupHelper.Sources.SMB.IO;
 public class SMBWriteOnlyFileStream : Stream
 {
     private readonly ISMBFileStore _fileStore;
+    private readonly SMBFile _file;
     private readonly object _fileHandle;
     private long _position;
     private bool _disposed;
 
     public SMBWriteOnlyFileStream(ISMBFileStore fileStore, SMBFile file)
     {
+        _fileStore = fileStore;
+        _fileHandle = file.Handle;
+        _position = 0;
+    }
+
+    public SMBWriteOnlyFileStream(ISMBFileStore fileStore, string filePath)
+    {
+        var file = SMBFile.OpenFileForWriting(fileStore, filePath);
+        _file = file;
         _fileStore = fileStore;
         _fileHandle = file.Handle;
         _position = 0;
@@ -66,6 +76,7 @@ public class SMBWriteOnlyFileStream : Stream
     {
         if (!_disposed)
         {
+            _file?.Dispose();
             _disposed = true;
         }
         base.Dispose(disposing);

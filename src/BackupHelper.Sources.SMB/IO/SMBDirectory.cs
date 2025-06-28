@@ -6,8 +6,13 @@ namespace BackupHelper.Sources.SMB.IO;
 
 public class SMBDirectory : SMBIOComponentBase
 {
-    private SMBDirectory(ISMBFileStore fileStore, object handle, FilePurpose filePurpose)
-        : base(fileStore, handle, filePurpose) { }
+    private readonly string _directoryPath;
+
+    private SMBDirectory(ISMBFileStore fileStore, object handle, FilePurpose filePurpose, string directoryPath)
+        : base(fileStore, handle, filePurpose)
+    {
+        _directoryPath = directoryPath;
+    }
 
     public IEnumerable<string> GetSubDirectories()
     {
@@ -15,7 +20,7 @@ public class SMBDirectory : SMBIOComponentBase
 
         return fileInfos
                .Where(info => (info.FileAttributes & FileAttributes.Directory) == FileAttributes.Directory)
-               .Select(info => info.FileName);
+               .Select(info => Path.Join(_directoryPath, info.FileName));
     }
 
     public IEnumerable<string> GetFiles()
@@ -24,7 +29,23 @@ public class SMBDirectory : SMBIOComponentBase
 
         return fileInfos
                .Where(info => (info.FileAttributes & FileAttributes.Directory) != FileAttributes.Directory)
-               .Select(info => info.FileName);
+               .Select(info => Path.Join(_directoryPath, info.FileName));
+    }
+
+    public void Delete(bool recursive = false)
+    {
+        if ((FilePurpose & FilePurpose.Delete) != FilePurpose.Delete)
+            throw new InvalidOperationException("This file cannot be deleted. It was not opened for deletion.");
+
+        if (recursive)
+            ClearDirectory();
+
+        var fileDispositionInformation = new FileDispositionInformation
+        {
+            DeletePending = true,
+        };
+        var status = SMBFileStore.SetFileInformation(Handle, fileDispositionInformation);
+        SMBHelper.ThrowIfStatusNotSuccess(status, nameof(SMBFileStore.SetFileInformation));
     }
 
     public void ClearDirectory()
@@ -92,7 +113,7 @@ public class SMBDirectory : SMBIOComponentBase
         SMBHelper.ThrowIfStatusNotSuccess(status, nameof(fileStore.CreateFile));
         SMBHelper.ThrowIfFileStatusNotFileOpened(fileStatus, directoryPath, nameof(fileStore.CreateFile));
 
-        return new SMBDirectory(fileStore, fileHandle, FilePurpose.Read);
+        return new SMBDirectory(fileStore, fileHandle, FilePurpose.Read, directoryPath);
     }
 
     public static SMBDirectory OpenDirectoryForDeletion(ISMBFileStore fileStore, string directoryPath)
@@ -101,7 +122,7 @@ public class SMBDirectory : SMBIOComponentBase
             out var fileHandle,
             out var fileStatus,
             directoryPath,
-            AccessMask.DELETE | AccessMask.SYNCHRONIZE,
+            AccessMask.GENERIC_READ | AccessMask.DELETE | AccessMask.SYNCHRONIZE,
             FileAttributes.Directory,
             ShareAccess.None,
             CreateDisposition.FILE_OPEN,
@@ -110,7 +131,7 @@ public class SMBDirectory : SMBIOComponentBase
         SMBHelper.ThrowIfStatusNotSuccess(status, nameof(fileStore.CreateFile));
         SMBHelper.ThrowIfFileStatusNotFileOpened(fileStatus, directoryPath, nameof(fileStore.CreateFile));
 
-        return new SMBDirectory(fileStore, fileHandle, FilePurpose.Delete);
+        return new SMBDirectory(fileStore, fileHandle, FilePurpose.Read | FilePurpose.Delete, directoryPath);
     }
 
     public static SMBDirectory CreateDirectory(ISMBFileStore fileStore, string directoryPath)
@@ -119,15 +140,15 @@ public class SMBDirectory : SMBIOComponentBase
             out var fileHandle,
             out var fileStatus,
             directoryPath,
-            AccessMask.GENERIC_WRITE | AccessMask.SYNCHRONIZE,
+            AccessMask.GENERIC_READ | AccessMask.SYNCHRONIZE,
             FileAttributes.Directory,
-            ShareAccess.None,
+            ShareAccess.Read,
             CreateDisposition.FILE_CREATE,
             CreateOptions.FILE_DIRECTORY_FILE | CreateOptions.FILE_SYNCHRONOUS_IO_NONALERT,
             null);
         SMBHelper.ThrowIfStatusNotSuccess(status, nameof(fileStore.CreateFile));
         SMBHelper.ThrowIfFileStatusNotFileCreated(fileStatus, directoryPath, nameof(fileStore.CreateFile));
 
-        return new SMBDirectory(fileStore, fileHandle, FilePurpose.Write);
+        return new SMBDirectory(fileStore, fileHandle, FilePurpose.Read, directoryPath);
     }
 }

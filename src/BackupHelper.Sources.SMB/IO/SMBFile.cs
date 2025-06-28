@@ -30,6 +30,19 @@ public class SMBFile : SMBIOComponentBase
         return new SMBWriteOnlyFileStream(SMBFileStore, this);
     }
 
+    public void Delete()
+    {
+        if ((FilePurpose & FilePurpose.Delete) != FilePurpose.Delete)
+            throw new InvalidOperationException("This file cannot be deleted. It was not opened for deletion.");
+
+        var fileDispositionInformation = new FileDispositionInformation
+        {
+            DeletePending = true,
+        };
+        var status = SMBFileStore.SetFileInformation(Handle, fileDispositionInformation);
+        SMBHelper.ThrowIfStatusNotSuccess(status, nameof(SMBFileStore.SetFileInformation));
+    }
+
     public static SMBFile OpenFileForReading(ISMBFileStore fileStore, string filePath)
     {
         var status = fileStore.CreateFile(
@@ -49,13 +62,32 @@ public class SMBFile : SMBIOComponentBase
         return new SMBFile(fileStore, fileHandle, fileInfo, FilePurpose.Read);
     }
 
+    public static SMBFile OpenFileForWriting(ISMBFileStore fileStore, string filePath)
+    {
+        var status = fileStore.CreateFile(
+            out var fileHandle,
+            out var fileStatus,
+            filePath,
+            AccessMask.GENERIC_READ | AccessMask.GENERIC_WRITE | AccessMask.SYNCHRONIZE,
+            FileAttributes.Normal,
+            ShareAccess.Read | ShareAccess.Write,
+            CreateDisposition.FILE_OPEN,
+            CreateOptions.FILE_NON_DIRECTORY_FILE | CreateOptions.FILE_SYNCHRONOUS_IO_ALERT,
+            null);
+        SMBHelper.ThrowIfStatusNotSuccess(status, nameof(fileStore.CreateFile));
+        SMBHelper.ThrowIfFileStatusNotFileOpened(fileStatus, filePath, nameof(fileStore.CreateFile));
+
+        var fileInfo = GetFileInfo(fileStore, filePath, fileHandle);
+        return new SMBFile(fileStore, fileHandle, fileInfo, FilePurpose.Read | FilePurpose.Write);
+    }
+
     public static SMBFile OpenFileForDeletion(ISMBFileStore fileStore, string filePath)
     {
         var status = fileStore.CreateFile(
             out var fileHandle,
             out var fileStatus,
             filePath,
-            AccessMask.DELETE | AccessMask.SYNCHRONIZE,
+            AccessMask.GENERIC_READ | AccessMask.DELETE | AccessMask.SYNCHRONIZE,
             FileAttributes.Normal,
             ShareAccess.None,
             CreateDisposition.FILE_OPEN,
@@ -65,7 +97,7 @@ public class SMBFile : SMBIOComponentBase
         SMBHelper.ThrowIfFileStatusNotFileOpened(fileStatus, filePath, nameof(fileStore.CreateFile));
 
         var fileInfo = GetFileInfo(fileStore, filePath, fileHandle);
-        return new SMBFile(fileStore, fileHandle, fileInfo, FilePurpose.Delete);
+        return new SMBFile(fileStore, fileHandle, fileInfo, FilePurpose.Read | FilePurpose.Delete);
     }
 
     public static SMBFile CreateFile(ISMBFileStore fileStore, string filePath)
@@ -74,9 +106,9 @@ public class SMBFile : SMBIOComponentBase
             out var fileHandle,
             out var fileStatus,
             filePath,
-            AccessMask.GENERIC_WRITE | AccessMask.SYNCHRONIZE,
+            AccessMask.GENERIC_READ | AccessMask.GENERIC_WRITE | AccessMask.SYNCHRONIZE,
             FileAttributes.Normal,
-            ShareAccess.None,
+            ShareAccess.Read | ShareAccess.Write,
             CreateDisposition.FILE_CREATE,
             CreateOptions.FILE_NON_DIRECTORY_FILE | CreateOptions.FILE_SYNCHRONOUS_IO_NONALERT,
             null);
@@ -84,7 +116,7 @@ public class SMBFile : SMBIOComponentBase
         SMBHelper.ThrowIfFileStatusNotFileCreated(fileStatus, filePath, nameof(fileStore.CreateFile));
 
         var fileInfo = GetFileInfo(fileStore, filePath, fileHandle);
-        return new SMBFile(fileStore, fileHandle, fileInfo, FilePurpose.Write);
+        return new SMBFile(fileStore, fileHandle, fileInfo, FilePurpose.Read | FilePurpose.Write);
     }
 
     private static FileAllInformation GetFileInfo(ISMBFileStore fileStore, string filePath, object fileHandle)
