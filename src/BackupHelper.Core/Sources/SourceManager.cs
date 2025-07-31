@@ -15,44 +15,30 @@ public class SourceManager : ISourceManager
 
     public Stream GetStream(string path)
     {
-        var scheme = GetScheme(path);
-
-        if (string.IsNullOrEmpty(scheme))
-        {
-            if (!_sources.TryGetValue(DefaultScheme, out var defaultSource))
-            {
-                throw new NotSupportedException("No default file source is registered.");
-            }
-            return defaultSource.GetStream(path);
-        }
-
-        var source = GetSource(scheme);
-        var prefix = source.GetSchemePrefix();
-        var pathWithoutScheme = path[prefix.Length..];
-        return source.GetStream(pathWithoutScheme);
+        return GetFromSource(path, (source, pathWithoutScheme) => source.GetStream(pathWithoutScheme));
     }
 
     public IEnumerable<string> GetSubDirectories(string path)
     {
-        var scheme = GetScheme(path);
-
-        if (string.IsNullOrEmpty(scheme))
-        {
-            if (!_sources.TryGetValue(DefaultScheme, out var defaultSource))
-            {
-                throw new NotSupportedException("No default file source is registered.");
-            }
-
-            return defaultSource.GetSubDirectories(path);
-        }
-
-        var source = GetSource(scheme);
-        var prefix = source.GetSchemePrefix();
-        var pathWithoutScheme = path[prefix.Length..];
-        return source.GetSubDirectories(pathWithoutScheme);
+        return GetFromSource(path, (source, pathWithoutScheme) => source.GetSubDirectories(pathWithoutScheme));
     }
 
     public IEnumerable<string> GetFiles(string path)
+    {
+        return GetFromSource(path, (source, pathWithoutScheme) => source.GetFiles(pathWithoutScheme));
+    }
+
+    public bool FileExists(string path)
+    {
+        return GetFromSource(path, (source, pathWithoutScheme) => source.FileExists(pathWithoutScheme));
+    }
+
+    public bool DirectoryExists(string path)
+    {
+        return GetFromSource(path, (source, pathWithoutScheme) => source.DirectoryExists(pathWithoutScheme));
+    }
+
+    private T GetFromSource<T>(string path, Func<ISource, string, T> action)
     {
         var scheme = GetScheme(path);
 
@@ -63,15 +49,16 @@ public class SourceManager : ISourceManager
                 throw new NotSupportedException("No default file source is registered.");
             }
 
-            return defaultSource.GetFiles(path);
+            return action(defaultSource, path);
         }
 
         var source = GetSource(scheme);
         var prefix = source.GetSchemePrefix();
         var pathWithoutScheme = path[prefix.Length..];
 
-        return source.GetFiles(pathWithoutScheme);
+        return action(source, pathWithoutScheme);
     }
+
 
     private ISource GetSource(string scheme)
     {

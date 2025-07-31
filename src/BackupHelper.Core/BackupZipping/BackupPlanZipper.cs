@@ -1,4 +1,6 @@
 using BackupHelper.Core.FileZipping;
+using BackupHelper.Core.Sources;
+using BackupHelper.Core.Utilities;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 
@@ -50,21 +52,31 @@ public class BackupPlanZipper : IBackupPlanZipper
 
     private void AddBackupFileEntryToZip(IFileZipper zipper, BackupFileEntry fileEntry, string zipPath)
     {
-        if (File.Exists(fileEntry.FilePath))
+        var filePath = fileEntry.FilePath;
+        if (!string.IsNullOrEmpty(fileEntry.CronExpression))
+        {
+            var lastOccurence = CronExpressionResolver.GetLastOccurrenceBeforeDateTime(fileEntry.CronExpression, DateTime.Now, fileEntry.GetTimeZoneInfo());
+            filePath = SimplifiedPOSIXDateTimeResolver.Resolve(filePath, lastOccurence);
+        }
+
+        using var scope = _serviceScopeFactory.CreateScope();
+        var sourceManager = scope.ServiceProvider.GetRequiredService<ISourceManager>();
+
+        if (sourceManager.FileExists(filePath))
         {
             _logger.LogInformation("Adding file to zip file '{FileEntryFilePath}' under zip path '{ZipPath}'",
-                                   fileEntry.FilePath, string.IsNullOrEmpty(zipPath) ? "<root>" : zipPath + '/');
-            zipper.AddFile(fileEntry.FilePath, zipPath);
+                                   filePath, string.IsNullOrEmpty(zipPath) ? "<root>" : zipPath + '/');
+            zipper.AddFile(filePath, zipPath);
         }
-        else if (Directory.Exists(fileEntry.FilePath))
+        else if (sourceManager.DirectoryExists(filePath))
         {
             _logger.LogInformation("Adding directory to zip file '{FileEntryFilePath}' under zip path '{ZipPath}'",
-                                   fileEntry.FilePath, string.IsNullOrEmpty(zipPath) ? "<root>" : zipPath + '/');
-            zipper.AddDirectory(fileEntry.FilePath, zipPath);
+                                   filePath, string.IsNullOrEmpty(zipPath) ? "<root>" : zipPath + '/');
+            zipper.AddDirectory(filePath, zipPath);
         }
         else
         {
-            _logger.LogWarning("File or directory not found: {FileEntryFilePath}", fileEntry.FilePath);
+            _logger.LogWarning("File or directory not found: {FileEntryFilePath}", filePath);
         }
     }
 

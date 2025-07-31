@@ -1,4 +1,5 @@
-﻿using SMBLibrary;
+﻿using System.Diagnostics;
+using SMBLibrary;
 using SMBLibrary.Client;
 using FileAttributes = SMBLibrary.FileAttributes;
 
@@ -150,5 +151,32 @@ public class SMBDirectory : SMBIOComponentBase
         SMBHelper.ThrowIfFileStatusNotFileCreated(fileStatus, directoryPath, nameof(fileStore.CreateFile));
 
         return new SMBDirectory(fileStore, fileHandle, FilePurpose.Read, directoryPath);
+    }
+
+    public static bool Exists(ISMBFileStore fileStore, string directoryPath)
+    {
+        var status = fileStore.CreateFile(
+            out var fileHandle,
+            out var fileStatus,
+            directoryPath,
+            AccessMask.GENERIC_READ | AccessMask.SYNCHRONIZE,
+            FileAttributes.Directory,
+            ShareAccess.Read,
+            CreateDisposition.FILE_OPEN,
+            CreateOptions.FILE_DIRECTORY_FILE | CreateOptions.FILE_SYNCHRONOUS_IO_NONALERT,
+            null);
+
+        var directoryExists = status == NTStatus.STATUS_SUCCESS && fileStatus == FileStatus.FILE_OPENED;
+        var directoryDoesntExist = status == NTStatus.STATUS_OBJECT_NAME_NOT_FOUND && fileStatus == FileStatus.FILE_DOES_NOT_EXIST;
+
+        if (!directoryExists && !directoryDoesntExist)
+        {
+            throw new InvalidOperationException($"Unexpected status '{status}' and fileStatus '{fileStatus}' when checking existence of directory'{directoryPath}'");
+        }
+
+        if (directoryExists)
+            fileStore.CloseFile(fileHandle);
+
+        return directoryExists && !directoryDoesntExist;
     }
 }

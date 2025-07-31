@@ -86,6 +86,12 @@ public class SMBConnection : IDisposable
         smbFile.Delete();
     }
 
+    public bool FileExists(string filePath)
+        => SMBFile.Exists(_smbFileStore, filePath);
+
+    public bool DirectoryExists(string directoryPath)
+        => SMBDirectory.Exists(_smbFileStore, directoryPath);
+
     public void Dispose()
     {
         _smbFileStore.Disconnect();

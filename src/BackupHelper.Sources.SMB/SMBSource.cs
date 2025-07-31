@@ -19,26 +19,40 @@ public class SMBSource : ISource
 
     public Stream GetStream(string path)
     {
-        var shareInfo = SMBShareInfo.FromFilePath(path);
-        var connection = GetConnection(shareInfo, path);
-        var smbPath = SMBHelper.StripShareInfo(path);
+        var (shareInfo, connection, smbPath) = GetFullSMBInfo(path);
         return connection.GetStream(smbPath);
     }
 
     public IEnumerable<string> GetSubDirectories(string path)
     {
-        var shareInfo = SMBShareInfo.FromFilePath(path);
-        var connection = GetConnection(shareInfo, path);
-        var smbPath = SMBHelper.StripShareInfo(path);
+        var (shareInfo, connection, smbPath) = GetFullSMBInfo(path);
         return connection.GetSubDirectories(smbPath).Select(dir => Path.Join(shareInfo.ToString(), dir));
     }
 
     public IEnumerable<string> GetFiles(string path)
     {
+        var (shareInfo, connection, smbPath) = GetFullSMBInfo(path);
+        return connection.GetFiles(smbPath).Select(file => Path.Join(shareInfo.ToString(), file));
+    }
+
+    public bool FileExists(string path)
+    {
+        var (shareInfo, connection, smbPath) = GetFullSMBInfo(path);
+        return connection.FileExists(smbPath);
+    }
+
+    public bool DirectoryExists(string path)
+    {
+        var (shareInfo , connection, smbPath) = GetFullSMBInfo(path);
+        return connection.DirectoryExists(smbPath);
+    }
+
+    private (SMBShareInfo shareInfo, SMBConnection connection, string smbPath) GetFullSMBInfo(string path)
+    {
         var shareInfo = SMBShareInfo.FromFilePath(path);
         var connection = GetConnection(shareInfo, path);
         var smbPath = SMBHelper.StripShareInfo(path);
-        return connection.GetFiles(smbPath).Select(file => Path.Join(shareInfo.ToString(), file));
+        return (shareInfo, connection, smbPath);
     }
 
     private SMBConnection GetConnection(SMBShareInfo shareInfo, string path)
