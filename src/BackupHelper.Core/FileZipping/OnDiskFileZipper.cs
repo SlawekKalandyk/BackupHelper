@@ -1,4 +1,4 @@
-﻿using System.IO.Compression;
+﻿using ICSharpCode.SharpZipLib.Zip;
 using BackupHelper.Core.Sources;
 using BackupHelper.Core.Utilities;
 using Microsoft.Extensions.Logging;
@@ -16,9 +16,9 @@ public class OnDiskFileZipperFactory : IFileZipperFactory
         _sourceManager = sourceManager;
     }
 
-    public IFileZipper Create(string zipFilePath, bool overwriteFileIfExists)
+    public IFileZipper Create(string zipFilePath, bool overwriteFileIfExists, string? password)
     {
-        return new OnDiskFileZipper(_logger, _sourceManager, zipFilePath, overwriteFileIfExists);
+        return new OnDiskFileZipper(_logger, _sourceManager, zipFilePath, overwriteFileIfExists, password);
     }
 }
 
@@ -27,12 +27,13 @@ public class OnDiskFileZipper : FileZipperBase
     private readonly ILogger<OnDiskFileZipper> _logger;
     private readonly ISourceManager _sourceManager;
     private readonly FileStream _zipFileStream;
-    private readonly ZipArchive _zipArchive;
+    private readonly ZipOutputStream _zipOutputStream;
 
     public OnDiskFileZipper(ILogger<OnDiskFileZipper> logger,
                             ISourceManager sourceManager,
                             string zipFilePath,
-                            bool overwriteFileIfExists)
+                            bool overwriteFileIfExists,
+                            string? password)
         : base(zipFilePath, overwriteFileIfExists)
     {
         _logger = logger;
@@ -40,21 +41,32 @@ public class OnDiskFileZipper : FileZipperBase
 
         var fileMode = overwriteFileIfExists ? FileMode.Create : FileMode.CreateNew;
         _zipFileStream = new FileStream(zipFilePath, fileMode, FileAccess.ReadWrite);
-        _zipArchive = new ZipArchive(_zipFileStream, ZipArchiveMode.Create, false);
+        _zipOutputStream = new ZipOutputStream(_zipFileStream);
+
+        if (!string.IsNullOrEmpty(password))
+        {
+            _zipOutputStream.Password = password;
+        }
+        _zipOutputStream.SetLevel(9); // Maximum compression
     }
 
     public override bool HasToBeSaved => false;
 
     public override void AddFile(string filePath, string zipPath = "")
     {
-        var newZipPath = Path.Combine(zipPath, PathHelper.GetName(filePath));
+        var newZipPath = Path.Combine(zipPath, PathHelper.GetName(filePath)).Replace('\\', '/');
 
         try
         {
-            var entry = _zipArchive.CreateEntry(newZipPath, CompressionLevel.Optimal);
-            using var entryStream = entry.Open();
+            var entry = new ZipEntry(newZipPath)
+            {
+                DateTime = File.GetLastWriteTime(filePath)
+            };
+            _zipOutputStream.PutNextEntry(entry);
+
             using var fileStream = _sourceManager.GetStream(filePath);
-            fileStream.CopyTo(entryStream);
+            fileStream.CopyTo(_zipOutputStream);
+            _zipOutputStream.CloseEntry();
         }
         catch (IOException e)
         {
@@ -64,10 +76,17 @@ public class OnDiskFileZipper : FileZipperBase
 
     public override void AddDirectory(string directoryPath, string zipPath = "")
     {
-        var newZipPath = Path.Combine(zipPath, PathHelper.GetName(directoryPath));
+        var newZipPath = Path.Combine(zipPath, PathHelper.GetName(directoryPath)).Replace('\\', '/') + '/';
 
-        _zipArchive.CreateEntry(newZipPath + '/');
-        AddDirectoryContent(directoryPath, newZipPath);
+        // Add directory entry
+        var entry = new ZipEntry(newZipPath)
+        {
+            DateTime = Directory.GetLastWriteTime(directoryPath)
+        };
+        _zipOutputStream.PutNextEntry(entry);
+        _zipOutputStream.CloseEntry();
+
+        AddDirectoryContent(directoryPath, newZipPath.TrimEnd('/'));
     }
 
     public override void AddDirectoryContent(string directoryPath, string zipPath = "")
@@ -94,7 +113,7 @@ public class OnDiskFileZipper : FileZipperBase
     public override void Dispose()
     {
         base.Dispose();
-        _zipArchive.Dispose();
+        _zipOutputStream.Dispose();
         _zipFileStream.Dispose();
     }
 }

@@ -2,7 +2,7 @@
 
 public interface IFileZipperFactory
 {
-    IFileZipper Create(string zipFilePath, bool overwriteFileIfExists);
+    IFileZipper Create(string zipFilePath, bool overwriteFileIfExists, string? password = null);
 }
 
 public interface IFileZipper : IDisposable

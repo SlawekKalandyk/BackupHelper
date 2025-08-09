@@ -12,6 +12,7 @@ public class BackupPlanZipperTests : ZipTestsBase
 {
     private BackupPlanZipperTestsDateTimeProvider _dateTimeProvider;
     private IBackupPlanZipper _backupPlanZipper;
+    private Unzipper _unzipper;
 
     [SetUp]
     protected override void Setup()
@@ -21,6 +22,7 @@ public class BackupPlanZipperTests : ZipTestsBase
         _backupPlanZipper = ServiceScope.ServiceProvider.GetRequiredService<IBackupPlanZipper>();
 
         _dateTimeProvider.Now = new DateTime(2023, 10, 1, 12, 0, 0); // Set a fixed date for tests
+        _unzipper = new Unzipper(ZipFilePath, UnzippedFilesDirectoryPath);
     }
 
     [TearDown]
@@ -84,7 +86,7 @@ public class BackupPlanZipperTests : ZipTestsBase
 
         // Act
         _backupPlanZipper.CreateZipFile(backupPlan, ZipFilePath);
-        ZipFile.ExtractToDirectory(ZipFilePath, UnzippedFilesDirectoryPath);
+        _unzipper.UnzipFile();
 
         // Assert
         Assert.That(File.Exists(Path.Combine(UnzippedFilesDirectoryPath, "dir1", "file1.txt")));
@@ -99,7 +101,7 @@ public class BackupPlanZipperTests : ZipTestsBase
 
         // Act
         _backupPlanZipper.CreateZipFile(backupPlan, ZipFilePath);
-        ZipFile.ExtractToDirectory(ZipFilePath, UnzippedFilesDirectoryPath);
+        _unzipper.UnzipFile();
 
         // Assert
         Assert.That(Directory.Exists(Path.Combine(UnzippedFilesDirectoryPath, "auto-2023-10-01_00-00")));

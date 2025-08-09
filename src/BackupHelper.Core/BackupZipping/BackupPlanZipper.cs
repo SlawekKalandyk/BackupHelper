@@ -20,13 +20,13 @@ public class BackupPlanZipper : IBackupPlanZipper
         _dateTimeProvider = dateTimeProvider;
     }
 
-    public void CreateZipFile(BackupPlan plan, string outputPath)
+    public void CreateZipFile(BackupPlan plan, string outputPath, string? password = null)
     {
         _logger.LogInformation("Creating backup file at {OutputPath}", outputPath);
 
         using var scope = _serviceScopeFactory.CreateScope();
         var fileZipperFactory = scope.ServiceProvider.GetRequiredService<IFileZipperFactory>();
-        using var fileZipper = fileZipperFactory.Create(outputPath, overwriteFileIfExists: true);
+        using var fileZipper = fileZipperFactory.Create(outputPath, overwriteFileIfExists: true, password);
 
         foreach (var entry in plan.Items)
         {
