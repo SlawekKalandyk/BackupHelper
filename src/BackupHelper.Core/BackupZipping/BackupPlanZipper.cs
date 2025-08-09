@@ -1,3 +1,4 @@
+using BackupHelper.Abstractions;
 using BackupHelper.Core.FileZipping;
 using BackupHelper.Core.Sources;
 using BackupHelper.Core.Utilities;
@@ -10,11 +11,13 @@ public class BackupPlanZipper : IBackupPlanZipper
 {
     private readonly ILogger<BackupPlanZipper> _logger;
     private readonly IServiceScopeFactory _serviceScopeFactory;
+    private readonly IDateTimeProvider _dateTimeProvider;
 
-    public BackupPlanZipper(ILogger<BackupPlanZipper> logger, IServiceScopeFactory serviceScopeFactory)
+    public BackupPlanZipper(ILogger<BackupPlanZipper> logger, IServiceScopeFactory serviceScopeFactory, IDateTimeProvider dateTimeProvider)
     {
         _logger = logger;
         _serviceScopeFactory = serviceScopeFactory;
+        _dateTimeProvider = dateTimeProvider;
     }
 
     public void CreateZipFile(BackupPlan plan, string outputPath)
@@ -55,7 +58,10 @@ public class BackupPlanZipper : IBackupPlanZipper
         var filePath = fileEntry.FilePath;
         if (!string.IsNullOrEmpty(fileEntry.CronExpression))
         {
-            var lastOccurence = CronExpressionResolver.GetLastOccurrenceBeforeDateTime(fileEntry.CronExpression, DateTime.Now, fileEntry.GetTimeZoneInfo());
+            var lastOccurence = CronExpressionResolver.GetLastOccurrenceBeforeDateTime(
+                fileEntry.CronExpression,
+                _dateTimeProvider.Now,
+                fileEntry.GetTimeZoneInfo());
             filePath = SimplifiedPOSIXDateTimeResolver.Resolve(filePath, lastOccurence);
         }
 
