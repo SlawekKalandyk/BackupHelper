@@ -47,6 +47,18 @@ public class SMBSource : ISource
         return connection.DirectoryExists(smbPath);
     }
 
+    public DateTime? GetFileLastWriteTime(string path)
+    {
+        var (shareInfo , connection, smbPath) = GetFullSMBInfo(path);
+        return connection.GetFileLastWriteTime(smbPath);
+    }
+
+    public DateTime? GetDirectoryLastWriteTime(string path)
+    {
+        var (shareInfo, connection, smbPath) = GetFullSMBInfo(path);
+        return connection.GetDirectoryLastWriteTime(smbPath);
+    }
+
     private (SMBShareInfo shareInfo, SMBConnection connection, string smbPath) GetFullSMBInfo(string path)
     {
         var shareInfo = SMBShareInfo.FromFilePath(path);

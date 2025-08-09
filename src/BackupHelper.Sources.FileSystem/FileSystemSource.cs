@@ -50,6 +50,12 @@ public class FileSystemSource : ISource
     public bool DirectoryExists(string path)
         => Directory.Exists(path);
 
+    public DateTime? GetFileLastWriteTime(string path)
+        => File.GetLastWriteTime(path);
+
+    public DateTime? GetDirectoryLastWriteTime(string path)
+        => Directory.GetLastWriteTime(path);
+
     private T GetFromFileInUseSource<T>(string path, Func<string, T> defaultFunc, Func<IFileInUseSource, string, T> fileInUseFunc,
                                         [CallerMemberName] string callerName = "")
     {

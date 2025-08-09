@@ -92,6 +92,12 @@ public class SMBConnection : IDisposable
     public bool DirectoryExists(string directoryPath)
         => SMBDirectory.Exists(_smbFileStore, directoryPath);
 
+    public DateTime? GetFileLastWriteTime(string filePath)
+        => SMBFile.GetLastWriteTime(_smbFileStore, filePath);
+
+    public DateTime? GetDirectoryLastWriteTime(string directoryPath)
+        => SMBDirectory.GetLastWriteTime(_smbFileStore, directoryPath);
+
     public void Dispose()
     {
         _smbFileStore.Disconnect();

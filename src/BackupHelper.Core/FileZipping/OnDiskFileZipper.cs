@@ -56,33 +56,44 @@ public class OnDiskFileZipper : FileZipperBase
     {
         var newZipPath = Path.Combine(zipPath, PathHelper.GetName(filePath)).Replace('\\', '/');
 
+        #if !DEBUG
         try
         {
-            var entry = new ZipEntry(newZipPath)
+        #endif
+            var entry = new ZipEntry(newZipPath);
+            var lastWriteTime = _sourceManager.GetFileLastWriteTime(filePath);
+
+            if (lastWriteTime.HasValue)
             {
-                DateTime = File.GetLastWriteTime(filePath)
-            };
+                entry.DateTime = lastWriteTime.Value;
+            }
+
             _zipOutputStream.PutNextEntry(entry);
 
             using var fileStream = _sourceManager.GetStream(filePath);
             fileStream.CopyTo(_zipOutputStream);
             _zipOutputStream.CloseEntry();
+        #if !DEBUG
         }
         catch (IOException e)
         {
             _logger.LogError("Failed to add file {FilePath} to zip file {ZipFileStreamName}: {ExMessage}", filePath, _zipFileStream.Name, e.Message);
         }
+        #endif
     }
 
     public override void AddDirectory(string directoryPath, string zipPath = "")
     {
         var newZipPath = Path.Combine(zipPath, PathHelper.GetName(directoryPath)).Replace('\\', '/') + '/';
 
-        // Add directory entry
-        var entry = new ZipEntry(newZipPath)
+        var entry = new ZipEntry(newZipPath);
+        var lastWriteTime = _sourceManager.GetDirectoryLastWriteTime(directoryPath);
+
+        if (lastWriteTime.HasValue)
         {
-            DateTime = Directory.GetLastWriteTime(directoryPath)
-        };
+            entry.DateTime = lastWriteTime.Value;
+        }
+
         _zipOutputStream.PutNextEntry(entry);
         _zipOutputStream.CloseEntry();
 
