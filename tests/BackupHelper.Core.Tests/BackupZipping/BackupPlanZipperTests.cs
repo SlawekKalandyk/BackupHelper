@@ -1,5 +1,4 @@
-﻿using System.IO.Compression;
-using BackupHelper.Abstractions;
+﻿using BackupHelper.Abstractions;
 using BackupHelper.Core.BackupZipping;
 using BackupHelper.Tests.Shared;
 using Microsoft.Extensions.Configuration;
@@ -13,6 +12,21 @@ public class BackupPlanZipperTests : ZipTestsBase
     private BackupPlanZipperTestsDateTimeProvider _dateTimeProvider;
     private IBackupPlanZipper _backupPlanZipper;
     private Unzipper _unzipper;
+    private SMBTestConfigurationProvider _smbTestConfigurationProvider;
+
+    protected override void OverrideServices(IServiceCollection services, IConfiguration configuration)
+    {
+        base.OverrideServices(services, configuration);
+        services.AddSingleton<IDateTimeProvider, BackupPlanZipperTestsDateTimeProvider>();
+
+        _smbTestConfigurationProvider = new SMBTestConfigurationProvider(configuration);
+        var credentialsProvider = new TestCredentialsProvider();
+        credentialsProvider.SetCredential(
+            _smbTestConfigurationProvider.SharePath,
+            _smbTestConfigurationProvider.Username,
+            _smbTestConfigurationProvider.Password);
+        services.AddSingleton<ICredentialsProvider>(credentialsProvider);
+    }
 
     [SetUp]
     protected override void Setup()
@@ -23,18 +37,22 @@ public class BackupPlanZipperTests : ZipTestsBase
 
         _dateTimeProvider.Now = new DateTime(2023, 10, 1, 12, 0, 0); // Set a fixed date for tests
         _unzipper = new Unzipper(ZipFilePath, UnzippedFilesDirectoryPath);
+
+        using (var smbConnection = _smbTestConfigurationProvider.GetSMBConnection())
+        {
+            smbConnection.CreateDirectory(_smbTestConfigurationProvider.TestsDirectoryName);
+        }
     }
 
     [TearDown]
     protected override void Cleanup()
     {
-        base.Cleanup();
-    }
+        using (var smbConnection = _smbTestConfigurationProvider.GetSMBConnection())
+        {
+            smbConnection.DeleteDirectory(_smbTestConfigurationProvider.TestsDirectoryName);
+        }
 
-    protected override void OverrideServices(IServiceCollection services, IConfiguration configuration)
-    {
-        base.OverrideServices(services, configuration);
-        services.AddSingleton<IDateTimeProvider, BackupPlanZipperTestsDateTimeProvider>();
+        base.Cleanup();
     }
 
     private void PrepareFileStructure()
@@ -47,11 +65,16 @@ public class BackupPlanZipperTests : ZipTestsBase
         // Prepare: {ZippedFilesDirectoryPath}\auto-%Y-%m-%d_%H-%M
         var autoDir = Path.Combine(ZippedFilesDirectoryPath, "auto-2023-10-01_00-00");
         Directory.CreateDirectory(autoDir);
+
+        // Prepare: {ZippedFilesDirectoryPath}\smb_file1.txt
+        _smbTestConfigurationProvider.CreateTestFile("smb_file1.txt");
+
+        // Prepare: {ZippedFilesDirectoryPath}\smb_dir1
+        _smbTestConfigurationProvider.CreateTestDirectory("smb_dir1");
     }
 
     private BackupPlan CreateSampleBackupPlan()
     {
-        // All paths are relative to ZippedFilesDirectoryPath
         return new BackupPlan
         {
             Items = new List<BackupEntry>
@@ -72,6 +95,13 @@ public class BackupPlanZipperTests : ZipTestsBase
                             FilePath = Path.Combine(ZippedFilesDirectoryPath, "file1.txt")
                         }
                     }
+                },
+                new BackupFileEntry
+                {
+                    FilePath = $@"smb://{_smbTestConfigurationProvider.TestsDirectoryPath}\smb_file1.txt"
+                },
+                new BackupFileEntry{
+                    FilePath = $@"smb://{_smbTestConfigurationProvider.TestsDirectoryPath}\smb_dir1"
                 }
             }
         };
@@ -106,4 +136,37 @@ public class BackupPlanZipperTests : ZipTestsBase
         // Assert
         Assert.That(Directory.Exists(Path.Combine(UnzippedFilesDirectoryPath, "auto-2023-10-01_00-00")));
     }
+
+    [Test]
+    public void GivenBackupEntryWithSMBFile_WhenZipFileIsUnzipped_ThenUnzippedFileExists()
+    {
+        // Arrange
+        PrepareFileStructure();
+        var backupPlan = CreateSampleBackupPlan();
+
+        // Act
+        _backupPlanZipper.CreateZipFile(backupPlan, ZipFilePath);
+        _unzipper.UnzipFile();
+
+        // Assert
+        var expectedFile = Path.Combine(UnzippedFilesDirectoryPath, "smb_file1.txt");
+        Assert.That(File.Exists(expectedFile), $"Expected SMB file '{expectedFile}' to exist after unzip.");
+    }
+
+    [Test]
+    public void GivenBackupEntryWithSMBDirectory_WhenZipFileIsUnzipped_ThenUnzippedDirectoryExists()
+    {
+        // Arrange
+        PrepareFileStructure();
+        var backupPlan = CreateSampleBackupPlan();
+
+        // Act
+        _backupPlanZipper.CreateZipFile(backupPlan, ZipFilePath);
+        _unzipper.UnzipFile();
+
+        // Assert
+        var expectedDirectory = Path.Combine(UnzippedFilesDirectoryPath, "smb_dir1");
+        Assert.That(Directory.Exists(expectedDirectory), $"Expected SMB directory '{expectedDirectory}' to exist after unzip.");
+    }
+
 }
