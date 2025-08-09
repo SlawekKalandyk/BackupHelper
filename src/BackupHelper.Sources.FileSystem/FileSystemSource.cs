@@ -53,7 +53,6 @@ public class FileSystemSource : ISource
     private T GetFromFileInUseSource<T>(string path, Func<string, T> defaultFunc, Func<IFileInUseSource, string, T> fileInUseFunc,
                                         [CallerMemberName] string callerName = "")
     {
-        var fileInUseSource = _fileInUseSourceManager.GetFileInUseSource(path);
         try
         {
             return defaultFunc(path);
@@ -64,6 +63,7 @@ public class FileSystemSource : ISource
             try
             {
             #endif
+                var fileInUseSource = _fileInUseSourceManager.GetFileInUseSource(path);
                 return fileInUseFunc(fileInUseSource, path);
             #if !DEBUG
             }
