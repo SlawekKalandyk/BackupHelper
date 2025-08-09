@@ -1,5 +1,5 @@
-﻿using Microsoft.Extensions.Logging;
-using System.IO.Compression;
+﻿using ICSharpCode.SharpZipLib.Zip;
+using Microsoft.Extensions.Logging;
 using BackupHelper.Core.Sources;
 using BackupHelper.Core.Utilities;
 
@@ -16,9 +16,9 @@ public class InMemoryFileZipperFactory : IFileZipperFactory
         _sourceManager = sourceManager;
     }
 
-    public IFileZipper Create(string zipFilePath, bool overwriteFileIfExists)
+    public IFileZipper Create(string zipFilePath, bool overwriteFileIfExists, string? password)
     {
-        return new InMemoryFileZipper(_logger, _sourceManager, zipFilePath, overwriteFileIfExists);
+        return new InMemoryFileZipper(_logger, _sourceManager, zipFilePath, overwriteFileIfExists, password);
     }
 }
 
@@ -26,16 +26,26 @@ public class InMemoryFileZipper : FileZipperBase
 {
     private readonly ILogger<InMemoryFileZipper> _logger;
     private readonly ISourceManager _sourceManager;
-    private readonly Stream _zipMemoryStream;
-    private ZipArchive? _zipArchive;
+    private readonly MemoryStream _zipMemoryStream;
+    private readonly ZipOutputStream _zipOutputStream;
 
-    public InMemoryFileZipper(ILogger<InMemoryFileZipper> logger, ISourceManager sourceManager, string zipFilePath, bool overwriteFileIfExists)
+    public InMemoryFileZipper(ILogger<InMemoryFileZipper> logger,
+                              ISourceManager sourceManager,
+                              string zipFilePath,
+                              bool overwriteFileIfExists,
+                              string? password)
         : base(zipFilePath, overwriteFileIfExists)
     {
         _logger = logger;
         _sourceManager = sourceManager;
         _zipMemoryStream = new MemoryStream();
-        _zipArchive = new ZipArchive(_zipMemoryStream, ZipArchiveMode.Create, leaveOpen: true);
+        _zipOutputStream = new ZipOutputStream(_zipMemoryStream);
+
+        if (!string.IsNullOrEmpty(password))
+        {
+            _zipOutputStream.Password = password;
+        }
+        _zipOutputStream.SetLevel(9); // Maximum compression
     }
 
     public override void Save()
@@ -46,9 +56,7 @@ public class InMemoryFileZipper : FileZipperBase
             File.Delete(ZipFilePath);
         }
 
-        // ZipArchive has to be disposed before underlying stream can be copied to a file
-        _zipArchive?.Dispose();
-        _zipArchive = null;
+        _zipOutputStream.Finish();
         using var fileStream = File.Open(ZipFilePath, FileMode.Create, FileAccess.ReadWrite);
         _zipMemoryStream.Seek(0, SeekOrigin.Begin);
         _zipMemoryStream.CopyTo(fileStream);
@@ -58,15 +66,18 @@ public class InMemoryFileZipper : FileZipperBase
 
     public override void AddFile(string filePath, string zipPath = "")
     {
-        EnsureZipArchiveIsOpen();
-
-        var newZipPath = Path.Combine(zipPath, PathHelper.GetName(filePath));
+        var newZipPath = Path.Combine(zipPath, PathHelper.GetName(filePath)).Replace('\\', '/');
         try
         {
-            var entry = _zipArchive!.CreateEntry(newZipPath, CompressionLevel.Optimal);
-            using var entryStream = entry.Open();
+            var entry = new ZipEntry(newZipPath)
+            {
+                DateTime = File.GetLastWriteTime(filePath)
+            };
+            _zipOutputStream.PutNextEntry(entry);
+
             using var fileStream = _sourceManager.GetStream(filePath);
-            fileStream.CopyTo(entryStream);
+            fileStream.CopyTo(_zipOutputStream);
+            _zipOutputStream.CloseEntry();
         }
         catch (Exception e)
         {
@@ -76,16 +87,20 @@ public class InMemoryFileZipper : FileZipperBase
 
     public override void AddDirectory(string directoryPath, string zipPath = "")
     {
-        var newZipPath = Path.Combine(zipPath, PathHelper.GetName(directoryPath));
+        var newZipPath = Path.Combine(zipPath, PathHelper.GetName(directoryPath)).Replace('\\', '/') + '/';
 
-        _zipArchive!.CreateEntry(newZipPath + '/');
-        AddDirectoryContent(directoryPath, newZipPath);
+        var entry = new ZipEntry(newZipPath)
+        {
+            DateTime = Directory.GetLastWriteTime(directoryPath)
+        };
+        _zipOutputStream.PutNextEntry(entry);
+        _zipOutputStream.CloseEntry();
+
+        AddDirectoryContent(directoryPath, newZipPath.TrimEnd('/'));
     }
 
     public override void AddDirectoryContent(string directoryPath, string zipPath = "")
     {
-        EnsureZipArchiveIsOpen();
-
         var subDirectories = _sourceManager.GetSubDirectories(directoryPath);
         var files = _sourceManager.GetFiles(directoryPath);
 
@@ -100,14 +115,9 @@ public class InMemoryFileZipper : FileZipperBase
         }
     }
 
-    private void EnsureZipArchiveIsOpen()
-    {
-        _zipArchive ??= new ZipArchive(_zipMemoryStream, ZipArchiveMode.Update, true);
-    }
-
     public override void Dispose()
     {
-        _zipArchive?.Dispose();
+        _zipOutputStream.Dispose();
         _zipMemoryStream.Dispose();
     }
 }
