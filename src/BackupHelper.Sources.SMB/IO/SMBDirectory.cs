@@ -167,16 +167,47 @@ public class SMBDirectory : SMBIOComponentBase
             null);
 
         var directoryExists = status == NTStatus.STATUS_SUCCESS && fileStatus == FileStatus.FILE_OPENED;
-        var directoryDoesntExist = status == NTStatus.STATUS_OBJECT_NAME_NOT_FOUND && fileStatus == FileStatus.FILE_DOES_NOT_EXIST;
-
-        if (!directoryExists && !directoryDoesntExist)
-        {
-            throw new InvalidOperationException($"Unexpected status '{status}' and fileStatus '{fileStatus}' when checking existence of directory'{directoryPath}'");
-        }
 
         if (directoryExists)
             fileStore.CloseFile(fileHandle);
 
-        return directoryExists && !directoryDoesntExist;
+        return directoryExists;
+    }
+
+    public static DateTime? GetLastWriteTime(ISMBFileStore smbFileStore, string directoryPath)
+    {
+        var status = smbFileStore.CreateFile(
+            out var fileHandle,
+            out var fileStatus,
+            directoryPath,
+            AccessMask.GENERIC_READ | AccessMask.SYNCHRONIZE,
+            FileAttributes.Directory,
+            ShareAccess.Read,
+            CreateDisposition.FILE_OPEN,
+            CreateOptions.FILE_DIRECTORY_FILE | CreateOptions.FILE_SYNCHRONOUS_IO_NONALERT,
+            null);
+        SMBHelper.ThrowIfStatusNotSuccess(status, nameof(smbFileStore.CreateFile));
+        SMBHelper.ThrowIfFileStatusNotFileOpened(fileStatus, directoryPath, nameof(smbFileStore.CreateFile));
+
+        var directoryInfo = GetDirectoryInfo(smbFileStore, directoryPath, fileHandle);
+        smbFileStore.CloseFile(fileHandle);
+
+        return directoryInfo.BasicInformation.LastWriteTime.Time;
+    }
+
+    private static FileAllInformation GetDirectoryInfo(ISMBFileStore fileStore, string directoryPath, object fileHandle)
+    {
+        var status = fileStore.GetFileInformation(
+            out var directoryInfo,
+            fileHandle,
+            FileInformationClass.FileAllInformation);
+        SMBHelper.ThrowIfStatusNotSuccess(status, nameof(fileStore.GetFileInformation));
+
+        if (directoryInfo is not FileAllInformation fullDirectoryInfo)
+        {
+            throw new InvalidOperationException($"Failed to retrieve directory information for '{directoryPath}'");
+        }
+
+        return fullDirectoryInfo;
     }
 }

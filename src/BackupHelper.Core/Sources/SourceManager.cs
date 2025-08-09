@@ -38,6 +38,16 @@ public class SourceManager : ISourceManager
         return GetFromSource(path, (source, pathWithoutScheme) => source.DirectoryExists(pathWithoutScheme));
     }
 
+    public DateTime? GetFileLastWriteTime(string path)
+    {
+        return GetFromSource(path, (source, pathWithoutScheme) => source.GetFileLastWriteTime(pathWithoutScheme));
+    }
+
+    public DateTime? GetDirectoryLastWriteTime(string path)
+    {
+        return GetFromSource(path, (source, pathWithoutScheme) => source.GetDirectoryLastWriteTime(pathWithoutScheme));
+    }
+
     private T GetFromSource<T>(string path, Func<ISource, string, T> action)
     {
         var scheme = GetScheme(path);

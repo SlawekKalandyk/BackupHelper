@@ -7,4 +7,6 @@ public interface ISourceManager
     IEnumerable<string> GetFiles(string path);
     bool FileExists(string path);
     bool DirectoryExists(string path);
+    DateTime? GetFileLastWriteTime(string path);
+    DateTime? GetDirectoryLastWriteTime(string directoryPath);
 }
