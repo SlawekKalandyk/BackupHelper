@@ -119,6 +119,33 @@ public class SMBFile : SMBIOComponentBase
         return new SMBFile(fileStore, fileHandle, fileInfo, FilePurpose.Read | FilePurpose.Write);
     }
 
+    public static bool Exists(ISMBFileStore fileStore, string filePath)
+    {
+        var status = fileStore.CreateFile(
+            out var fileHandle,
+            out var fileStatus,
+            filePath,
+            AccessMask.GENERIC_READ | AccessMask.SYNCHRONIZE,
+            FileAttributes.Normal,
+            ShareAccess.Read,
+            CreateDisposition.FILE_OPEN,
+            CreateOptions.FILE_NON_DIRECTORY_FILE | CreateOptions.FILE_SYNCHRONOUS_IO_NONALERT,
+            null);
+
+        var fileExists = status == NTStatus.STATUS_SUCCESS && fileStatus == FileStatus.FILE_OPENED;
+        var fileDoesntExist = status == NTStatus.STATUS_OBJECT_NAME_NOT_FOUND && fileStatus == FileStatus.FILE_DOES_NOT_EXIST;
+
+        if (!fileExists && !fileDoesntExist)
+        {
+            throw new InvalidOperationException($"Unexpected status '{status}' and fileStatus '{fileStatus}' when checking existence of file '{filePath}'");
+        }
+
+        if (fileExists)
+            fileStore.CloseFile(fileHandle);
+
+        return fileExists && !fileDoesntExist;
+    }
+
     private static FileAllInformation GetFileInfo(ISMBFileStore fileStore, string filePath, object fileHandle)
     {
         var status = fileStore.GetFileInformation(

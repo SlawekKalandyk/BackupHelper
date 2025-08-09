@@ -8,4 +8,6 @@ public interface IFileInUseSourceFactory
 public interface IFileInUseSource : IDisposable
 {
     Stream GetStream(string path);
+    IEnumerable<string> GetSubDirectories(string path);
+    IEnumerable<string> GetFiles(string path);
 }

@@ -1,4 +1,5 @@
-﻿using BackupHelper.Sources.Abstractions;
+﻿using System.Runtime.CompilerServices;
+using BackupHelper.Sources.Abstractions;
 using BackupHelper.Sources.FileSystem.FileInUseSource;
 using Microsoft.Extensions.Logging;
 
@@ -21,33 +22,59 @@ public class FileSystemSource : ISource
 
     public Stream GetStream(string path)
     {
-        try
-        {
-            return new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read);
-        }
-        catch (IOException)
-        {
-        #if !DEBUG
-            try
-            {
-        #endif
-            var fileInUseSource = _fileInUseSourceManager.GetFileInUseSource(path);
-            return fileInUseSource.GetStream(path);
-        #if !DEBUG
-            }
-            catch (Exception e)
-            {
-                _logger.LogError("Failed to get file {FilePath}: {ExMessage}", path, e.Message);
-            }
-        #endif
-        }
+        return GetFromFileInUseSource(
+            path,
+            (p) => new FileStream(p, FileMode.Open, FileAccess.Read, FileShare.Read),
+            (fileInUseSource, p) => fileInUseSource.GetStream(p));
     }
 
     public IEnumerable<string> GetSubDirectories(string path)
-        => Directory.GetDirectories(path);
+    {
+        return GetFromFileInUseSource(
+            path,
+            (p) => Directory.GetDirectories(p),
+            (fileInUseSource, p) => fileInUseSource.GetSubDirectories(p));
+    }
 
     public IEnumerable<string> GetFiles(string path)
-        => Directory.GetFiles(path);
+    {
+        return GetFromFileInUseSource(
+            path,
+            (p) => Directory.GetFiles(p),
+            (fileInUseSource, p) => fileInUseSource.GetFiles(p));
+    }
+
+    public bool FileExists(string path)
+        => File.Exists(path);
+
+    public bool DirectoryExists(string path)
+        => Directory.Exists(path);
+
+    private T GetFromFileInUseSource<T>(string path, Func<string, T> defaultFunc, Func<IFileInUseSource, string, T> fileInUseFunc,
+                                        [CallerMemberName] string callerName = "")
+    {
+        try
+        {
+            return defaultFunc(path);
+        }
+        catch (IOException)
+        {
+            #if !DEBUG
+            try
+            {
+            #endif
+                var fileInUseSource = _fileInUseSourceManager.GetFileInUseSource(path);
+                return fileInUseFunc(fileInUseSource, path);
+            #if !DEBUG
+            }
+            catch (Exception e)
+            {
+                _logger.LogError(e, "Error in {CallerName} for path: {Path}", callerName, path);
+                return default;
+            }
+            #endif
+        }
+    }
 
     public void Dispose()
     {

@@ -31,8 +31,31 @@ public class VssFileInUseSource : IFileInUseSource
 
     public void AddEntry(ZipArchive zipArchive, string filePath, string zipPath, CompressionLevel compressionLevel)
     {
-        var volume = Path.GetPathRoot(filePath);
+        var snapshotPath = GetSnapshotPath(filePath);
+        zipArchive.CreateEntryFromFile(snapshotPath, zipPath, compressionLevel);
+    }
 
+    public Stream GetStream(string path)
+    {
+        var snapshotPath = GetSnapshotPath(path);
+        return new FileStream(snapshotPath, FileMode.Open, FileAccess.Read, FileShare.Read);
+    }
+
+    public IEnumerable<string> GetSubDirectories(string path)
+    {
+        var snapshotPath = GetSnapshotPath(path);
+        return Directory.GetDirectories(snapshotPath);
+    }
+
+    public IEnumerable<string> GetFiles(string path)
+    {
+        var snapshotPath = GetSnapshotPath(path);
+        return Directory.GetFiles(snapshotPath);
+    }
+
+    private string GetSnapshotPath(string path)
+    {
+        var volume = Path.GetPathRoot(path);
         if (!_vssBackups.TryGetValue(volume, out var vssBackup))
         {
             vssBackup = new VssBackup(_logger);
@@ -40,9 +63,7 @@ public class VssFileInUseSource : IFileInUseSource
         }
 
         vssBackup.Setup(volume);
-        var snapshotPath = vssBackup.GetSnapshotPath(filePath);
-
-        zipArchive.CreateEntryFromFile(snapshotPath, zipPath, compressionLevel);
+        return vssBackup.GetSnapshotPath(path);
     }
 
     public void Dispose()
@@ -52,21 +73,5 @@ public class VssFileInUseSource : IFileInUseSource
             vssBackup.Dispose();
         }
         _vssBackups.Clear();
-    }
-
-    public Stream GetStream(string path)
-    {
-        var volume = Path.GetPathRoot(path);
-
-        if (!_vssBackups.TryGetValue(volume, out var vssBackup))
-        {
-            vssBackup = new VssBackup(_logger);
-            _vssBackups[volume] = vssBackup;
-        }
-
-        vssBackup.Setup(volume);
-        var snapshotPath = vssBackup.GetSnapshotPath(path);
-
-        return new FileStream(snapshotPath, FileMode.Open, FileAccess.Read, FileShare.Read);
     }
 }

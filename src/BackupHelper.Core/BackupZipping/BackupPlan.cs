@@ -2,69 +2,66 @@
 
 namespace BackupHelper.Core.BackupZipping;
 
-[JsonConverter(typeof(BackupEntryConverter))]
 public abstract class BackupEntry { }
 
 public class BackupFileEntry : BackupEntry
 {
+    private TimeZoneType _timeZoneType = TimeZoneType.Local;
+
+    [JsonProperty("path")]
     public string FilePath { get; set; } = string.Empty;
+
+    [JsonProperty("cronExpression")]
+    public string? CronExpression { get; set; } = null;
+
+    [JsonProperty("timeZone")]
+    public string TimeZone
+    {
+        get => _timeZoneType.ToString().ToLowerInvariant();
+        set
+        {
+            if (string.IsNullOrEmpty(value))
+            {
+                _timeZoneType = TimeZoneType.Local;
+                return;
+            }
+
+            var parsedSuccessfully = Enum.TryParse<TimeZoneType>(value, true, out var timeZoneType);
+            if (parsedSuccessfully)
+            {
+                _timeZoneType = timeZoneType;
+            }
+            else
+            {
+                throw new ArgumentException($"Invalid time zone type: {value}. Expected 'local', 'utc' or no value.");
+            }
+        }
+    }
+
+    public TimeZoneInfo GetTimeZoneInfo()
+    {
+        return _timeZoneType switch
+        {
+            TimeZoneType.Local => TimeZoneInfo.Local,
+            TimeZoneType.Utc => TimeZoneInfo.Utc,
+            _ => throw new InvalidOperationException("Time zone type is not set or invalid.")
+        };
+    }
+
+    private enum TimeZoneType
+    {
+        Local,
+        Utc
+    }
 }
 
 public class BackupDirectoryEntry : BackupEntry
 {
+    [JsonProperty("name")]
     public string DirectoryName { get; set; } = string.Empty;
+
+    [JsonProperty("items")]
     public List<BackupEntry> Items { get; set; } = new();
-}
-
-public class BackupEntryConverter : JsonConverter<BackupEntry>
-{
-    public override BackupEntry? ReadJson(JsonReader reader, Type objectType, BackupEntry? existingValue, bool hasExistingValue, JsonSerializer serializer)
-    {
-        if (reader.TokenType == JsonToken.String)
-        {
-            return new BackupFileEntry { FilePath = (string)reader.Value! };
-        }
-
-        if (reader.TokenType == JsonToken.StartObject)
-        {
-            var obj = serializer.Deserialize<Dictionary<string, object>>(reader);
-
-            if (obj != null && obj.Count == 1)
-            {
-                var dirName = obj.Keys.First();
-                var itemsToken = obj[dirName];
-                var items = itemsToken is Newtonsoft.Json.Linq.JArray arr
-                                ? arr.ToObject<List<BackupEntry>>(serializer)
-                                : new List<BackupEntry>();
-
-                return new BackupDirectoryEntry
-                {
-                    DirectoryName = dirName,
-                    Items = items
-                };
-            }
-        }
-
-        return null;
-    }
-
-    public override void WriteJson(JsonWriter writer, BackupEntry? value, JsonSerializer serializer)
-    {
-        if (value == null)
-            return;
-
-        if (value is BackupFileEntry fileEntry)
-        {
-            writer.WriteValue(fileEntry.FilePath);
-        }
-        else if (value is BackupDirectoryEntry dirEntry)
-        {
-            writer.WriteStartObject();
-            writer.WritePropertyName(dirEntry.DirectoryName);
-            serializer.Serialize(writer, dirEntry.Items);
-            writer.WriteEndObject();
-        }
-    }
 }
 
 public class BackupPlan

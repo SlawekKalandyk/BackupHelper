@@ -78,4 +78,40 @@ public class SMBSourceTests : SMBTestsBase
         Assert.That(files.Contains($"{SMBTestsDirectoryPath}\\file1.txt"));
         Assert.That(files.Contains($"{SMBTestsDirectoryPath}\\file2.txt"));
     }
+
+    [Test]
+    public void GivenExistingSMBFile_WhenCheckingIfFileExists_ThenReturnsTrue()
+    {
+        CreateTestFileStructure();
+
+        var smbSource = GetSMBSource();
+        Assert.That(smbSource.FileExists($"{SMBTestsDirectoryPath}\\file1.txt"));
+    }
+
+    [Test]
+    public void GivenNonExistingSMBFile_WhenCheckingIfFileExists_ThenReturnsFalse()
+    {
+        CreateTestFileStructure();
+
+        var smbSource = GetSMBSource();
+        Assert.That(smbSource.FileExists($"{SMBTestsDirectoryPath}\\nonexistent.txt"), Is.False);
+    }
+
+    [Test]
+    public void GivenExistingSMBDirectory_WhenCheckingIfDirectoryExists_ThenReturnsTrue()
+    {
+        CreateTestFileStructure();
+
+        var smbSource = GetSMBSource();
+        Assert.That(smbSource.DirectoryExists($"{SMBTestsDirectoryPath}\\SubDir1"));
+    }
+
+    [Test]
+    public void GivenNonExistingSMBDirectory_WhenCheckingIfDirectoryExists_ThenReturnsFalse()
+    {
+        CreateTestFileStructure();
+
+        var smbSource = GetSMBSource();
+        Assert.That(smbSource.DirectoryExists($"{SMBTestsDirectoryPath}\\NonExistentDirectory"), Is.False);
+    }
 }
