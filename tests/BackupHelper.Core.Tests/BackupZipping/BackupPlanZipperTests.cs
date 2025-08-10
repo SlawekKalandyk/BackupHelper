@@ -18,14 +18,17 @@ public class BackupPlanZipperTests : ZipTestsBase
     {
         base.OverrideServices(services, configuration);
         services.AddSingleton<IDateTimeProvider, BackupPlanZipperTestsDateTimeProvider>();
+    }
 
+    protected override void AddCredentials(TestCredentialsProvider credentialsProvider, IConfiguration configuration)
+    {
+        base.AddCredentials(credentialsProvider, configuration);
         _smbTestConfigurationProvider = new SMBTestConfigurationProvider(configuration);
-        var credentialsProvider = new TestCredentialsProvider();
+
         credentialsProvider.SetCredential(
             _smbTestConfigurationProvider.SharePath,
             _smbTestConfigurationProvider.Username,
             _smbTestConfigurationProvider.Password);
-        services.AddSingleton<ICredentialsProvider>(credentialsProvider);
     }
 
     [SetUp]

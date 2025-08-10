@@ -4,7 +4,7 @@ using BackupHelper.Tests.Shared;
 namespace BackupHelper.Core.Tests.Credentials;
 
 [TestFixture]
-public class KeepassCredentialsProviderTests : TestsBase
+public class KeePassCredentialsProviderTests : TestsBase
 {
     [Test]
     public void GivenNoDatabase_WhenKeepassCredentialsProviderIsCreated_ThenDatabaseIsCreated()
@@ -13,7 +13,7 @@ public class KeepassCredentialsProviderTests : TestsBase
 
         Assert.That(!File.Exists(testDatabasePath));
 
-        using (_ = new KeepassCredentialsProvider(testDatabasePath, "testPassword"))
+        using (_ = new KeePassCredentialsProvider(new(testDatabasePath, "testPassword")))
         {
         }
 
@@ -28,7 +28,7 @@ public class KeepassCredentialsProviderTests : TestsBase
         var expectedPassword = "TestPass";
 
         var testDatabasePath = Path.Combine(TestsDirectoryRootPath, "test.kdbx");
-        using var provider = new KeepassCredentialsProvider(testDatabasePath, "testPassword");
+        using var provider = new KeePassCredentialsProvider(new(testDatabasePath, "testPassword"));
 
         provider.SetCredential(credentialName, expectedUsername, expectedPassword);
 
@@ -46,7 +46,7 @@ public class KeepassCredentialsProviderTests : TestsBase
         var expectedPassword = "TestPass";
 
         var testDatabasePath = Path.Combine(TestsDirectoryRootPath, "test.kdbx");
-        using var provider = new KeepassCredentialsProvider(testDatabasePath, "testPassword");
+        using var provider = new KeePassCredentialsProvider(new(testDatabasePath, "testPassword"));
 
         provider.SetCredential(credentialName, expectedUsername, expectedPassword);
 
@@ -61,12 +61,12 @@ public class KeepassCredentialsProviderTests : TestsBase
         var expectedPassword = "TestPass";
 
         var testDatabasePath = Path.Combine(TestsDirectoryRootPath, "test.kdbx");
-        using (var provider = new KeepassCredentialsProvider(testDatabasePath, "testPassword"))
+        using (var provider = new KeePassCredentialsProvider(new(testDatabasePath, "testPassword")))
         {
             provider.SetCredential(credentialName, expectedUsername, expectedPassword);
         }
 
-        using (var provider = new KeepassCredentialsProvider(testDatabasePath, "testPassword"))
+        using (var provider = new KeePassCredentialsProvider(new(testDatabasePath, "testPassword")))
         {
             var (actualUsername, actualPassword) = provider.GetCredential(credentialName);
 

@@ -1,6 +1,6 @@
-﻿using System.Reflection;
-using BackupHelper.Abstractions;
+﻿using BackupHelper.Abstractions;
 using BackupHelper.Core.BackupZipping;
+using BackupHelper.Core.Credentials;
 using BackupHelper.Core.FileZipping;
 using BackupHelper.Core.Sources;
 using BackupHelper.Core.Utilities;
@@ -17,10 +17,16 @@ public static class ConfigureServices
 {
     public static IServiceCollection AddCoreServices(this IServiceCollection services, IConfiguration configuration)
     {
-        services.AddMediatR(serviceConfiguration => serviceConfiguration.RegisterServicesFromAssembly(Assembly.GetExecutingAssembly()));
         services.AddSources();
         services.AddSingleton<IDateTimeProvider, DateTimeProvider>();
         services.AddSingleton<IBackupPlanZipper, BackupPlanZipper>();
+        services.AddSingleton<ICredentialsProviderFactory, CredentialsProviderFactory>();
+        services.AddTransient<ICredentialsProvider>(
+            serviceProvider =>
+            {
+                var factory = serviceProvider.GetRequiredService<ICredentialsProviderFactory>();
+                return factory.GetDefaultCredentialsProvider();
+            });
         services.AddTransient<IFileZipperFactory, OnDiskFileZipperFactory>();
 
         return services;

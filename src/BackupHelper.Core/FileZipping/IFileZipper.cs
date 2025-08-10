@@ -13,6 +13,17 @@ public interface IFileZipper : IDisposable
     bool HasToBeSaved { get; }
 
     /// <summary>
+    /// Can headers in zip archive be encrypted (i.e. file and directory names)
+    /// </summary>
+    bool CanEncryptHeaders { get; }
+
+    /// <summary>
+    /// Encrypt headers in zip archive (i.e. file and directory names) if supported by the implementation.
+    /// If not supported, this property is ignored.
+    /// </summary>
+    bool EncryptHeaders { get; set; }
+
+    /// <summary>
     /// Add file to zip archive
     /// </summary>
     /// <param name="filePath">Path to the file in the filesystem</param>

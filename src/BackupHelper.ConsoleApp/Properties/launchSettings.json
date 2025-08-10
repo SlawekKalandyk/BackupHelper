@@ -2,8 +2,8 @@
   "profiles": {
     "BackupHelper.ConsoleApp": {
       "commandName": "Project",
-      "commandLineArgs": "\"E:\\Programming\\tests\\output.zip\" \"E:\\Programming\\tests\\backup.json\"",
-      "workingDirectory": "E:\\Programming\\tests"
+      "commandLineArgs": "",
+      "workingDirectory": ""
     }
   }
 }

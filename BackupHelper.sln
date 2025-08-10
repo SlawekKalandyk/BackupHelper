@@ -33,6 +33,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BackupHelper.Abstractions",
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BackupHelper.Tests.Shared", "tests\BackupHelper.Tests.Shared\BackupHelper.Tests.Shared.csproj", "{C663DEDC-CD7F-4F55-9448-5CC653139A63}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BackupHelper.Api", "src\BackupHelper.Api\BackupHelper.Api.csproj", "{89F6E7F2-0EDA-43A9-A491-0BEBDC76AA6D}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -99,6 +101,12 @@ Global
 		{C663DEDC-CD7F-4F55-9448-5CC653139A63}.Release|Any CPU.Build.0 = Release|Any CPU
 		{C663DEDC-CD7F-4F55-9448-5CC653139A63}.Release-ConsoleApp|Any CPU.ActiveCfg = Debug|Any CPU
 		{C663DEDC-CD7F-4F55-9448-5CC653139A63}.Release-ConsoleApp|Any CPU.Build.0 = Debug|Any CPU
+		{89F6E7F2-0EDA-43A9-A491-0BEBDC76AA6D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{89F6E7F2-0EDA-43A9-A491-0BEBDC76AA6D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{89F6E7F2-0EDA-43A9-A491-0BEBDC76AA6D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{89F6E7F2-0EDA-43A9-A491-0BEBDC76AA6D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{89F6E7F2-0EDA-43A9-A491-0BEBDC76AA6D}.Release-ConsoleApp|Any CPU.ActiveCfg = Debug|Any CPU
+		{89F6E7F2-0EDA-43A9-A491-0BEBDC76AA6D}.Release-ConsoleApp|Any CPU.Build.0 = Debug|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -117,6 +125,7 @@ Global
 		{0FF8E2B1-ECEF-4C2E-9A16-8B83FFE1E668} = {38353503-ACDF-42FA-8EF1-863182CBB456}
 		{EAD66FA8-D9CD-4CCD-9C79-8E7A3AF88EB2} = {036A0814-F4D4-4054-BEA1-22F562BCA9C1}
 		{C663DEDC-CD7F-4F55-9448-5CC653139A63} = {D1E4C4F2-71F9-4C60-A090-213BB9107928}
+		{89F6E7F2-0EDA-43A9-A491-0BEBDC76AA6D} = {036A0814-F4D4-4054-BEA1-22F562BCA9C1}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {3309D9DD-FDBD-4E48-87FB-70CE42F87EF4}
