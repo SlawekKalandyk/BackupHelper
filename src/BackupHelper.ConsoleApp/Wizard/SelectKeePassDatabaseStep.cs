@@ -3,33 +3,46 @@ using Sharprompt;
 
 namespace BackupHelper.ConsoleApp.Wizard;
 
-public class SelectKeePassDatabaseStep : WizardStepBase<SelectKeePassDatabaseStepParameters>
-{
-    public SelectKeePassDatabaseStep(SelectKeePassDatabaseStepParameters parameters) : base(parameters) { }
+public record SelectKeePassDatabaseStepParameters(string BackupPlanLocation, string OutputZipPath) : IWizardParameters;
 
-    public override Task<IWizardStep?> Execute()
+public class SelectKeePassDatabaseStep : IWizardStep<SelectKeePassDatabaseStepParameters>
+{
+    private readonly ICredentialsProviderFactory _credentialsProviderFactory;
+
+    public SelectKeePassDatabaseStep(ICredentialsProviderFactory credentialsProviderFactory)
+    {
+        _credentialsProviderFactory = credentialsProviderFactory;
+    }
+
+    public Task<IWizardParameters?> Handle(SelectKeePassDatabaseStepParameters parameters, CancellationToken cancellationToken)
     {
         var selectKeePassDb = Prompt.Confirm("Do you want to select an existing KeePass DB?");
 
         if (!selectKeePassDb)
         {
-            return Task.FromResult<IWizardStep?>(new PerformBackupStep(new(Parameters.BackupPlanLocation, Parameters.OutputZipPath)));
+            return Task.FromResult<IWizardParameters?>(new PerformBackupStepParameters(parameters.BackupPlanLocation, parameters.OutputZipPath));
         }
 
-        var keePassDbLocation = Prompt.Input<string>("Enter KeePass DB location: ", validators: [Validators.Required()]);
+        var keePassDbLocation = Prompt.Input<string>("Enter KeePass DB location", validators: [Validators.Required()]);
 
         if (File.Exists(keePassDbLocation))
         {
             var keePassDbPassword = GetKeePassDbPassword(keePassDbLocation);
+            var defaultCredentialsProviderConfiguration = new KeePassCredentialsProviderConfiguration(keePassDbLocation, keePassDbPassword);
+            _credentialsProviderFactory.SetDefaultCredentialsProviderConfiguration(defaultCredentialsProviderConfiguration);
 
-            return Task.FromResult<IWizardStep?>(
-                new PerformBackupStep(new(Parameters.BackupPlanLocation, Parameters.OutputZipPath, keePassDbLocation, keePassDbPassword)));
+            return Task.FromResult<IWizardParameters?>(
+                new PerformBackupStepParameters(
+                    parameters.BackupPlanLocation,
+                    parameters.OutputZipPath,
+                    keePassDbLocation,
+                    keePassDbPassword));
         }
         else
         {
             Console.WriteLine("KeePass DB file does not exist.");
 
-            return Task.FromResult<IWizardStep?>(new SelectKeePassDatabaseStep(Parameters));
+            return Task.FromResult<IWizardParameters?>(parameters);
         }
     }
 
@@ -39,7 +52,7 @@ public class SelectKeePassDatabaseStep : WizardStepBase<SelectKeePassDatabaseSte
 
         while (keePassDbPassword == null)
         {
-            keePassDbPassword = Prompt.Password("Enter KeePass DB password: ");
+            keePassDbPassword = Prompt.Password("Enter KeePass DB password");
             var correctPasswordProvided = KeePassCredentialsProvider.CanLogin(keePassDbLocation, keePassDbPassword);
 
             if (!correctPasswordProvided)
@@ -52,5 +65,3 @@ public class SelectKeePassDatabaseStep : WizardStepBase<SelectKeePassDatabaseSte
         return keePassDbPassword;
     }
 }
-
-public record SelectKeePassDatabaseStepParameters(string BackupPlanLocation, string OutputZipPath);

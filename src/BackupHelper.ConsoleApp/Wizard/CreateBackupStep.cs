@@ -2,17 +2,15 @@
 
 namespace BackupHelper.ConsoleApp.Wizard;
 
-public class CreateBackupStep : WizardStepBase<CreateBackupStepParameters>
+public record CreateBackupStepParameters : IWizardParameters;
+
+public class CreateBackupStep : IWizardStep<CreateBackupStepParameters>
 {
-    public CreateBackupStep(CreateBackupStepParameters parameters) : base(parameters) { }
-
-    public override Task<IWizardStep?> Execute()
+    public Task<IWizardParameters?> Handle(CreateBackupStepParameters parameters, CancellationToken cancellationToken)
     {
-        var backupPlanLocation = Prompt.Input<string>("Select backup plan location: ", validators: [Validators.Required()]);
-        var outputZipPath = Prompt.Input<string>("Select output zip path: ", validators: [Validators.Required()]);
+        var backupPlanLocation = Prompt.Input<string>("Select backup plan location", validators: [Validators.Required()]);
+        var outputZipPath = Prompt.Input<string>("Select output zip path", validators: [Validators.Required()]);
 
-        return Task.FromResult<IWizardStep?>(new SelectKeePassDatabaseStep(new(backupPlanLocation, outputZipPath)));
+        return Task.FromResult<IWizardParameters?>(new SelectKeePassDatabaseStepParameters(backupPlanLocation, outputZipPath));
     }
 }
-
-public record CreateBackupStepParameters;

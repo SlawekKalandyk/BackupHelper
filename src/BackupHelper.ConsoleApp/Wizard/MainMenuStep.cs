@@ -2,27 +2,27 @@
 
 namespace BackupHelper.ConsoleApp.Wizard;
 
-public class MainMenuStep : WizardStepBase<MainMenuStepParameters>
+public record MainMenuStepParameters : IWizardParameters;
+
+public class MainMenuStep : IWizardStep<MainMenuStepParameters>
 {
-    public MainMenuStep(MainMenuStepParameters parameters) : base(parameters) { }
-
-    public override Task<IWizardStep?> Execute()
+    public Task<IWizardParameters?> Handle(MainMenuStepParameters parameters, CancellationToken cancellationToken)
     {
-        var choice = Prompt.Select("Main Menu", new[]
-        {
-            "Create backup",
-            "Add SMB credential",
-            "Exit"
-        });
+        var choice = Prompt.Select(
+            "Main Menu",
+            [
+                "Create backup",
+                "Add SMB credential",
+                "Exit"
+            ]);
 
-        return choice switch
-        {
-            "Create backup" => Task.FromResult<IWizardStep?>(new CreateBackupStep(new())),
-            "Add SMB credential" => Task.FromResult<IWizardStep?>(new AddSmbCredentialStep(new())),
-            "Exit" => Task.FromResult<IWizardStep?>(new ExitStep(new())),
-            _ => throw new ArgumentOutOfRangeException(nameof(choice), $"Invalid choice: {choice}")
-        };
+        return Task.FromResult<IWizardParameters?>(
+            choice switch
+            {
+                "Create backup" => new CreateBackupStepParameters(),
+                "Add SMB credential" => new AddSmbCredentialStepParameters(),
+                "Exit" => null,
+                _ => throw new ArgumentOutOfRangeException(nameof(choice), $"Invalid choice: {choice}")
+            });
     }
 }
-
-public record MainMenuStepParameters;

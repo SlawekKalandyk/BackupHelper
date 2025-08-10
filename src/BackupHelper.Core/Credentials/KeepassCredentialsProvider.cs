@@ -7,16 +7,19 @@ using KeePassLib.Serialization;
 
 namespace BackupHelper.Core.Credentials;
 
+public record KeePassCredentialsProviderConfiguration(string DatabasePath, string MasterPassword)
+    : ICredentialsProviderConfiguration;
+
 public class KeePassCredentialsProvider : ICredentialsProvider
 {
     private static readonly IStatusLogger _statusLogger = new NullStatusLogger();
     private PwDatabase _database;
 
-    public KeePassCredentialsProvider(string databasePath, string masterPassword)
+    public KeePassCredentialsProvider(KeePassCredentialsProviderConfiguration configuration)
     {
-        _database = !File.Exists(databasePath)
-                        ? CreateDatabase(databasePath, masterPassword)
-                        : OpenDatabase(databasePath, masterPassword);
+        _database = !File.Exists(configuration.DatabasePath)
+                        ? CreateDatabase(configuration.DatabasePath, configuration.MasterPassword)
+                        : OpenDatabase(configuration.DatabasePath, configuration.MasterPassword);
     }
 
     public static bool CanLogin(string databasePath, string password)

@@ -1,5 +1,5 @@
-﻿using BackupHelper.Abstractions;
-using BackupHelper.Api;
+﻿using BackupHelper.Api;
+using BackupHelper.Core;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -64,17 +64,21 @@ public abstract class TestsBase
         Directory.Delete(TestsDirectoryRootPath, true);
     }
 
-    protected virtual void OverrideServices(IServiceCollection services, IConfiguration configuration)
-    {
-    }
+    protected virtual void OverrideServices(IServiceCollection services, IConfiguration configuration) { }
+
+    protected virtual void AddCredentials(TestCredentialsProvider credentialsProvider, IConfiguration configuration) { }
 
     private ServiceProvider CreateServiceProvider(IConfiguration configuration)
     {
+        var credentialsProviderFactory = new TestCredentialsProviderFactory();
         var serviceCollection = new ServiceCollection()
-                                .AddApiServices(configuration, new TestCredentialsProvider())
+                                .AddCoreServices(configuration)
+                                .AddApiServices(configuration)
+                                .AddSingleton<ICredentialsProviderFactory>(credentialsProviderFactory)
                                 .AddLogging(builder => builder.AddProvider(NullLoggerProvider.Instance));
 
         OverrideServices(serviceCollection, configuration);
+        AddCredentials(credentialsProviderFactory.TestCredentialsProvider, configuration);
 
         return serviceCollection.BuildServiceProvider();
     }

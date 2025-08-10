@@ -1,5 +1,9 @@
 ﻿using BackupHelper.Abstractions;
 
+namespace BackupHelper.Core.Credentials;
+
+public record NullCredentialsProviderConfiguration : ICredentialsProviderConfiguration;
+
 public class NullCredentialsProvider : ICredentialsProvider
 {
     public (string Username, string Password) GetCredential(string credentialName)

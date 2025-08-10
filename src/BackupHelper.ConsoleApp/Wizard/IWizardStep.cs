@@ -1,19 +1,10 @@
-﻿namespace BackupHelper.ConsoleApp.Wizard;
+﻿using MediatR;
 
-public interface IWizardStep
+namespace BackupHelper.ConsoleApp.Wizard;
+
+public interface IWizardParameters : IRequest<IWizardParameters?>;
+
+public interface IWizardStep<TParameters> : IRequestHandler<TParameters, IWizardParameters?>
+    where TParameters : IWizardParameters
 {
-    Task<IWizardStep?> Execute();
-}
-
-public abstract class WizardStepBase<T> : IWizardStep
-    where T : class
-{
-    protected WizardStepBase(T parameters)
-    {
-        Parameters = parameters;
-    }
-
-    protected T Parameters { get; }
-
-    public abstract Task<IWizardStep?> Execute();
 }

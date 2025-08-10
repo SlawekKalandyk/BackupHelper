@@ -1,8 +1,5 @@
-﻿using System.Runtime.CompilerServices;
-using BackupHelper.Abstractions;
-using BackupHelper.Tests.Shared;
+﻿using BackupHelper.Tests.Shared;
 using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.DependencyInjection;
 
 namespace BackupHelper.Sources.SMB.Tests;
 
@@ -11,18 +8,15 @@ public abstract class SMBTestsBase : TestsBase
 {
     protected SMBTestConfigurationProvider SMBTestConfigurationProvider { get; private set; }
 
-    protected override void OverrideServices(IServiceCollection services, IConfiguration configuration)
+    protected override void AddCredentials(TestCredentialsProvider credentialsProvider, IConfiguration configuration)
     {
-        base.OverrideServices(services, configuration);
+        base.AddCredentials(credentialsProvider, configuration);
 
         SMBTestConfigurationProvider = new SMBTestConfigurationProvider(configuration);
-
-        var credentialsProvider = new TestCredentialsProvider();
         credentialsProvider.SetCredential(
             SMBTestConfigurationProvider.SharePath,
             SMBTestConfigurationProvider.Username,
             SMBTestConfigurationProvider.Password);
-        services.AddSingleton<ICredentialsProvider>(credentialsProvider);
     }
 
     [SetUp]

@@ -1,14 +1,13 @@
 ﻿namespace BackupHelper.ConsoleApp.Wizard;
 
-public class ExitStep : WizardStepBase<ExitStepParameters>
-{
-    public ExitStep(ExitStepParameters parameters) : base(parameters) { }
+public record ExitStepParameters : IWizardParameters;
 
-    public override Task<IWizardStep?> Execute()
+public class ExitStep : IWizardStep<ExitStepParameters>
+{
+    public Task<IWizardParameters?> Handle(ExitStepParameters parameters, CancellationToken cancellationToken)
     {
         Console.WriteLine("Exiting the application. Goodbye!");
-        return null;
+
+        return Task.FromResult<IWizardParameters?>(null);
     }
 }
-
-public class ExitStepParameters { }
