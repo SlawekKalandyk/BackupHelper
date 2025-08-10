@@ -9,7 +9,7 @@ namespace BackupHelper.Core.Credentials;
 
 public class KeePassCredentialsProvider : ICredentialsProvider
 {
-    private readonly IStatusLogger _statusLogger = new NullStatusLogger();
+    private static readonly IStatusLogger _statusLogger = new NullStatusLogger();
     private PwDatabase _database;
 
     public KeePassCredentialsProvider(string databasePath, string masterPassword)
@@ -17,6 +17,30 @@ public class KeePassCredentialsProvider : ICredentialsProvider
         _database = !File.Exists(databasePath)
                         ? CreateDatabase(databasePath, masterPassword)
                         : OpenDatabase(databasePath, masterPassword);
+    }
+
+    public static bool CanLogin(string databasePath, string password)
+    {
+        if (!File.Exists(databasePath))
+            return false;
+
+        var database = new PwDatabase();
+        var compositeKey = new CompositeKey();
+        compositeKey.AddUserKey(new KcpPassword(password));
+
+        try
+        {
+            database.Open(new IOConnectionInfo() { Path = databasePath }, compositeKey, _statusLogger);
+            return database.IsOpen;
+        }
+        catch
+        {
+            return false;
+        }
+        finally
+        {
+            database?.Close();
+        }
     }
 
     public (string Username, string Password) GetCredential(string credentialName)
@@ -58,7 +82,7 @@ public class KeePassCredentialsProvider : ICredentialsProvider
         return database;
     }
 
-    private PwDatabase OpenDatabase(string databasePath, string masterPassword)
+    private static PwDatabase OpenDatabase(string databasePath, string masterPassword)
     {
         var database = new PwDatabase();
         var compositeKey = new CompositeKey();

@@ -1,5 +1,4 @@
-﻿using System.Reflection;
-using BackupHelper.Abstractions;
+﻿using BackupHelper.Abstractions;
 using BackupHelper.Core.BackupZipping;
 using BackupHelper.Core.FileZipping;
 using BackupHelper.Core.Sources;
@@ -17,7 +16,6 @@ public static class ConfigureServices
 {
     public static IServiceCollection AddCoreServices(this IServiceCollection services, IConfiguration configuration)
     {
-        services.AddMediatR(serviceConfiguration => serviceConfiguration.RegisterServicesFromAssembly(Assembly.GetExecutingAssembly()));
         services.AddSources();
         services.AddSingleton<IDateTimeProvider, DateTimeProvider>();
         services.AddSingleton<IBackupPlanZipper, BackupPlanZipper>();

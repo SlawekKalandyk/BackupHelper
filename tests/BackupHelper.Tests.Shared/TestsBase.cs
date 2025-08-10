@@ -1,5 +1,5 @@
 ﻿using BackupHelper.Abstractions;
-using BackupHelper.Core;
+using BackupHelper.Api;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -71,8 +71,7 @@ public abstract class TestsBase
     private ServiceProvider CreateServiceProvider(IConfiguration configuration)
     {
         var serviceCollection = new ServiceCollection()
-                                .AddCoreServices(configuration)
-                                .AddSingleton<ICredentialsProvider>(new TestCredentialsProvider())
+                                .AddApiServices(configuration, new TestCredentialsProvider())
                                 .AddLogging(builder => builder.AddProvider(NullLoggerProvider.Instance));
 
         OverrideServices(serviceCollection, configuration);

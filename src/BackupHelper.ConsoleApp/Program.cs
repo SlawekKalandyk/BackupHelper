@@ -1,5 +1,7 @@
-﻿using BackupHelper.Core;
+﻿using BackupHelper.Api;
+using BackupHelper.ConsoleApp.Wizard;
 using BackupHelper.Core.BackupZipping;
+using BackupHelper.Core.Credentials;
 using BackupHelper.Core.Features;
 using MediatR;
 using Microsoft.Extensions.Configuration;
@@ -16,79 +18,43 @@ internal class Program
     {
         //first arg - save paths separated by semicolon, e.g. "C:\Users\user\Documents;C:\Users\user\Pictures"
         //second arg - path to backup configuration file, e.g. "C:\Users\user\Documents\backup.json"
+        //third arg - path to KeePass database file, e.g. "C:\Users\user\Documents\credentials.kdbx"
 
-        if (args.Length != 2 || string.IsNullOrEmpty(args[0]) || string.IsNullOrEmpty(args[1]))
+        // if (args.Length != 3 || args.Any(string.IsNullOrWhiteSpace))
+        // {
+        //     throw new ArgumentException();
+        // }
+        //
+        // var savePath = args[0];
+        // var backupPlanFilePath = args[1];
+        // var credentialsDatabaseFilePath = args[2];
+        // var backupPlan = BackupPlan.FromJsonFile(backupPlanFilePath);
+        //
+        // var configuration = new ConfigurationBuilder()
+        //                     .AddCommandLine(args)
+        //                     .Build();
+        // var credentialsDatabasePassword = "test";//ConsoleHelper.PromptCredentialsDatabasePassword();
+        // var keepassCredentialsProvider = new KeePassCredentialsProvider(credentialsDatabaseFilePath, credentialsDatabasePassword);
+        // var serviceCollection = new ServiceCollection()
+        //     .AddApiServices(configuration, keepassCredentialsProvider);
+        //
+        // if (!string.IsNullOrEmpty(backupPlan.LogDirectory))
+        // {
+        //     Directory.CreateDirectory(backupPlan.LogDirectory);
+        //     serviceCollection.AddLogging(backupPlan.LogDirectory);
+        // }
+        //
+        // var services = serviceCollection.BuildServiceProvider();
+        // var mediator = services.GetRequiredService<IMediator>();
+        // await mediator.Send(new AddSMBCredentialCommand("192.168.0.105", "Public", "backup", "aWYhl5CaV3xtr4Zvhr0u"));
+        // await mediator.Send(new CreateBackupCommand(backupPlan, BackupSavePathHelper.GetBackupSavePath(savePath), "test"));
+
+        IWizardStep? step = new MainMenuStep(new());
+
+        do
         {
-            throw new ArgumentException();
-        }
-
-        var splitSavePaths = args[0].Split(';');
-        var backupPlanFilePath = args[1];
-        var backupPlan = BackupPlan.FromJsonFile(backupPlanFilePath);
-
-        var configuration = new ConfigurationBuilder()
-                            .AddCommandLine(args)
-                            .Build();
-        var serviceCollection = new ServiceCollection()
-            .AddCoreServices(configuration);
-
-        if (!string.IsNullOrEmpty(backupPlan.LogDirectory))
-        {
-            Directory.CreateDirectory(backupPlan.LogDirectory);
-            serviceCollection.AddLogging(backupPlan.LogDirectory);
-        }
-
-        var services = serviceCollection.BuildServiceProvider();
-        var mediator = services.GetRequiredService<IMediator>();
-        var savePaths = splitSavePaths.Select(GetBackupSavePath).ToArray();
-        await mediator.Send(new CreateBackupCommand(backupPlan, savePaths));
-    }
-
-    private static string GetBackupSavePath(string argPath)
-    {
-        if (File.Exists(argPath))
-        {
-            return argPath;
-        }
-
-        if (Directory.Exists(argPath))
-        {
-            return Path.Combine(argPath, CreateDateTimeBasedZipFileName());
-        }
-
-        if (Path.HasExtension(argPath))
-        {
-            var directories = Path.GetDirectoryName(argPath);
-
-            if (string.IsNullOrEmpty(directories))
-            {
-                return argPath;
-            }
-
-            Directory.CreateDirectory(directories);
-
-            return argPath;
-        }
-
-        Directory.CreateDirectory(argPath);
-
-        return Path.Combine(argPath, CreateDateTimeBasedZipFileName());
-    }
-
-    private static string CreateDateTimeBasedZipFileName()
-    {
-        var time = DateTime.Now;
-        var baseFileName = $"{time:yyyy-MM-dd_HH-mm-ss}_backup";
-        var fileName = $"{baseFileName}.zip";
-        var i = 1;
-
-        while (File.Exists(fileName))
-        {
-            fileName = baseFileName + $".{i}.zip";
-            ++i;
-        }
-
-        return fileName;
+            step = await step.Execute();
+        } while (step is not (null or ExitStep));
     }
 }
 
