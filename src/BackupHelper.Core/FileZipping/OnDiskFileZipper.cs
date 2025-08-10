@@ -28,6 +28,7 @@ public class OnDiskFileZipper : FileZipperBase
     private readonly ISourceManager _sourceManager;
     private readonly FileStream _zipFileStream;
     private readonly ZipOutputStream _zipOutputStream;
+    private readonly bool _encrypt;
 
     public OnDiskFileZipper(ILogger<OnDiskFileZipper> logger,
                             ISourceManager sourceManager,
@@ -46,11 +47,14 @@ public class OnDiskFileZipper : FileZipperBase
         if (!string.IsNullOrEmpty(password))
         {
             _zipOutputStream.Password = password;
+            _encrypt = true;
         }
+
         _zipOutputStream.SetLevel(9); // Maximum compression
     }
 
     public override bool HasToBeSaved => false;
+    public override bool CanEncryptHeaders => false;
 
     public override void AddFile(string filePath, string zipPath = "")
     {
@@ -60,7 +64,10 @@ public class OnDiskFileZipper : FileZipperBase
         try
         {
         #endif
-            var entry = new ZipEntry(newZipPath);
+            var entry = new ZipEntry(newZipPath)
+            {
+                AESKeySize = _encrypt ? 256 : 0
+            };
             var lastWriteTime = _sourceManager.GetFileLastWriteTime(filePath);
 
             if (lastWriteTime.HasValue)
@@ -86,7 +93,10 @@ public class OnDiskFileZipper : FileZipperBase
     {
         var newZipPath = Path.Combine(zipPath, PathHelper.GetName(directoryPath)).Replace('\\', '/') + '/';
 
-        var entry = new ZipEntry(newZipPath);
+        var entry = new ZipEntry(newZipPath)
+        {
+            AESKeySize = _encrypt ? 256 : 0
+        };
         var lastWriteTime = _sourceManager.GetDirectoryLastWriteTime(directoryPath);
 
         if (lastWriteTime.HasValue)
@@ -114,11 +124,6 @@ public class OnDiskFileZipper : FileZipperBase
         {
             AddFile(filePath, zipPath);
         }
-    }
-
-    public override void Save()
-    {
-        throw new NotSupportedException();
     }
 
     public override void Dispose()

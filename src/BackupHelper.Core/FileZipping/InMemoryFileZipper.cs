@@ -28,6 +28,7 @@ public class InMemoryFileZipper : FileZipperBase
     private readonly ISourceManager _sourceManager;
     private readonly MemoryStream _zipMemoryStream;
     private readonly ZipOutputStream _zipOutputStream;
+    private readonly bool _encrypt;
 
     public InMemoryFileZipper(ILogger<InMemoryFileZipper> logger,
                               ISourceManager sourceManager,
@@ -44,11 +45,16 @@ public class InMemoryFileZipper : FileZipperBase
         if (!string.IsNullOrEmpty(password))
         {
             _zipOutputStream.Password = password;
+            _encrypt = true;
         }
+
         _zipOutputStream.SetLevel(9); // Maximum compression
     }
 
-    public override void Save()
+    public override bool HasToBeSaved => true;
+    public override bool CanEncryptHeaders => false;
+
+    protected override void SaveCore()
     {
         if (OverwriteFileIfExists && File.Exists(ZipFilePath))
         {
@@ -62,8 +68,6 @@ public class InMemoryFileZipper : FileZipperBase
         _zipMemoryStream.CopyTo(fileStream);
     }
 
-    public override bool HasToBeSaved => true;
-
     public override void AddFile(string filePath, string zipPath = "")
     {
         var newZipPath = Path.Combine(zipPath, PathHelper.GetName(filePath)).Replace('\\', '/');
@@ -71,7 +75,8 @@ public class InMemoryFileZipper : FileZipperBase
         {
             var entry = new ZipEntry(newZipPath)
             {
-                DateTime = File.GetLastWriteTime(filePath)
+                DateTime = File.GetLastWriteTime(filePath),
+                AESKeySize = _encrypt ? 256 : 0
             };
             _zipOutputStream.PutNextEntry(entry);
 
@@ -91,7 +96,8 @@ public class InMemoryFileZipper : FileZipperBase
 
         var entry = new ZipEntry(newZipPath)
         {
-            DateTime = Directory.GetLastWriteTime(directoryPath)
+            DateTime = Directory.GetLastWriteTime(directoryPath),
+            AESKeySize = _encrypt ? 256 : 0
         };
         _zipOutputStream.PutNextEntry(entry);
         _zipOutputStream.CloseEntry();

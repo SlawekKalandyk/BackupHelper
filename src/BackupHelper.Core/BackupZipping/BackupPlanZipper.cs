@@ -2,6 +2,7 @@ using BackupHelper.Abstractions;
 using BackupHelper.Core.FileZipping;
 using BackupHelper.Core.Sources;
 using BackupHelper.Core.Utilities;
+using ICSharpCode.SharpZipLib.Zip;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 
@@ -23,20 +24,36 @@ public class BackupPlanZipper : IBackupPlanZipper
     public void CreateZipFile(BackupPlan plan, string outputPath, string? password = null)
     {
         _logger.LogInformation("Creating backup file at {OutputPath}", outputPath);
+        var fileZipperCanEncryptHeaders = false;
 
         using var scope = _serviceScopeFactory.CreateScope();
         var fileZipperFactory = scope.ServiceProvider.GetRequiredService<IFileZipperFactory>();
-        using var fileZipper = fileZipperFactory.Create(outputPath, overwriteFileIfExists: true, password);
 
-        foreach (var entry in plan.Items)
+        using (var fileZipper = fileZipperFactory.Create(outputPath, overwriteFileIfExists: true, password))
         {
-            AddEntryToZip(fileZipper, entry, string.Empty);
+            if (fileZipper.CanEncryptHeaders)
+            {
+                fileZipper.EncryptHeaders = plan.EncryptHeaders;
+            }
+
+            foreach (var entry in plan.Items)
+            {
+                AddEntryToZip(fileZipper, entry, string.Empty);
+            }
+
+            if (fileZipper.HasToBeSaved)
+            {
+                _logger.LogInformation("Saving zip to {OutputPath}", outputPath);
+                fileZipper.Save();
+            }
+
+            fileZipperCanEncryptHeaders = fileZipper.CanEncryptHeaders;
         }
 
-        if (fileZipper.HasToBeSaved)
+        if (!string.IsNullOrWhiteSpace(password) && plan.EncryptHeaders && !fileZipperCanEncryptHeaders)
         {
-            _logger.LogInformation("Saving zip to {OutputPath}", outputPath);
-            fileZipper.Save();
+            _logger.LogInformation("Used file zipper doesn't encrypt headers by default. Fallback to encryption by double zipping");
+            EncryptZipFile(outputPath, password);
         }
     }
 
@@ -93,5 +110,26 @@ public class BackupPlanZipper : IBackupPlanZipper
         {
             AddEntryToZip(zipper, subEntry, newZipPath);
         }
+    }
+
+    private void EncryptZipFile(string zipPath, string password)
+    {
+        var extension = Path.GetExtension(zipPath);
+        var pathWithoutExtension = Path.GetFileNameWithoutExtension(zipPath);
+        var innerZipName = pathWithoutExtension + ".inner" + extension;
+        var directory = Path.GetDirectoryName(zipPath) ?? throw new InvalidOperationException("Zip file path does not have a valid directory.");
+        var innerZipPath = Path.Combine(directory, innerZipName);
+
+        File.Move(zipPath, innerZipPath, true);
+
+        var fastZip = new FastZip()
+        {
+            Password = password,
+            CreateEmptyDirectories = true,
+            EntryEncryptionMethod = ZipEncryptionMethod.AES256
+        };
+        fastZip.CreateZip(zipPath, directory, false, innerZipName);
+
+        File.Delete(innerZipPath);
     }
 }
