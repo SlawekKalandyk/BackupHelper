@@ -1,10 +1,9 @@
-﻿using System.ComponentModel.DataAnnotations;
+﻿using BackupHelper.Api.Features.BackupProfiles;
 using BackupHelper.ConsoleApp.Utilities;
-using BackupHelper.Core.Features;
 using MediatR;
 using Sharprompt;
 
-namespace BackupHelper.ConsoleApp.Wizard;
+namespace BackupHelper.ConsoleApp.Wizard.BackupProfiles;
 
 public record CreateBackupProfileStepParameters : IWizardParameters;
 
@@ -33,8 +32,7 @@ public class CreateBackupProfileStep : IWizardStep<CreateBackupProfileStepParame
             cancellationToken);
 
         Console.WriteLine("Backup profile created successfully!");
-        var createAnother = Prompt.Confirm("Do you want to create another backup profile?");
 
-        return createAnother ? new CreateBackupProfileStepParameters() : new MainMenuStepParameters();
+        return new ManageBackupProfilesStepParameters();
     }
 }

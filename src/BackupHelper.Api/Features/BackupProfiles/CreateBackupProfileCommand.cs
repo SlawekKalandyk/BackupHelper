@@ -1,9 +1,8 @@
 ﻿using BackupHelper.Abstractions;
-using BackupHelper.Api;
 using MediatR;
 using Newtonsoft.Json;
 
-namespace BackupHelper.Core.Features;
+namespace BackupHelper.Api.Features.BackupProfiles;
 
 public record CreateBackupProfileCommand(string Name, string BackupPlanLocation, string BackupDirectory, string KeePassDbLocation)
     : IRequest<CreateBackupProfileCommandResult>;
@@ -34,7 +33,7 @@ public class CreateBackupProfileCommandHandler : IRequestHandler<CreateBackupPro
             request.BackupDirectory,
             request.KeePassDbLocation);
 
-        File.WriteAllText(backupProfilePath, JsonConvert.SerializeObject(backupProfile));
+        File.WriteAllText(backupProfilePath, JsonConvert.SerializeObject(backupProfile, Formatting.Indented));
 
         return Task.FromResult(new CreateBackupProfileCommandResult());
     }

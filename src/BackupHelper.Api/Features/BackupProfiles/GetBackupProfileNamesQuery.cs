@@ -1,7 +1,7 @@
 ﻿using BackupHelper.Abstractions;
 using MediatR;
 
-namespace BackupHelper.Core.Features;
+namespace BackupHelper.Api.Features.BackupProfiles;
 
 public record GetBackupProfileNamesQuery : IRequest<IReadOnlyList<string>>;
 

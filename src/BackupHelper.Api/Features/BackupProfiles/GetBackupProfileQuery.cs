@@ -1,9 +1,8 @@
 ﻿using BackupHelper.Abstractions;
-using BackupHelper.Api;
 using MediatR;
 using Newtonsoft.Json;
 
-namespace BackupHelper.Core.Features;
+namespace BackupHelper.Api.Features.BackupProfiles;
 
 public record GetBackupProfileQuery(string Name) : IRequest<BackupProfile?>;
 
@@ -20,6 +19,12 @@ public class GetBackupProfileQueryHandler : IRequestHandler<GetBackupProfileQuer
     {
         var backupProfilesPath = _applicationDataHandler.GetBackupProfilesPath();
         var backupProfileFilePath = Path.Combine(backupProfilesPath, request.Name);
+
+        if (!File.Exists(backupProfileFilePath))
+        {
+            return Task.FromResult<BackupProfile?>(null);
+        }
+
         var backupProfileJson = File.ReadAllText(backupProfileFilePath);
         var backupProfile = JsonConvert.DeserializeObject<BackupProfile>(backupProfileJson);
 
