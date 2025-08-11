@@ -1,4 +1,5 @@
-﻿using Sharprompt;
+﻿using BackupHelper.ConsoleApp.Wizard.BackupProfiles;
+using Sharprompt;
 
 namespace BackupHelper.ConsoleApp.Wizard;
 
@@ -12,6 +13,7 @@ public class MainMenuStep : IWizardStep<MainMenuStepParameters>
             "Main Menu",
             [
                 "Create backup",
+                "Manage backup profiles",
                 "Add SMB credential",
                 "Exit"
             ]);
@@ -20,6 +22,7 @@ public class MainMenuStep : IWizardStep<MainMenuStepParameters>
             choice switch
             {
                 "Create backup" => new CreateBackupStepParameters(),
+                "Manage backup profiles" => new ManageBackupProfilesStepParameters(),
                 "Add SMB credential" => new AddSmbCredentialStepParameters(),
                 "Exit" => null,
                 _ => throw new ArgumentOutOfRangeException(nameof(choice), $"Invalid choice: {choice}")

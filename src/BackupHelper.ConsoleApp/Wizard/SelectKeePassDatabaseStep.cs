@@ -3,7 +3,7 @@ using Sharprompt;
 
 namespace BackupHelper.ConsoleApp.Wizard;
 
-public record SelectKeePassDatabaseStepParameters(string BackupPlanLocation, string OutputZipPath) : IWizardParameters;
+public record SelectKeePassDatabaseStepParameters(string BackupPlanLocation, string OutputZipPath, string? KeePassDbLocation = null) : IWizardParameters;
 
 public class SelectKeePassDatabaseStep : IWizardStep<SelectKeePassDatabaseStepParameters>
 {
@@ -16,14 +16,19 @@ public class SelectKeePassDatabaseStep : IWizardStep<SelectKeePassDatabaseStepPa
 
     public Task<IWizardParameters?> Handle(SelectKeePassDatabaseStepParameters parameters, CancellationToken cancellationToken)
     {
-        var selectKeePassDb = Prompt.Confirm("Do you want to select an existing KeePass DB?");
+        var keePassDbLocation = parameters.KeePassDbLocation;
 
-        if (!selectKeePassDb)
+        if (string.IsNullOrEmpty(parameters.KeePassDbLocation))
         {
-            return Task.FromResult<IWizardParameters?>(new PerformBackupStepParameters(parameters.BackupPlanLocation, parameters.OutputZipPath));
-        }
+            var selectKeePassDb = Prompt.Confirm("Do you want to select an existing KeePass DB?");
 
-        var keePassDbLocation = Prompt.Input<string>("Enter KeePass DB location", validators: [Validators.Required()]);
+            if (!selectKeePassDb)
+            {
+                return Task.FromResult<IWizardParameters?>(new PerformBackupStepParameters(parameters.BackupPlanLocation, parameters.OutputZipPath));
+            }
+
+            keePassDbLocation = Prompt.Input<string>("Enter KeePass DB location", validators: [Validators.Required()]);
+        }
 
         if (File.Exists(keePassDbLocation))
         {
