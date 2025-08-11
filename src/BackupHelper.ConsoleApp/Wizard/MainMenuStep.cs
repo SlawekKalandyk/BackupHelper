@@ -12,6 +12,7 @@ public class MainMenuStep : IWizardStep<MainMenuStepParameters>
             "Main Menu",
             [
                 "Create backup",
+                "Create backup profile",
                 "Add SMB credential",
                 "Exit"
             ]);
@@ -20,6 +21,7 @@ public class MainMenuStep : IWizardStep<MainMenuStepParameters>
             choice switch
             {
                 "Create backup" => new CreateBackupStepParameters(),
+                "Create backup profile" => new CreateBackupProfileStepParameters(),
                 "Add SMB credential" => new AddSmbCredentialStepParameters(),
                 "Exit" => null,
                 _ => throw new ArgumentOutOfRangeException(nameof(choice), $"Invalid choice: {choice}")

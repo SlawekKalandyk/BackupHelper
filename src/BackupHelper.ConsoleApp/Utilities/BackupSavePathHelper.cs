@@ -1,4 +1,4 @@
-﻿namespace BackupHelper.ConsoleApp;
+﻿namespace BackupHelper.ConsoleApp.Utilities;
 
 public class BackupSavePathHelper
 {
