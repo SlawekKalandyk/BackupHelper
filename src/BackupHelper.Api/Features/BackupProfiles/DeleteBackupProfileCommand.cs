@@ -3,7 +3,7 @@ using MediatR;
 
 namespace BackupHelper.Api.Features.BackupProfiles;
 
-public record DeleteBackupProfileCommand(string ProfileName) : IRequest;
+public record DeleteBackupProfileCommand(string BackupProfileName) : IRequest;
 
 public class DeleteBackupProfileCommandHandler : IRequestHandler<DeleteBackupProfileCommand>
 {
@@ -17,7 +17,7 @@ public class DeleteBackupProfileCommandHandler : IRequestHandler<DeleteBackupPro
     public Task Handle(DeleteBackupProfileCommand request, CancellationToken cancellationToken)
     {
         var backupProfilesPath = _applicationDataHandler.GetBackupProfilesPath();
-        var profileFilePath = Path.Combine(backupProfilesPath, request.ProfileName);
+        var profileFilePath = Path.Combine(backupProfilesPath, request.BackupProfileName);
 
         if (File.Exists(profileFilePath))
         {
