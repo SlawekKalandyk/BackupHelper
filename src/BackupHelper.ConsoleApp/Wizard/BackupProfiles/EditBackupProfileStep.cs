@@ -60,10 +60,7 @@ public class EditBackupProfileStep : IWizardStep<EditBackupProfileStepParameters
         }
         else if (editedProperty == "Show Backup Profile Info")
         {
-            Console.WriteLine($"Backup Profile Name: {backupProfile.Name}");
-            Console.WriteLine($"Backup Plan Location: {backupProfile.BackupPlanLocation}");
-            Console.WriteLine($"Backup Directory: {backupProfile.BackupDirectory}");
-            Console.WriteLine($"KeePass Database Location: {backupProfile.KeePassDbLocation}");
+            await _mediator.Send(new ShowBackupProfileInfoStepParameters(backupProfile), cancellationToken);
             return new EditBackupProfileStepParameters(backupProfile.Name);
         }
         else if (editedProperty == "Name")

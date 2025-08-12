@@ -22,7 +22,7 @@ public class ManageBackupProfilesStep : IWizardStep<ManageBackupProfilesStepPara
             choice switch
             {
                 "Create new backup profile" => new CreateBackupProfileStepParameters(),
-                "Show backup profile info" => new GetBackupProfileInfoStepParameters(),
+                "Show backup profile info" => new ShowBackupProfileInfoStepParameters(),
                 "Edit existing backup profile" => new EditBackupProfileStepParameters(),
                 "Delete backup profile" => new DeleteBackupProfileStepParameters(),
                 "Back to main menu" => new MainMenuStepParameters(),
