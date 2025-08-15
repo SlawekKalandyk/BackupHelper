@@ -4,4 +4,5 @@ public interface IApplicationDataHandler
 {
     string GetApplicationDataPath();
     string GetBackupProfilesPath();
+    string GetCredentialProfilesPath();
 }
