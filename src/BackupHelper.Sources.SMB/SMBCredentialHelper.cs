@@ -1,6 +1,6 @@
-﻿namespace BackupHelper.Api.Features.Credentials;
+﻿namespace BackupHelper.Sources.SMB;
 
-public static class CredentialHelper
+public static class SMBCredentialHelper
 {
     public static string GetSMBCredentialTitle(string server, string shareName)
     {
