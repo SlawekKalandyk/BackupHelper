@@ -31,7 +31,7 @@ public class UpdateSMBCredentialCommandHandler : IRequestHandler<UpdateSMBCreden
                 $"Existing: '{existingTitle}', New: '{newTitle}'.");
         }
 
-        var credentialsProvider = _credentialsProviderFactory.Create(request.CredentialsProviderConfiguration);
+        using var credentialsProvider = _credentialsProviderFactory.Create(request.CredentialsProviderConfiguration);
         var credentials = credentialsProvider.GetCredentials();
         var credential = credentials.FirstOrDefault(c => c.Title == newTitle);
 

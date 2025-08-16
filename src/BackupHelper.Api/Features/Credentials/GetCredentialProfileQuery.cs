@@ -31,7 +31,7 @@ public class GetCredentialProfileQueryHandler : IRequestHandler<GetCredentialPro
         var keePassCredentialsProviderConfiguration = new KeePassCredentialsProviderConfiguration(
             credentialProfileFilePath,
             request.Password);
-        var credentialsProvider = _credentialsProviderFactory.Create(keePassCredentialsProviderConfiguration);
+        using var credentialsProvider = _credentialsProviderFactory.Create(keePassCredentialsProviderConfiguration);
         var credentials = credentialsProvider.GetCredentials();
         var credentialProfile = new CredentialProfile(request.Name, credentials);
 

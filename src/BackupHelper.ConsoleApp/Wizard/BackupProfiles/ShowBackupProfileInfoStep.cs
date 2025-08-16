@@ -18,9 +18,9 @@ public class ShowBackupProfileInfoStep : IWizardStep<ShowBackupProfileInfoStepPa
     public async Task<IWizardParameters?> Handle(ShowBackupProfileInfoStepParameters request, CancellationToken cancellationToken)
     {
         var backupProfile = request.BackupProfile;
+
         if (backupProfile == null)
         {
-
             var backupProfileNames = await _mediator.Send(new GetBackupProfileNamesQuery(), cancellationToken);
 
             if (backupProfileNames.Count == 0)
