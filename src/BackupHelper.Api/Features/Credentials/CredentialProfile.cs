@@ -2,4 +2,4 @@
 
 namespace BackupHelper.Api.Features.Credentials;
 
-public record CredentialProfile(string Name, IReadOnlyCollection<CredentialEntry> Credentials);
+public record CredentialProfile(string Name, string Password, IReadOnlyCollection<CredentialEntry> Credentials);

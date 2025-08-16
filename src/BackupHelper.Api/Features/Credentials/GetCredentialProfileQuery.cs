@@ -33,7 +33,7 @@ public class GetCredentialProfileQueryHandler : IRequestHandler<GetCredentialPro
             request.Password);
         using var credentialsProvider = _credentialsProviderFactory.Create(keePassCredentialsProviderConfiguration);
         var credentials = credentialsProvider.GetCredentials();
-        var credentialProfile = new CredentialProfile(request.Name, credentials);
+        var credentialProfile = new CredentialProfile(request.Name, request.Password, credentials);
 
         return Task.FromResult<CredentialProfile?>(credentialProfile);
     }

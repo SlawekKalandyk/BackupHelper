@@ -19,6 +19,11 @@ public class NullCredentialsProvider : ICredentialsProvider
         // No operation for null provider
     }
 
+    public void DeleteCredential(string credentialName)
+    {
+        // No operation for null provider
+    }
+
     public IReadOnlyCollection<CredentialEntry> GetCredentials()
         => [];
 

@@ -93,6 +93,17 @@ public class KeePassCredentialsProvider : ICredentialsProvider
         _database.Save(_statusLogger);
     }
 
+    public void DeleteCredential(string credentialName)
+    {
+        var existingEntry = _database.RootGroup.Entries.SingleOrDefault(entry => entry.Strings.ReadSafe(PwDefs.TitleField) == credentialName);
+
+        if (existingEntry == null)
+            throw new CredentialNotFound(credentialName);
+
+        _database.RootGroup.Entries.Remove(existingEntry);
+        _database.Save(_statusLogger);
+    }
+
     public IReadOnlyCollection<CredentialEntry> GetCredentials()
     {
         var entries = _database.RootGroup.Entries;

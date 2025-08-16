@@ -41,11 +41,6 @@ public class UpdateSMBCredentialCommandHandler : IRequestHandler<UpdateSMBCreden
                 $"SMB credential for server '{request.NewCredential.Server}' and share name '{request.NewCredential.ShareName}' not found.");
         }
 
-        if (credential.Password != request.ExistingCredential.Password)
-        {
-            throw new UnauthorizedAccessException("Current password is incorrect.");
-        }
-
         credentialsProvider.UpdateCredential(request.NewCredential.ToCredentialEntry());
 
         return Task.CompletedTask;

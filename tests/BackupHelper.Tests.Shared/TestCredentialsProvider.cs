@@ -38,6 +38,11 @@ public class TestCredentialsProvider : ICredentialsProvider
         _credentials[credentialEntry.Title] = credentialEntry;
     }
 
+    public void DeleteCredential(string credentialName)
+    {
+        _credentials.Remove(credentialName);
+    }
+
     public IReadOnlyCollection<CredentialEntry> GetCredentials()
         => _credentials
             .Select(kvp => kvp.Value with { Title = kvp.Key })
