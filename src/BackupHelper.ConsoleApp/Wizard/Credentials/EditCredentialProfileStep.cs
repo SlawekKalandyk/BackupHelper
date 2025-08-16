@@ -52,6 +52,7 @@ public class EditCredentialProfileStep : IWizardStep<EditCredentialProfileStepPa
             "Select property to edit",
             [
                 "Name",
+                "Add Credential",
                 "Edit Credential",
                 "Delete Credential",
                 "Cancel"
@@ -78,6 +79,11 @@ public class EditCredentialProfileStep : IWizardStep<EditCredentialProfileStepPa
             Console.WriteLine("Credential profile name updated successfully!");
 
             return new ManageCredentialProfilesStepParameters();
+        }
+
+        if (choice == "Add Credential")
+        {
+            return new AddSmbCredentialStepParameters(credentialProfile);
         }
 
         if (choice == "Edit Credential")
