@@ -25,10 +25,11 @@ public class BackupPlanZipperTests : ZipTestsBase
         base.AddCredentials(credentialsProvider, configuration);
         _smbTestConfigurationProvider = new SMBTestConfigurationProvider(configuration);
 
-        credentialsProvider.SetCredential(
+        var credential = new CredentialEntry(
             _smbTestConfigurationProvider.SharePath,
             _smbTestConfigurationProvider.Username,
             _smbTestConfigurationProvider.Password);
+        credentialsProvider.SetCredential(credential);
     }
 
     [SetUp]
@@ -103,7 +104,8 @@ public class BackupPlanZipperTests : ZipTestsBase
                 {
                     FilePath = $@"smb://{_smbTestConfigurationProvider.TestsDirectoryPath}\smb_file1.txt"
                 },
-                new BackupFileEntry{
+                new BackupFileEntry
+                {
                     FilePath = $@"smb://{_smbTestConfigurationProvider.TestsDirectoryPath}\smb_dir1"
                 }
             }
@@ -171,5 +173,4 @@ public class BackupPlanZipperTests : ZipTestsBase
         var expectedDirectory = Path.Combine(UnzippedFilesDirectoryPath, "smb_dir1");
         Assert.That(Directory.Exists(expectedDirectory), $"Expected SMB directory '{expectedDirectory}' to exist after unzip.");
     }
-
 }

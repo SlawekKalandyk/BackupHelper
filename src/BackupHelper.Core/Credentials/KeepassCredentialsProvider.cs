@@ -34,6 +34,7 @@ public class KeePassCredentialsProvider : ICredentialsProvider
         try
         {
             database.Open(new IOConnectionInfo() { Path = databasePath }, compositeKey, _statusLogger);
+
             return database.IsOpen;
         }
         catch
@@ -46,32 +47,62 @@ public class KeePassCredentialsProvider : ICredentialsProvider
         }
     }
 
-    public (string Username, string Password) GetCredential(string credentialName)
+    public CredentialEntry? GetCredential(string credentialName)
     {
         var foundEntry = _database.RootGroup.Entries.SingleOrDefault(entry => entry.Strings.ReadSafe(PwDefs.TitleField) == credentialName);
 
         if (foundEntry == null)
-            return (string.Empty, string.Empty);
+            return null;
 
         var user = foundEntry.Strings.ReadSafe(PwDefs.UserNameField);
         var pass = foundEntry.Strings.ReadSafe(PwDefs.PasswordField);
 
-        return (user, pass);
+        return new CredentialEntry(credentialName, user, pass);
     }
 
-    public void SetCredential(string credentialName, string username, string password)
+    public void SetCredential(CredentialEntry credentialEntry)
     {
-        var existingEntry = _database.RootGroup.Entries.SingleOrDefault(entry => entry.Strings.ReadSafe(PwDefs.TitleField) == credentialName);
+        var existingEntry = _database.RootGroup.Entries.SingleOrDefault(entry => entry.Strings.ReadSafe(PwDefs.TitleField) == credentialEntry.Title);
 
         if (existingEntry != null)
-            throw new CredentialAlreadyExists(credentialName);
+            throw new CredentialAlreadyExists(credentialEntry.Title);
 
         var entry = new PwEntry(true, true);
-        entry.Strings.Set(PwDefs.TitleField, new ProtectedString(false, credentialName));
-        entry.Strings.Set(PwDefs.UserNameField, new ProtectedString(false, username));
-        entry.Strings.Set(PwDefs.PasswordField, new ProtectedString(true, password));
+        entry.Strings.Set(PwDefs.TitleField, new ProtectedString(false, credentialEntry.Title));
+        entry.Strings.Set(PwDefs.UserNameField, new ProtectedString(false, credentialEntry.Username));
+
+        if (!string.IsNullOrWhiteSpace(credentialEntry.Password))
+            entry.Strings.Set(PwDefs.PasswordField, new ProtectedString(true, credentialEntry.Password));
+
         _database.RootGroup.AddEntry(entry, true);
         _database.Save(_statusLogger);
+    }
+
+    public void UpdateCredential(CredentialEntry credentialEntry)
+    {
+        var existingEntry = _database.RootGroup.Entries.SingleOrDefault(entry => entry.Strings.ReadSafe(PwDefs.TitleField) == credentialEntry.Title);
+
+        if (existingEntry == null)
+            throw new CredentialNotFound(credentialEntry.Title);
+
+        existingEntry.Strings.Set(PwDefs.UserNameField, new ProtectedString(false, credentialEntry.Username));
+
+        if (!string.IsNullOrWhiteSpace(credentialEntry.Password))
+            existingEntry.Strings.Set(PwDefs.PasswordField, new ProtectedString(true, credentialEntry.Password));
+
+        _database.Save(_statusLogger);
+    }
+
+    public IReadOnlyCollection<CredentialEntry> GetCredentials()
+    {
+        var entries = _database.RootGroup.Entries;
+
+        return entries.Select(
+                          entry => new CredentialEntry(
+                              entry.Strings.ReadSafe(PwDefs.TitleField),
+                              entry.Strings.ReadSafe(PwDefs.UserNameField),
+                              entry.Strings.ReadSafe(PwDefs.PasswordField)))
+                      .ToList();
     }
 
     private PwDatabase CreateDatabase(string databasePath, string masterPassword)

@@ -20,9 +20,11 @@ public class CreateBackupProfileStep : IWizardStep<CreateBackupProfileStepParame
     {
         var name = Prompt.Input<string>("Enter backup profile name", validators: [Validators.Required()]);
         var profileExists = await _mediator.Send(new CheckBackupProfileExistsQuery(name), cancellationToken);
+
         if (profileExists)
         {
             Console.WriteLine($"Backup profile '{name}' already exists. Please choose a different name.");
+
             return new CreateBackupProfileStepParameters();
         }
 

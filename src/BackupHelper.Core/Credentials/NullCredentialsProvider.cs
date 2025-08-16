@@ -6,15 +6,21 @@ public record NullCredentialsProviderConfiguration : ICredentialsProviderConfigu
 
 public class NullCredentialsProvider : ICredentialsProvider
 {
-    public (string Username, string Password) GetCredential(string credentialName)
-    {
-        return (string.Empty, string.Empty);
-    }
+    public CredentialEntry? GetCredential(string credentialName)
+        => null;
 
-    public void SetCredential(string credentialName, string username, string password)
+    public void SetCredential(CredentialEntry credentialEntry)
     {
         // No operation for null provider
     }
+
+    public void UpdateCredential(CredentialEntry credentialEntry)
+    {
+        // No operation for null provider
+    }
+
+    public IReadOnlyCollection<CredentialEntry> GetCredentials()
+        => [];
 
     public void Dispose()
     {
