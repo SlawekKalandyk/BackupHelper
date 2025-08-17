@@ -78,12 +78,12 @@ public class EditCredentialProfileStep : IWizardStep<EditCredentialProfileStepPa
             await _mediator.Send(new UpdateCredentialProfileNameCommand(credentialProfile, newName), cancellationToken);
             Console.WriteLine("Credential profile name updated successfully!");
 
-            return new ManageCredentialProfilesStepParameters();
+            return new EditCredentialProfileStepParameters(credentialProfile);
         }
 
         if (choice == "Add Credential")
         {
-            return new AddSmbCredentialStepParameters(credentialProfile);
+            return new AddSMBCredentialStepParameters(credentialProfile);
         }
 
         if (choice == "Edit Credential")
@@ -92,18 +92,15 @@ public class EditCredentialProfileStep : IWizardStep<EditCredentialProfileStepPa
             {
                 Console.WriteLine("No credentials available to edit. Please add a credential first.");
 
-                return new ManageCredentialProfilesStepParameters();
+                return new EditCredentialProfileStepParameters(credentialProfile);
             }
 
             var credentialDictionary = credentialProfile.Credentials.ToDictionary(credential => credential.Title, credential => credential);
             var credentialTitle = Prompt.Select("Select a credential to edit", credentialDictionary.Keys, 5);
             var selectedCredential = credentialDictionary[credentialTitle];
             var (server, shareName) = SMBCredentialHelper.DeconstructSMBCredentialTitle(selectedCredential.Title);
-            var credentialsProviderConfiguration = new KeePassCredentialsProviderConfiguration(
-                Path.Combine(_applicationDataHandler.GetCredentialProfilesPath(), credentialProfile.Name),
-                credentialProfile.Password);
 
-            return new EditSMBCredentialStepParameters(credentialsProviderConfiguration, server, shareName);
+            return new EditSMBCredentialStepParameters(credentialProfile, server, shareName);
         }
 
         if (choice == "Delete Credential")
@@ -112,16 +109,18 @@ public class EditCredentialProfileStep : IWizardStep<EditCredentialProfileStepPa
             {
                 Console.WriteLine("No credentials available to delete. Please add a credential first.");
 
-                return new ManageCredentialProfilesStepParameters();
+                return new EditCredentialProfileStepParameters(credentialProfile);
             }
 
             var credentialDictionary = credentialProfile.Credentials.ToDictionary(credential => credential.Title, credential => credential);
             var credentialTitle = Prompt.Select("Select a credential to delete", credentialDictionary.Keys, 5);
             var confirmation = Prompt.Confirm($"Are you sure you want to delete the credential '{credentialTitle}'?");
+
             if (!confirmation)
             {
                 Console.WriteLine("Credential deletion cancelled.");
-                return new ManageCredentialProfilesStepParameters();
+
+                return new EditCredentialProfileStepParameters(credentialProfile);
             }
 
             var selectedCredential = credentialDictionary[credentialTitle];
@@ -133,7 +132,7 @@ public class EditCredentialProfileStep : IWizardStep<EditCredentialProfileStepPa
             await _mediator.Send(new DeleteSMBCredentialCommand(credentialsProviderConfiguration, server, shareName), cancellationToken);
             Console.WriteLine("SMB credential deleted successfully!");
 
-            return new ManageCredentialProfilesStepParameters();
+            return new EditCredentialProfileStepParameters(credentialProfile);
         }
 
         Console.WriteLine("Unknown choice. Please try again.");

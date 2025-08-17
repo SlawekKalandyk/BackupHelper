@@ -1,23 +1,27 @@
 ﻿using BackupHelper.Abstractions;
+using BackupHelper.Api.Features.Credentials;
 using BackupHelper.Api.Features.Credentials.SMB;
+using BackupHelper.Core.Credentials;
 using BackupHelper.Sources.SMB;
 using MediatR;
 using Sharprompt;
 
 namespace BackupHelper.ConsoleApp.Wizard.Credentials;
 
-public record EditSMBCredentialStepParameters(ICredentialsProviderConfiguration CredentialsProviderConfiguration, string Server, string ShareName)
+public record EditSMBCredentialStepParameters(CredentialProfile CredentialProfile, string Server, string ShareName)
     : IWizardParameters;
 
 public class EditSMBCredentialStep : IWizardStep<EditSMBCredentialStepParameters>
 {
     private readonly IMediator _mediator;
     private readonly ICredentialsProviderFactory _credentialsProviderFactory;
+    private readonly IApplicationDataHandler _applicationDataHandler;
 
-    public EditSMBCredentialStep(IMediator mediator, ICredentialsProviderFactory credentialsProviderFactory)
+    public EditSMBCredentialStep(IMediator mediator, ICredentialsProviderFactory credentialsProviderFactory, IApplicationDataHandler applicationDataHandler)
     {
         _mediator = mediator;
         _credentialsProviderFactory = credentialsProviderFactory;
+        _applicationDataHandler = applicationDataHandler;
     }
 
     public async Task<IWizardParameters?> Handle(EditSMBCredentialStepParameters request, CancellationToken cancellationToken)
@@ -32,10 +36,13 @@ public class EditSMBCredentialStep : IWizardStep<EditSMBCredentialStepParameters
 
         if (choice == "Cancel")
         {
-            return new ManageCredentialProfilesStepParameters();
+            return new EditCredentialProfileStepParameters(request.CredentialProfile);
         }
 
-        using var credentialsProvider = _credentialsProviderFactory.Create(request.CredentialsProviderConfiguration);
+        var credentialsProviderConfiguration = new KeePassCredentialsProviderConfiguration(
+            Path.Combine(_applicationDataHandler.GetCredentialProfilesPath(), request.CredentialProfile.Name),
+            request.CredentialProfile.Password);
+        using var credentialsProvider = _credentialsProviderFactory.Create(credentialsProviderConfiguration);
         var credentialName = SMBCredentialHelper.GetSMBCredentialTitle(request.Server, request.ShareName);
         var existingCredentials = credentialsProvider.GetCredential(credentialName);
 
@@ -43,7 +50,7 @@ public class EditSMBCredentialStep : IWizardStep<EditSMBCredentialStepParameters
         {
             Console.WriteLine($"No existing SMB credentials found for {credentialName}. Please create them first.");
 
-            return new ManageCredentialProfilesStepParameters();
+            return new EditCredentialProfileStepParameters(request.CredentialProfile);
         }
 
         var existingSMBCredentials = new SMBCredential(
@@ -59,7 +66,7 @@ public class EditSMBCredentialStep : IWizardStep<EditSMBCredentialStepParameters
             var newSMBCredentials = existingSMBCredentials with { Username = newUsername };
             await _mediator.Send(
                 new UpdateSMBCredentialCommand(
-                    request.CredentialsProviderConfiguration,
+                    credentialsProviderConfiguration,
                     existingSMBCredentials,
                     newSMBCredentials),
                 cancellationToken);
@@ -71,13 +78,13 @@ public class EditSMBCredentialStep : IWizardStep<EditSMBCredentialStepParameters
             var newSMBCredentials = existingSMBCredentials with { Password = newPassword };
             await _mediator.Send(
                 new UpdateSMBCredentialCommand(
-                    request.CredentialsProviderConfiguration,
+                    credentialsProviderConfiguration,
                     existingSMBCredentials,
                     newSMBCredentials),
                 cancellationToken);
             Console.WriteLine("SMB credential password updated successfully!");
         }
 
-        return new ManageCredentialProfilesStepParameters();
+        return new EditCredentialProfileStepParameters(request.CredentialProfile);
     }
 }

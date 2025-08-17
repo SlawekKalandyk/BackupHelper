@@ -8,20 +8,20 @@ using Sharprompt;
 
 namespace BackupHelper.ConsoleApp.Wizard.Credentials;
 
-public record AddSmbCredentialStepParameters(CredentialProfile CredentialProfile) : IWizardParameters;
+public record AddSMBCredentialStepParameters(CredentialProfile CredentialProfile) : IWizardParameters;
 
-public class AddSmbCredentialStep : IWizardStep<AddSmbCredentialStepParameters>
+public class AddSMBCredentialStep : IWizardStep<AddSMBCredentialStepParameters>
 {
     private readonly IMediator _mediator;
     private readonly IApplicationDataHandler _applicationDataHandler;
 
-    public AddSmbCredentialStep(IMediator mediator, IApplicationDataHandler applicationDataHandler)
+    public AddSMBCredentialStep(IMediator mediator, IApplicationDataHandler applicationDataHandler)
     {
         _mediator = mediator;
         _applicationDataHandler = applicationDataHandler;
     }
 
-    public async Task<IWizardParameters?> Handle(AddSmbCredentialStepParameters request, CancellationToken cancellationToken)
+    public async Task<IWizardParameters?> Handle(AddSMBCredentialStepParameters request, CancellationToken cancellationToken)
     {
         var keePassDbLocation = Path.Combine(_applicationDataHandler.GetCredentialProfilesPath(), request.CredentialProfile.Name);
         var credentialsProviderConfiguration = new KeePassCredentialsProviderConfiguration(keePassDbLocation, request.CredentialProfile.Password);
@@ -37,11 +37,11 @@ public class AddSmbCredentialStep : IWizardStep<AddSmbCredentialStepParameters>
 
             if (editCredential)
             {
-                return new EditSMBCredentialStepParameters(credentialsProviderConfiguration, server, share);
+                return new EditSMBCredentialStepParameters(request.CredentialProfile, server, share);
             }
             else
             {
-                return new AddSmbCredentialStepParameters(request.CredentialProfile);
+                return new EditCredentialProfileStepParameters(request.CredentialProfile);
             }
         }
 
@@ -55,7 +55,7 @@ public class AddSmbCredentialStep : IWizardStep<AddSmbCredentialStepParameters>
         var addAnother = Prompt.Confirm("Do you want to add another SMB credential?");
 
         return addAnother
-                   ? new AddSmbCredentialStepParameters(request.CredentialProfile)
-                   : new ManageCredentialProfilesStepParameters();
+                   ? new AddSMBCredentialStepParameters(request.CredentialProfile)
+                   : new EditCredentialProfileStepParameters(request.CredentialProfile);
     }
 }
