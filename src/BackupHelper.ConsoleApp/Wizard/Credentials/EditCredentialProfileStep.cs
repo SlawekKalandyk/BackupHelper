@@ -62,20 +62,7 @@ public class EditCredentialProfileStep : IWizardStep<EditCredentialProfileStepPa
 
         if (choice == "Name")
         {
-            var newName = Prompt.Input<string>("Enter new credential profile name", validators: [Validators.Required()]);
-            var profileExists = await _mediator.Send(new CheckCredentialProfileExistsQuery(newName), cancellationToken);
-
-            if (profileExists)
-            {
-                Console.WriteLine($"Credential profile '{newName}' already exists. Please choose a different name.");
-
-                return new EditCredentialProfileStepParameters(credentialProfile);
-            }
-
-            await _mediator.Send(new UpdateCredentialProfileNameCommand(credentialProfile, newName), cancellationToken);
-            Console.WriteLine("Credential profile name updated successfully!");
-
-            return new EditCredentialProfileStepParameters(credentialProfile);
+            return new UpdateCredentialProfileNameStepParameters(credentialProfile);
         }
 
         if (choice == "Add Credential")
