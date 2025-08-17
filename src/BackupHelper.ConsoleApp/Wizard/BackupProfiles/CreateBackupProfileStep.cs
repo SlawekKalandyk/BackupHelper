@@ -1,4 +1,5 @@
 ﻿using BackupHelper.Api.Features.BackupProfiles;
+using BackupHelper.Api.Features.Credentials;
 using BackupHelper.ConsoleApp.Utilities;
 using MediatR;
 using Sharprompt;
@@ -30,14 +31,15 @@ public class CreateBackupProfileStep : IWizardStep<CreateBackupProfileStepParame
 
         var backupPlanLocation = Prompt.Input<string>("Select backup plan location", validators: [Validators.Required(), ValidatorsHelper.FileExists]);
         var backupDirectory = Prompt.Input<string>("Select backup directory", validators: [Validators.Required(), ValidatorsHelper.DirectoryExists]);
-        var keePassDbLocation = Prompt.Input<string>("Select KeePass database location", validators: [Validators.Required(), ValidatorsHelper.FileExists]);
+        var credentialProfileNames = await _mediator.Send(new GetCredentialProfileNamesQuery(), cancellationToken);
+        var credentialProfileName = Prompt.Select("Select a credential profile to use for this backup profile", credentialProfileNames, pageSize: 5);
 
         await _mediator.Send(
             new CreateBackupProfileCommand(
                 name,
                 backupPlanLocation,
                 backupDirectory,
-                keePassDbLocation),
+                credentialProfileName),
             cancellationToken);
 
         Console.WriteLine("Backup profile created successfully!");
