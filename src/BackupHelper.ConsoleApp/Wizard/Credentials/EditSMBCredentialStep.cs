@@ -75,6 +75,15 @@ public class EditSMBCredentialStep : IWizardStep<EditSMBCredentialStepParameters
         else if (choice == "Change password")
         {
             var newPassword = Prompt.Password("Enter new password", validators: [Validators.Required()]);
+            var confirmNewPassword = Prompt.Password("Confirm new password", validators: [Validators.Required()]);
+
+            if (newPassword != confirmNewPassword)
+            {
+                Console.WriteLine("Passwords do not match. Please try again.");
+
+                return new EditSMBCredentialStepParameters(request.CredentialProfile, request.Server, request.ShareName);
+            }
+
             var newSMBCredentials = existingSMBCredentials with { Password = newPassword };
             await _mediator.Send(
                 new UpdateSMBCredentialCommand(
