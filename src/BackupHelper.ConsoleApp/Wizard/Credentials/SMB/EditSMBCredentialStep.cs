@@ -8,7 +8,7 @@ using Sharprompt;
 
 namespace BackupHelper.ConsoleApp.Wizard.Credentials;
 
-public record EditSMBCredentialStepParameters(CredentialProfile CredentialProfile, string Server, string ShareName)
+public record EditSMBCredentialStepParameters(CredentialProfile CredentialProfile, CredentialEntry? CredentialToEdit = null)
     : IWizardParameters;
 
 public class EditSMBCredentialStep : IWizardStep<EditSMBCredentialStepParameters>
@@ -26,6 +26,22 @@ public class EditSMBCredentialStep : IWizardStep<EditSMBCredentialStepParameters
 
     public async Task<IWizardParameters?> Handle(EditSMBCredentialStepParameters request, CancellationToken cancellationToken)
     {
+        if (request.CredentialProfile.Credentials.Count == 0)
+        {
+            Console.WriteLine("No credentials available to edit. Please add a credential first.");
+
+            return new EditCredentialProfileStepParameters(request.CredentialProfile);
+        }
+
+        var credentialToEdit = request.CredentialToEdit;
+
+        if (credentialToEdit == null)
+        {
+            var credentialDictionary = request.CredentialProfile.Credentials.ToDictionary(credential => credential.Title, credential => credential);
+            var credentialTitle = Prompt.Select("Select a credential to edit", credentialDictionary.Keys, 5);
+            credentialToEdit = credentialDictionary[credentialTitle];
+        }
+
         var choice = Prompt.Select(
             "Select an action",
             [
@@ -43,19 +59,19 @@ public class EditSMBCredentialStep : IWizardStep<EditSMBCredentialStepParameters
             Path.Combine(_applicationDataHandler.GetCredentialProfilesPath(), request.CredentialProfile.Name),
             request.CredentialProfile.Password);
         using var credentialsProvider = _credentialsProviderFactory.Create(credentialsProviderConfiguration);
-        var credentialName = SMBCredentialHelper.GetSMBCredentialTitle(request.Server, request.ShareName);
-        var existingCredentials = credentialsProvider.GetCredential(credentialName);
+        var existingCredentials = credentialsProvider.GetCredential(credentialToEdit.Title);
+        var (server, shareName) = SMBCredentialHelper.DeconstructSMBCredentialTitle(credentialToEdit.Title);
 
         if (existingCredentials == null)
         {
-            Console.WriteLine($"No existing SMB credentials found for {credentialName}. Please create them first.");
+            Console.WriteLine($"No existing SMB credentials found for {credentialToEdit.Title}. Please create them first.");
 
             return new EditCredentialProfileStepParameters(request.CredentialProfile);
         }
 
         var existingSMBCredentials = new SMBCredential(
-            request.Server,
-            request.ShareName,
+            server,
+            shareName,
             existingCredentials.Username,
             existingCredentials.Password);
 
@@ -81,7 +97,7 @@ public class EditSMBCredentialStep : IWizardStep<EditSMBCredentialStepParameters
             {
                 Console.WriteLine("Passwords do not match. Please try again.");
 
-                return new EditSMBCredentialStepParameters(request.CredentialProfile, request.Server, request.ShareName);
+                return new EditSMBCredentialStepParameters(request.CredentialProfile, credentialToEdit);
             }
 
             var newSMBCredentials = existingSMBCredentials with { Password = newPassword };

@@ -28,16 +28,16 @@ public class AddSMBCredentialStep : IWizardStep<AddSMBCredentialStepParameters>
 
         var server = Prompt.Input<string>("Enter SMB server address", validators: [Validators.Required()]);
         var share = Prompt.Input<string>("Enter SMB share name", validators: [Validators.Required()]);
-        var credentialAlreadyExists = await _mediator.Send(new CheckSMBCredentialExistsQuery(credentialsProviderConfiguration, server, share), cancellationToken);
+        var credential = await _mediator.Send(new GetSMBCredentialQuery(credentialsProviderConfiguration, server, share), cancellationToken);
 
-        if (credentialAlreadyExists)
+        if (credential != null)
         {
             var title = SMBCredentialHelper.GetSMBCredentialTitle(server, share);
             var editCredential = Prompt.Confirm($"SMB credential for {title} exists. Do you want to edit it?");
 
             if (editCredential)
             {
-                return new EditSMBCredentialStepParameters(request.CredentialProfile, server, share);
+                return new EditSMBCredentialStepParameters(request.CredentialProfile, credential);
             }
             else
             {

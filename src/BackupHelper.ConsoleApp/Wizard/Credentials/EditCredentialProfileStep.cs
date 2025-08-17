@@ -88,51 +88,12 @@ public class EditCredentialProfileStep : IWizardStep<EditCredentialProfileStepPa
 
         if (choice == "Edit Credential")
         {
-            if (credentialProfile.Credentials.Count == 0)
-            {
-                Console.WriteLine("No credentials available to edit. Please add a credential first.");
-
-                return new EditCredentialProfileStepParameters(credentialProfile);
-            }
-
-            var credentialDictionary = credentialProfile.Credentials.ToDictionary(credential => credential.Title, credential => credential);
-            var credentialTitle = Prompt.Select("Select a credential to edit", credentialDictionary.Keys, 5);
-            var selectedCredential = credentialDictionary[credentialTitle];
-            var (server, shareName) = SMBCredentialHelper.DeconstructSMBCredentialTitle(selectedCredential.Title);
-
-            return new EditSMBCredentialStepParameters(credentialProfile, server, shareName);
+            return new EditSMBCredentialStepParameters(credentialProfile);
         }
 
         if (choice == "Delete Credential")
         {
-            if (credentialProfile.Credentials.Count == 0)
-            {
-                Console.WriteLine("No credentials available to delete. Please add a credential first.");
-
-                return new EditCredentialProfileStepParameters(credentialProfile);
-            }
-
-            var credentialDictionary = credentialProfile.Credentials.ToDictionary(credential => credential.Title, credential => credential);
-            var credentialTitle = Prompt.Select("Select a credential to delete", credentialDictionary.Keys, 5);
-            var confirmation = Prompt.Confirm($"Are you sure you want to delete the credential '{credentialTitle}'?");
-
-            if (!confirmation)
-            {
-                Console.WriteLine("Credential deletion cancelled.");
-
-                return new EditCredentialProfileStepParameters(credentialProfile);
-            }
-
-            var selectedCredential = credentialDictionary[credentialTitle];
-            var (server, shareName) = SMBCredentialHelper.DeconstructSMBCredentialTitle(selectedCredential.Title);
-            var credentialsProviderConfiguration = new KeePassCredentialsProviderConfiguration(
-                Path.Combine(_applicationDataHandler.GetCredentialProfilesPath(), credentialProfile.Name),
-                credentialProfile.Password);
-
-            await _mediator.Send(new DeleteSMBCredentialCommand(credentialsProviderConfiguration, server, shareName), cancellationToken);
-            Console.WriteLine("SMB credential deleted successfully!");
-
-            return new EditCredentialProfileStepParameters(credentialProfile);
+            return new DeleteSMBCredentialStepParameters(credentialProfile);
         }
 
         Console.WriteLine("Unknown choice. Please try again.");

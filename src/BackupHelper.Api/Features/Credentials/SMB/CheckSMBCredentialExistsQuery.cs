@@ -18,8 +18,8 @@ public class CheckSMBCredentialExistsQueryHandler : IRequestHandler<CheckSMBCred
     public Task<bool> Handle(CheckSMBCredentialExistsQuery request, CancellationToken cancellationToken)
     {
         using var credentialsProvider = _credentialsProviderFactory.Create(request.CredentialsProviderConfiguration);
-        var credentials = credentialsProvider.GetCredentials();
         var title = SMBCredentialHelper.GetSMBCredentialTitle(request.Server, request.ShareName);
-        return Task.FromResult(credentials.Any(credential => credential.Title == title));
+        var credential = credentialsProvider.GetCredential(title);
+        return Task.FromResult(credential != null);
     }
 }
