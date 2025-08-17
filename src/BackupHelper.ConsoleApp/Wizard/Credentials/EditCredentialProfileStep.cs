@@ -1,8 +1,5 @@
 ﻿using BackupHelper.Abstractions;
 using BackupHelper.Api.Features.Credentials;
-using BackupHelper.Api.Features.Credentials.SMB;
-using BackupHelper.Core.Credentials;
-using BackupHelper.Sources.SMB;
 using MediatR;
 using Sharprompt;
 
