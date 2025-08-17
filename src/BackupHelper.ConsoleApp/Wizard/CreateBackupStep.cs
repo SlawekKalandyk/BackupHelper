@@ -1,5 +1,7 @@
 ﻿using BackupHelper.Abstractions;
 using BackupHelper.Api.Features.BackupProfiles;
+using BackupHelper.Api.Features.Credentials;
+using BackupHelper.Core.Credentials;
 using BackupHelper.Core.Features;
 using MediatR;
 using Sharprompt;
@@ -12,11 +14,13 @@ public class CreateBackupStep : IWizardStep<CreateBackupStepParameters>
 {
     private readonly IMediator _mediator;
     private readonly IApplicationDataHandler _applicationDataHandler;
+    private ICredentialsProviderFactory _credentialsProviderFactory;
 
-    public CreateBackupStep(IMediator mediator, IApplicationDataHandler applicationDataHandler)
+    public CreateBackupStep(IMediator mediator, IApplicationDataHandler applicationDataHandler, ICredentialsProviderFactory credentialsProviderFactory)
     {
         _mediator = mediator;
         _applicationDataHandler = applicationDataHandler;
+        _credentialsProviderFactory = credentialsProviderFactory;
     }
 
     public async Task<IWizardParameters?> Handle(CreateBackupStepParameters parameters, CancellationToken cancellationToken)
@@ -36,15 +40,47 @@ public class CreateBackupStep : IWizardStep<CreateBackupStepParameters>
                 return parameters;
             }
 
-            return new SelectKeePassDatabaseStepParameters(
+            var credentialProfileExists = await _mediator.Send(new CheckCredentialProfileExistsQuery(backupProfile.CredentialProfileName), cancellationToken);
+            if (!credentialProfileExists)
+            {
+                Console.WriteLine($"Credential profile '{backupProfile.CredentialProfileName}' not found. Please create it first.");
+                return new MainMenuStepParameters();
+            }
+
+            var keePassDbLocation = Path.Combine(_applicationDataHandler.GetCredentialProfilesPath(), backupProfile.CredentialProfileName);
+            var credentialProfilePassword = GetCredentialProfilePassword(keePassDbLocation);
+            var defaultCredentialsProviderConfiguration = new KeePassCredentialsProviderConfiguration(keePassDbLocation, credentialProfilePassword);
+            _credentialsProviderFactory.SetDefaultCredentialsProviderConfiguration(defaultCredentialsProviderConfiguration);
+
+            return new PerformBackupStepParameters(
                 backupProfile.BackupPlanLocation,
                 backupProfile.BackupDirectory,
-                backupProfile.KeePassDbLocation);
+                keePassDbLocation,
+                credentialProfilePassword);
         }
 
         var backupPlanLocation = Prompt.Input<string>("Select backup plan location", validators: [Validators.Required()]);
         var outputZipPath = Prompt.Input<string>("Select output zip path", validators: [Validators.Required()]);
 
         return new SelectKeePassDatabaseStepParameters(backupPlanLocation, outputZipPath);
+    }
+
+    private string GetCredentialProfilePassword(string keePassDbLocation)
+    {
+        string? keePassDbPassword = null;
+
+        while (keePassDbPassword == null)
+        {
+            keePassDbPassword = Prompt.Password("Enter credential profile password");
+            var correctPasswordProvided = KeePassCredentialsProvider.CanLogin(keePassDbLocation, keePassDbPassword);
+
+            if (!correctPasswordProvided)
+            {
+                Console.WriteLine("Incorrect password. Please try again.");
+                keePassDbPassword = null;
+            }
+        }
+
+        return keePassDbPassword;
     }
 }

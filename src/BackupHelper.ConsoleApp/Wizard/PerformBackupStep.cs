@@ -61,13 +61,14 @@ public class PerformBackupStep : IWizardStep<PerformBackupStepParameters>
         if (!string.IsNullOrEmpty(backupPlan.LogDirectory))
             AddBackupLogSink(backupPlan.LogDirectory);
 
+        var backupSavePath = BackupSavePathHelper.GetBackupSavePath(parameters.OutputZipPath);
         await _mediator.Send(
-                           new CreateBackupCommand(backupPlan, BackupSavePathHelper.GetBackupSavePath(parameters.OutputZipPath), backupPassword),
+                           new CreateBackupCommand(backupPlan, backupSavePath, backupPassword),
                            cancellationToken)
                        .ContinueWith(
                            _ =>
                            {
-                               Console.WriteLine($"Backup completed successfully. Output file: {parameters.OutputZipPath}");
+                               Console.WriteLine($"Backup completed successfully. Output file: {backupSavePath}");
                            },
                            cancellationToken);
 

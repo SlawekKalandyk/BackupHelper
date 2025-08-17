@@ -4,7 +4,7 @@ using Newtonsoft.Json;
 
 namespace BackupHelper.Api.Features.BackupProfiles;
 
-public record CreateBackupProfileCommand(string Name, string BackupPlanLocation, string BackupDirectory, string KeePassDbLocation)
+public record CreateBackupProfileCommand(string Name, string BackupPlanLocation, string BackupDirectory, string CredentialProfileName)
     : IRequest;
 
 
@@ -30,7 +30,7 @@ public class CreateBackupProfileCommandHandler : IRequestHandler<CreateBackupPro
             request.Name,
             request.BackupPlanLocation,
             request.BackupDirectory,
-            request.KeePassDbLocation);
+            request.CredentialProfileName);
 
         File.WriteAllText(backupProfilePath, JsonConvert.SerializeObject(backupProfile, Formatting.Indented));
 

@@ -1,4 +1,5 @@
 ﻿using BackupHelper.Api.Features.BackupProfiles;
+using BackupHelper.Api.Features.Credentials;
 using BackupHelper.ConsoleApp.Utilities;
 using MediatR;
 using Sharprompt;
@@ -50,7 +51,7 @@ public class EditBackupProfileStep : IWizardStep<EditBackupProfileStepParameters
                 "Name",
                 "Backup Plan Location",
                 "Backup Directory",
-                "KeePass Database Location",
+                "Change Credential Profile",
                 "Cancel"
             ]);
 
@@ -84,12 +85,13 @@ public class EditBackupProfileStep : IWizardStep<EditBackupProfileStepParameters
             await _mediator.Send(new UpdateBackupProfileCommand(backupProfile, updatedBackupProfile), cancellationToken);
             Console.WriteLine("Backup directory updated successfully!");
         }
-        else if (choice == "KeePass Database Location")
+        else if (choice == "Change Credential Profile")
         {
-            var newKeePassDbLocation = Prompt.Input<string>("Enter new KeePass database location", validators: [Validators.Required(), ValidatorsHelper.FileExists]);
-            var updatedBackupProfile = backupProfile with { KeePassDbLocation = newKeePassDbLocation };
+            var credentialProfileNames = await _mediator.Send(new GetCredentialProfileNamesQuery(), cancellationToken);
+            var credentialProfileName = Prompt.Select("Select a credential profile to use for this backup profile", credentialProfileNames, pageSize: 5);
+            var updatedBackupProfile = backupProfile with { CredentialProfileName = credentialProfileName };
             await _mediator.Send(new UpdateBackupProfileCommand(backupProfile, updatedBackupProfile), cancellationToken);
-            Console.WriteLine("KeePass database location updated successfully!");
+            Console.WriteLine("Credential profile updated successfully!");
         }
 
         return new ManageBackupProfilesStepParameters();
