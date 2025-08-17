@@ -23,15 +23,31 @@ public record TestCredentialsProviderConfiguration : ICredentialsProviderConfigu
 
 public class TestCredentialsProvider : ICredentialsProvider
 {
-    private readonly Dictionary<string, (string Username, string Password)> _credentials = new();
+    private readonly Dictionary<string, CredentialEntry> _credentials = new();
 
-    public (string Username, string Password) GetCredential(string credentialName)
-        => _credentials[credentialName];
+    public CredentialEntry? GetCredential(string credentialName)
+        => _credentials.GetValueOrDefault(credentialName);
 
-    public void SetCredential(string credentialName, string username, string password)
+    public void SetCredential(CredentialEntry credentialEntry)
     {
-        _credentials[credentialName] = (username, password);
+        _credentials[credentialEntry.Title] = credentialEntry;
     }
+
+    public void UpdateCredential(CredentialEntry credentialEntry)
+    {
+        _credentials[credentialEntry.Title] = credentialEntry;
+    }
+
+    public void DeleteCredential(string credentialName)
+    {
+        _credentials.Remove(credentialName);
+    }
+
+    public IReadOnlyCollection<CredentialEntry> GetCredentials()
+        => _credentials
+            .Select(kvp => kvp.Value with { Title = kvp.Key })
+            .ToList()
+            .AsReadOnly();
 
     public void Dispose()
     {

@@ -1,4 +1,4 @@
-﻿using BackupHelper.Abstractions;
+﻿namespace BackupHelper.Abstractions;
 
 public interface ICredentialsProviderFactory
 {

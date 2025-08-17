@@ -93,10 +93,15 @@ public class SMBSource : ISource
 
     private SMBCredential GetCredential(SMBShareInfo shareInfo)
     {
-        var credentialName = $@"\\{shareInfo.ServerIPAddress.ToString()}\{shareInfo.ShareName}";
-        var (username, password) = _credentialsProvider.GetCredential(credentialName);
+        var credentialName = SMBCredentialHelper.GetSMBCredentialTitle(shareInfo.ServerIPAddress.ToString(), shareInfo.ShareName);
+        var credential = _credentialsProvider.GetCredential(credentialName);
 
-        return new SMBCredential(username, password);
+        if (credential == null)
+        {
+            throw new InvalidOperationException($"No credentials found for SMB share '{credentialName}'.");
+        }
+
+        return new SMBCredential(shareInfo.ServerIPAddress.ToString(), shareInfo.ShareName, credential.Username, credential.Password!);
     }
 
     public void Dispose()

@@ -20,4 +20,12 @@ public class ApplicationDataHandler : IApplicationDataHandler
 
         return backupProfilesPath;
     }
+
+    public string GetCredentialProfilesPath()
+    {
+        var credentialProfilesPath = Path.Combine(GetApplicationDataPath(), "CredentialProfiles");
+        Directory.CreateDirectory(credentialProfilesPath);
+
+        return credentialProfilesPath;
+    }
 }

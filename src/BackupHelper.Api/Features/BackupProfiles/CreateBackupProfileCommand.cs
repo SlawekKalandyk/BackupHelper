@@ -5,11 +5,10 @@ using Newtonsoft.Json;
 namespace BackupHelper.Api.Features.BackupProfiles;
 
 public record CreateBackupProfileCommand(string Name, string BackupPlanLocation, string BackupDirectory, string KeePassDbLocation)
-    : IRequest<CreateBackupProfileCommandResult>;
+    : IRequest;
 
-public record CreateBackupProfileCommandResult;
 
-public class CreateBackupProfileCommandHandler : IRequestHandler<CreateBackupProfileCommand, CreateBackupProfileCommandResult>
+public class CreateBackupProfileCommandHandler : IRequestHandler<CreateBackupProfileCommand>
 {
     private readonly IApplicationDataHandler _applicationDataHandler;
 
@@ -18,7 +17,7 @@ public class CreateBackupProfileCommandHandler : IRequestHandler<CreateBackupPro
         _applicationDataHandler = applicationDataHandler;
     }
 
-    public Task<CreateBackupProfileCommandResult> Handle(CreateBackupProfileCommand request, CancellationToken cancellationToken)
+    public Task Handle(CreateBackupProfileCommand request, CancellationToken cancellationToken)
     {
         var backupProfilePath = Path.Combine(_applicationDataHandler.GetBackupProfilesPath(), request.Name);
 
@@ -35,6 +34,6 @@ public class CreateBackupProfileCommandHandler : IRequestHandler<CreateBackupPro
 
         File.WriteAllText(backupProfilePath, JsonConvert.SerializeObject(backupProfile, Formatting.Indented));
 
-        return Task.FromResult(new CreateBackupProfileCommandResult());
+        return Task.CompletedTask;
     }
 }

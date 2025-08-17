@@ -19,6 +19,15 @@ public class CreateBackupProfileStep : IWizardStep<CreateBackupProfileStepParame
     public async Task<IWizardParameters?> Handle(CreateBackupProfileStepParameters request, CancellationToken cancellationToken)
     {
         var name = Prompt.Input<string>("Enter backup profile name", validators: [Validators.Required()]);
+        var profileExists = await _mediator.Send(new CheckBackupProfileExistsQuery(name), cancellationToken);
+
+        if (profileExists)
+        {
+            Console.WriteLine($"Backup profile '{name}' already exists. Please choose a different name.");
+
+            return new CreateBackupProfileStepParameters();
+        }
+
         var backupPlanLocation = Prompt.Input<string>("Select backup plan location", validators: [Validators.Required(), ValidatorsHelper.FileExists]);
         var backupDirectory = Prompt.Input<string>("Select backup directory", validators: [Validators.Required(), ValidatorsHelper.DirectoryExists]);
         var keePassDbLocation = Prompt.Input<string>("Select KeePass database location", validators: [Validators.Required(), ValidatorsHelper.FileExists]);

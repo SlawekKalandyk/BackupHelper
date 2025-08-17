@@ -1,0 +1,142 @@
+﻿using BackupHelper.Abstractions;
+using BackupHelper.Api.Features.Credentials;
+using BackupHelper.Api.Features.Credentials.SMB;
+using BackupHelper.Core.Credentials;
+using BackupHelper.Sources.SMB;
+using MediatR;
+using Sharprompt;
+
+namespace BackupHelper.ConsoleApp.Wizard.Credentials;
+
+public record EditCredentialProfileStepParameters(CredentialProfile? CredentialProfile = null) : IWizardParameters;
+
+public class EditCredentialProfileStep : IWizardStep<EditCredentialProfileStepParameters>
+{
+    private readonly IMediator _mediator;
+    private readonly IApplicationDataHandler _applicationDataHandler;
+
+    public EditCredentialProfileStep(IMediator mediator, IApplicationDataHandler applicationDataHandler)
+    {
+        _mediator = mediator;
+        _applicationDataHandler = applicationDataHandler;
+    }
+
+    public async Task<IWizardParameters?> Handle(EditCredentialProfileStepParameters request, CancellationToken cancellationToken)
+    {
+        var credentialProfile = request.CredentialProfile;
+
+        if (credentialProfile == null)
+        {
+            var credentialProfileNames = await _mediator.Send(new GetCredentialProfileNamesQuery(), cancellationToken);
+
+            if (credentialProfileNames.Count == 0)
+            {
+                Console.WriteLine("No credential profiles available to edit.");
+
+                return new ManageCredentialProfilesStepParameters();
+            }
+
+            var credentialProfileName = Prompt.Select("Select a credential profile to edit", credentialProfileNames, 5);
+            var password = Prompt.Password("Enter the password for the credential profile", validators: [Validators.Required()]);
+            credentialProfile = await _mediator.Send(new GetCredentialProfileQuery(credentialProfileName, password), cancellationToken);
+        }
+
+        if (credentialProfile == null)
+        {
+            Console.WriteLine("Credential profile not found or incorrect password. Please try again.");
+
+            return new ManageCredentialProfilesStepParameters();
+        }
+
+        var choice = Prompt.Select(
+            "Select property to edit",
+            [
+                "Name",
+                "Add Credential",
+                "Edit Credential",
+                "Delete Credential",
+                "Cancel"
+            ]);
+
+        if (choice == "Cancel")
+        {
+            return new ManageCredentialProfilesStepParameters();
+        }
+
+        if (choice == "Name")
+        {
+            var newName = Prompt.Input<string>("Enter new credential profile name", validators: [Validators.Required()]);
+            var profileExists = await _mediator.Send(new CheckCredentialProfileExistsQuery(newName), cancellationToken);
+
+            if (profileExists)
+            {
+                Console.WriteLine($"Credential profile '{newName}' already exists. Please choose a different name.");
+
+                return new EditCredentialProfileStepParameters(credentialProfile);
+            }
+
+            await _mediator.Send(new UpdateCredentialProfileNameCommand(credentialProfile, newName), cancellationToken);
+            Console.WriteLine("Credential profile name updated successfully!");
+
+            return new EditCredentialProfileStepParameters(credentialProfile);
+        }
+
+        if (choice == "Add Credential")
+        {
+            return new AddSMBCredentialStepParameters(credentialProfile);
+        }
+
+        if (choice == "Edit Credential")
+        {
+            if (credentialProfile.Credentials.Count == 0)
+            {
+                Console.WriteLine("No credentials available to edit. Please add a credential first.");
+
+                return new EditCredentialProfileStepParameters(credentialProfile);
+            }
+
+            var credentialDictionary = credentialProfile.Credentials.ToDictionary(credential => credential.Title, credential => credential);
+            var credentialTitle = Prompt.Select("Select a credential to edit", credentialDictionary.Keys, 5);
+            var selectedCredential = credentialDictionary[credentialTitle];
+            var (server, shareName) = SMBCredentialHelper.DeconstructSMBCredentialTitle(selectedCredential.Title);
+
+            return new EditSMBCredentialStepParameters(credentialProfile, server, shareName);
+        }
+
+        if (choice == "Delete Credential")
+        {
+            if (credentialProfile.Credentials.Count == 0)
+            {
+                Console.WriteLine("No credentials available to delete. Please add a credential first.");
+
+                return new EditCredentialProfileStepParameters(credentialProfile);
+            }
+
+            var credentialDictionary = credentialProfile.Credentials.ToDictionary(credential => credential.Title, credential => credential);
+            var credentialTitle = Prompt.Select("Select a credential to delete", credentialDictionary.Keys, 5);
+            var confirmation = Prompt.Confirm($"Are you sure you want to delete the credential '{credentialTitle}'?");
+
+            if (!confirmation)
+            {
+                Console.WriteLine("Credential deletion cancelled.");
+
+                return new EditCredentialProfileStepParameters(credentialProfile);
+            }
+
+            var selectedCredential = credentialDictionary[credentialTitle];
+            var (server, shareName) = SMBCredentialHelper.DeconstructSMBCredentialTitle(selectedCredential.Title);
+            var credentialsProviderConfiguration = new KeePassCredentialsProviderConfiguration(
+                Path.Combine(_applicationDataHandler.GetCredentialProfilesPath(), credentialProfile.Name),
+                credentialProfile.Password);
+
+            await _mediator.Send(new DeleteSMBCredentialCommand(credentialsProviderConfiguration, server, shareName), cancellationToken);
+            Console.WriteLine("SMB credential deleted successfully!");
+
+            return new EditCredentialProfileStepParameters(credentialProfile);
+        }
+
+        Console.WriteLine("Unknown choice. Please try again.");
+
+        return new ManageCredentialProfilesStepParameters();
+    }
+}
