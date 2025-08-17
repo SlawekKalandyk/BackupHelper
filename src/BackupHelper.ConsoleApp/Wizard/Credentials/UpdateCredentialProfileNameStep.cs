@@ -26,7 +26,7 @@ public class UpdateCredentialProfileNameStep : IWizardStep<UpdateCredentialProfi
         {
             Console.WriteLine($"Credential profile '{newName}' already exists. Please choose a different name.");
 
-            return new EditCredentialProfileStepParameters(credentialProfile);
+            return new UpdateCredentialProfileNameStepParameters(credentialProfile);
         }
 
         await _mediator.Send(new UpdateCredentialProfileNameCommand(credentialProfile, newName), cancellationToken);

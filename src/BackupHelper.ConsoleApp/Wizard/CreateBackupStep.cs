@@ -44,7 +44,7 @@ public class CreateBackupStep : IWizardStep<CreateBackupStepParameters>
             if (!credentialProfileExists)
             {
                 Console.WriteLine($"Credential profile '{backupProfile.CredentialProfileName}' not found. Please create it first.");
-                return parameters;
+                return new MainMenuStepParameters();
             }
 
             var keePassDbLocation = Path.Combine(_applicationDataHandler.GetCredentialProfilesPath(), backupProfile.CredentialProfileName);
