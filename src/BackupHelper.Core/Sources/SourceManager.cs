@@ -20,12 +20,26 @@ public class SourceManager : ISourceManager
 
     public IEnumerable<string> GetSubDirectories(string path)
     {
-        return GetFromSource(path, (source, pathWithoutScheme) => source.GetSubDirectories(pathWithoutScheme));
+        return GetFromSource(path, (source, pathWithoutScheme) =>
+                                   {
+                                       var scheme = GetScheme(path);
+                                       return string.IsNullOrEmpty(scheme)
+                                           ? source.GetSubDirectories(pathWithoutScheme)
+                                           : source.GetSubDirectories(pathWithoutScheme)
+                                                   .Select(dir => Path.Join(scheme + ISource.PrefixSeparator, dir));
+                                   });
     }
 
     public IEnumerable<string> GetFiles(string path)
     {
-        return GetFromSource(path, (source, pathWithoutScheme) => source.GetFiles(pathWithoutScheme));
+        return GetFromSource(path, (source, pathWithoutScheme) =>
+                                   {
+                                       var scheme = GetScheme(path);
+                                       return string.IsNullOrEmpty(scheme)
+                                                  ? source.GetFiles(pathWithoutScheme)
+                                                  : source.GetFiles(pathWithoutScheme)
+                                                          .Select(dir => Path.Join(scheme + ISource.PrefixSeparator, dir));
+                                   });
     }
 
     public bool FileExists(string path)
