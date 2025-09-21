@@ -135,6 +135,27 @@ public class SMBDirectory : SMBIOComponentBase
         return new SMBDirectory(fileStore, fileHandle, FilePurpose.Read | FilePurpose.Delete, directoryPath);
     }
 
+    public static bool CanTraverseDirectory(ISMBFileStore fileStore, string directoryPath)
+    {
+        var status = fileStore.CreateFile(
+            out var fileHandle,
+            out var fileStatus,
+            directoryPath,
+            (AccessMask)DirectoryAccessMask.FILE_TRAVERSE | AccessMask.SYNCHRONIZE,
+            FileAttributes.Directory,
+            ShareAccess.Read | ShareAccess.Write,
+            CreateDisposition.FILE_OPEN,
+            CreateOptions.FILE_DIRECTORY_FILE | CreateOptions.FILE_SYNCHRONOUS_IO_NONALERT,
+            null);
+
+        var canTraverse = status == NTStatus.STATUS_SUCCESS && fileStatus == FileStatus.FILE_OPENED;
+
+        if (canTraverse)
+            fileStore.CloseFile(fileHandle);
+
+        return canTraverse;
+    }
+
     public static SMBDirectory CreateDirectory(ISMBFileStore fileStore, string directoryPath)
     {
         var status = fileStore.CreateFile(

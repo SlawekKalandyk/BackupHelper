@@ -41,9 +41,11 @@ public class CreateBackupStep : IWizardStep<CreateBackupStepParameters>
             }
 
             var credentialProfileExists = await _mediator.Send(new CheckCredentialProfileExistsQuery(backupProfile.CredentialProfileName), cancellationToken);
+
             if (!credentialProfileExists)
             {
                 Console.WriteLine($"Credential profile '{backupProfile.CredentialProfileName}' not found. Please create it first.");
+
                 return new MainMenuStepParameters();
             }
 
@@ -52,11 +54,15 @@ public class CreateBackupStep : IWizardStep<CreateBackupStepParameters>
             var defaultCredentialsProviderConfiguration = new KeePassCredentialsProviderConfiguration(keePassDbLocation, credentialProfilePassword);
             _credentialsProviderFactory.SetDefaultCredentialsProviderConfiguration(defaultCredentialsProviderConfiguration);
 
-            return new PerformBackupStepParameters(
-                backupProfile.BackupPlanLocation,
-                backupProfile.BackupDirectory,
-                keePassDbLocation,
-                credentialProfilePassword);
+            var canBackup = await CanBackupWithCredentialProfile(backupProfile.CredentialProfileName, credentialProfilePassword, cancellationToken);
+
+            return canBackup
+                ? new PerformBackupStepParameters(
+                    backupProfile.BackupPlanLocation,
+                    backupProfile.BackupDirectory,
+                    keePassDbLocation,
+                    credentialProfilePassword)
+                : new MainMenuStepParameters();
         }
 
         var backupPlanLocation = Prompt.Input<string>("Select backup plan location", validators: [Validators.Required()]);
@@ -82,5 +88,28 @@ public class CreateBackupStep : IWizardStep<CreateBackupStepParameters>
         }
 
         return keePassDbPassword;
+    }
+
+    private async Task<bool> CanBackupWithCredentialProfile(string credentialProfileName, string credentialProfilePassword, CancellationToken cancellationToken)
+    {
+        var nonConnectedCredentials = await _mediator.Send(
+                                          new CheckCredentialsConnectivityQuery(credentialProfileName, credentialProfilePassword),
+                                          cancellationToken);
+
+        if (nonConnectedCredentials.Count > 0)
+        {
+            Console.WriteLine("The following credentials could not connect to their respective resources:");
+
+            foreach (var credential in nonConnectedCredentials)
+            {
+                Console.WriteLine(string.Join(Environment.NewLine, credential.ToDisplayString()));
+            }
+
+            var backupAnyway = Prompt.Confirm("Do you want to proceed with the backup anyway?", false);
+
+            return backupAnyway;
+        }
+
+        return true;
     }
 }
