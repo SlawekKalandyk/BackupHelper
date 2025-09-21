@@ -86,6 +86,14 @@ public class SMBConnection : IDisposable
         smbFile.Delete();
     }
 
+    /// <summary>
+    /// Tests the connection to the SMB share by attempting to traverse the root directory.
+    /// </summary>
+    public bool TestConnection()
+    {
+        return IsConnected && SMBDirectory.CanTraverseDirectory(_smbFileStore, string.Empty);
+    }
+
     public bool FileExists(string filePath)
         => SMBFile.Exists(_smbFileStore, filePath);
 
