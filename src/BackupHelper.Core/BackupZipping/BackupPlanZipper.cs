@@ -42,7 +42,7 @@ public class BackupPlanZipper : IBackupPlanZipper
 
             foreach (var entry in plan.Items)
             {
-                AddEntryToZip(fileZipper, entry, string.Empty);
+                AddEntryToZip(fileZipper, entry, string.Empty, plan.CompressionLevel);
             }
 
             if (fileZipper.HasToBeSaved)
@@ -61,20 +61,20 @@ public class BackupPlanZipper : IBackupPlanZipper
         }
     }
 
-    private void AddEntryToZip(IFileZipper zipper, BackupEntry entry, string zipPath)
+    private void AddEntryToZip(IFileZipper zipper, BackupEntry entry, string zipPath, int? planCompressionLevel)
     {
         switch (entry)
         {
             case BackupFileEntry fileEntry:
-                AddBackupFileEntryToZip(zipper, fileEntry, zipPath);
+                AddBackupFileEntryToZip(zipper, fileEntry, zipPath, planCompressionLevel);
                 break;
             case BackupDirectoryEntry dirEntry:
-                AddBackupDirectoryEntryToZip(zipper, dirEntry, zipPath);
+                AddBackupDirectoryEntryToZip(zipper, dirEntry, zipPath, planCompressionLevel);
                 break;
         }
     }
 
-    private void AddBackupFileEntryToZip(IFileZipper zipper, BackupFileEntry fileEntry, string zipPath)
+    private void AddBackupFileEntryToZip(IFileZipper zipper, BackupFileEntry fileEntry, string zipPath, int? planCompressionLevel)
     {
         var filePath = fileEntry.FilePath;
         if (!string.IsNullOrEmpty(fileEntry.CronExpression))
@@ -89,17 +89,19 @@ public class BackupPlanZipper : IBackupPlanZipper
         using var scope = _serviceScopeFactory.CreateScope();
         var sourceManager = scope.ServiceProvider.GetRequiredService<ISourceManager>();
 
+        var effectiveCompressionLevel = fileEntry.CompressionLevel ?? planCompressionLevel;
+
         if (sourceManager.FileExists(filePath))
         {
             _logger.LogInformation("Adding file to zip file '{FileEntryFilePath}' under zip path '{ZipPath}'",
                                    filePath, string.IsNullOrEmpty(zipPath) ? "<root>" : zipPath + '/');
-            zipper.AddFile(filePath, zipPath, fileEntry.CompressionLevel);
+            zipper.AddFile(filePath, zipPath, effectiveCompressionLevel);
         }
         else if (sourceManager.DirectoryExists(filePath))
         {
             _logger.LogInformation("Adding directory to zip file '{FileEntryFilePath}' under zip path '{ZipPath}'",
                                    filePath, string.IsNullOrEmpty(zipPath) ? "<root>" : zipPath + '/');
-            zipper.AddDirectory(filePath, zipPath, fileEntry.CompressionLevel);
+            zipper.AddDirectory(filePath, zipPath, effectiveCompressionLevel);
         }
         else
         {
@@ -107,12 +109,12 @@ public class BackupPlanZipper : IBackupPlanZipper
         }
     }
 
-    private void AddBackupDirectoryEntryToZip(IFileZipper zipper, BackupDirectoryEntry dirEntry, string zipPath)
+    private void AddBackupDirectoryEntryToZip(IFileZipper zipper, BackupDirectoryEntry dirEntry, string zipPath, int? planCompressionLevel)
     {
         var newZipPath = string.IsNullOrEmpty(zipPath) ? dirEntry.DirectoryName : Path.Combine(zipPath, dirEntry.DirectoryName);
         foreach (var subEntry in dirEntry.Items)
         {
-            AddEntryToZip(zipper, subEntry, newZipPath);
+            AddEntryToZip(zipper, subEntry, newZipPath, planCompressionLevel);
         }
     }
 

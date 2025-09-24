@@ -146,6 +146,9 @@ public class BackupPlan
     [JsonProperty("memoryLimitMB")]
     public int? MemoryLimitMB { get; set; }
 
+    [JsonProperty("compressionLevel")]
+    public int? CompressionLevel { get; set; }
+
     public static BackupPlan FromJsonFile(string inputPath)
     {
         var json = File.ReadAllText(inputPath);
