@@ -26,6 +26,7 @@ public class OnDiskFileZipper : FileZipperBase
 {
     private readonly ILogger<OnDiskFileZipper> _logger;
     private readonly ISourceManager _sourceManager;
+    private readonly string? _password;
     private readonly FileStream _zipFileStream;
     private readonly ZipOutputStream _zipOutputStream;
     private readonly bool _encrypt;
@@ -39,6 +40,7 @@ public class OnDiskFileZipper : FileZipperBase
     {
         _logger = logger;
         _sourceManager = sourceManager;
+        _password = password;
 
         var fileMode = overwriteFileIfExists ? FileMode.Create : FileMode.CreateNew;
         _zipFileStream = new FileStream(zipFilePath, fileMode, FileAccess.ReadWrite);
@@ -56,7 +58,7 @@ public class OnDiskFileZipper : FileZipperBase
     public override bool HasToBeSaved => false;
     public override bool CanEncryptHeaders => false;
 
-    public override void AddFile(string filePath, string zipPath = "")
+    public override void AddFile(string filePath, string zipPath = "", int? compressionLevel = null)
     {
         var newZipPath = Path.Combine(zipPath, PathHelper.GetName(filePath)).Replace('\\', '/');
 
@@ -75,6 +77,8 @@ public class OnDiskFileZipper : FileZipperBase
                 entry.DateTime = lastWriteTime.Value;
             }
 
+            _zipOutputStream.SetLevel(compressionLevel ?? DefaultCompressionLevel);
+
             _zipOutputStream.PutNextEntry(entry);
 
             using var fileStream = _sourceManager.GetStream(filePath);
@@ -89,7 +93,7 @@ public class OnDiskFileZipper : FileZipperBase
         #endif
     }
 
-    public override void AddDirectory(string directoryPath, string zipPath = "")
+    public override void AddDirectory(string directoryPath, string zipPath = "", int? compressionLevel = null)
     {
         var newZipPath = Path.Combine(zipPath, PathHelper.GetName(directoryPath)).Replace('\\', '/') + '/';
 
@@ -103,6 +107,8 @@ public class OnDiskFileZipper : FileZipperBase
         {
             entry.DateTime = lastWriteTime.Value;
         }
+
+        _zipOutputStream.SetLevel(compressionLevel ?? DefaultCompressionLevel);
 
         _zipOutputStream.PutNextEntry(entry);
         _zipOutputStream.CloseEntry();

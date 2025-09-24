@@ -31,10 +31,14 @@ public class BackupPlanZipper : IBackupPlanZipper
 
         using (var fileZipper = fileZipperFactory.Create(outputPath, overwriteFileIfExists: true, password))
         {
+            if (plan.ThreadLimit.HasValue)
+                fileZipper.ThreadLimit = plan.ThreadLimit.Value;
+
+            if (plan.MemoryLimitMB.HasValue)
+                fileZipper.MemoryLimitMB = plan.MemoryLimitMB.Value;
+
             if (fileZipper.CanEncryptHeaders)
-            {
                 fileZipper.EncryptHeaders = plan.EncryptHeaders;
-            }
 
             foreach (var entry in plan.Items)
             {
@@ -89,13 +93,13 @@ public class BackupPlanZipper : IBackupPlanZipper
         {
             _logger.LogInformation("Adding file to zip file '{FileEntryFilePath}' under zip path '{ZipPath}'",
                                    filePath, string.IsNullOrEmpty(zipPath) ? "<root>" : zipPath + '/');
-            zipper.AddFile(filePath, zipPath);
+            zipper.AddFile(filePath, zipPath, fileEntry.CompressionLevel);
         }
         else if (sourceManager.DirectoryExists(filePath))
         {
             _logger.LogInformation("Adding directory to zip file '{FileEntryFilePath}' under zip path '{ZipPath}'",
                                    filePath, string.IsNullOrEmpty(zipPath) ? "<root>" : zipPath + '/');
-            zipper.AddDirectory(filePath, zipPath);
+            zipper.AddDirectory(filePath, zipPath, fileEntry.CompressionLevel);
         }
         else
         {
@@ -126,7 +130,8 @@ public class BackupPlanZipper : IBackupPlanZipper
         {
             Password = password,
             CreateEmptyDirectories = true,
-            EntryEncryptionMethod = ZipEncryptionMethod.AES256
+            EntryEncryptionMethod = ZipEncryptionMethod.AES256,
+            CompressionLevel = 0
         };
         fastZip.CreateZip(zipPath, directory, false, innerZipName);
 

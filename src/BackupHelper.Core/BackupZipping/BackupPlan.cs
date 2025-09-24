@@ -19,12 +19,14 @@ public class BackupEntryConverter : JsonConverter<BackupEntry>
             {
                 var filePath = obj["path"]?.ToString();
                 var cronExpression = obj["cronExpression"]?.ToString();
+                var compressionLevel = obj["compressionLevel"]?.ToObject<int?>();
                 var timeZone = obj["timeZone"]?.ToString();
 
                 return new BackupFileEntry
                 {
                     FilePath = filePath,
                     CronExpression = cronExpression,
+                    CompressionLevel = compressionLevel,
                     TimeZone = timeZone ?? string.Empty
                 };
             }
@@ -71,6 +73,9 @@ public class BackupFileEntry : BackupEntry
 
     [JsonProperty("cronExpression")]
     public string? CronExpression { get; set; } = null;
+
+    [JsonProperty("compressionLevel")]
+    public int? CompressionLevel { get; set; }
 
     [JsonProperty("timeZone")]
     public string TimeZone
@@ -133,8 +138,13 @@ public class BackupPlan
     public string? LogDirectory { get; set; }
 
     [JsonProperty("encryptHeaders")]
-
     public bool EncryptHeaders { get; set; } = false;
+
+    [JsonProperty("threadLimit")]
+    public int? ThreadLimit { get; set; }
+
+    [JsonProperty("memoryLimitMB")]
+    public int? MemoryLimitMB { get; set; }
 
     public static BackupPlan FromJsonFile(string inputPath)
     {
