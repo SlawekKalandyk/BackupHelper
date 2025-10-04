@@ -20,4 +20,5 @@ public interface ISource : IDisposable
     bool DirectoryExists(string path);
     DateTime? GetFileLastWriteTime(string path);
     DateTime? GetDirectoryLastWriteTime(string path);
+    long GetFileSize(string path);
 }

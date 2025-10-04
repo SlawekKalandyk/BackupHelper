@@ -13,7 +13,11 @@ public class SMBConnection : IDisposable
     public SMBConnection(string serverName, string domainName, string shareName, string username, string password)
     {
         _smb2Client = new SMB2Client();
-        _smb2Client.Connect(serverName, SMBTransportType.DirectTCPTransport);
+        var connected = _smb2Client.Connect(serverName, SMBTransportType.DirectTCPTransport);
+
+        if (!connected)
+            throw new InvalidOperationException($"Failed to connect to SMB server at {serverName}");
+
         var status = _smb2Client.Login(domainName, username, password);
         SMBHelper.ThrowIfStatusNotSuccess(status, nameof(_smb2Client.Login));
 
@@ -106,8 +110,14 @@ public class SMBConnection : IDisposable
     public DateTime? GetDirectoryLastWriteTime(string directoryPath)
         => SMBDirectory.GetLastWriteTime(_smbFileStore, directoryPath);
 
+    public long GetFileSize(string smbPath)
+        => SMBFile.GetFileSize(_smbFileStore, smbPath);
+
     public void Dispose()
     {
+        if (!IsConnected)
+            return;
+
         _smbFileStore.Disconnect();
         _smb2Client.Logoff();
         _smb2Client.Disconnect();

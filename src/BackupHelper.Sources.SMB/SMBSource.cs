@@ -5,110 +5,98 @@ namespace BackupHelper.Sources.SMB;
 
 public class SMBSource : ISource
 {
-    private readonly ICredentialsProvider _credentialsProvider;
-    private readonly IDictionary<SMBShareInfo, SMBConnection> _connections = new Dictionary<SMBShareInfo, SMBConnection>();
+    private readonly SMBConnectionPool _connectionPool;
+
+    public SMBSource(ICredentialsProvider credentialsProvider)
+    {
+        _connectionPool = new SMBConnectionPool(credentialsProvider);
+    }
 
     public static string Scheme => "smb";
 
     public string GetScheme() => Scheme;
 
-    public SMBSource(ICredentialsProvider credentialsProvider)
-    {
-        _credentialsProvider = credentialsProvider;
-    }
-
     public Stream GetStream(string path)
     {
-        var (shareInfo, connection, smbPath) = GetFullSMBInfo(path);
-        return connection.GetStream(smbPath);
+        var shareInfo = SMBShareInfo.FromFilePath(path);
+        var smbPath = SMBHelper.StripShareInfo(path);
+        var connection = _connectionPool.GetConnection(shareInfo);
+        
+        try
+        {
+            var stream = connection.GetStream(smbPath);
+            return new PooledSMBStream(stream, connection, shareInfo, _connectionPool);
+        }
+        catch
+        {
+            _connectionPool.ReturnConnection(shareInfo, connection);
+            throw;
+        }
     }
 
     public IEnumerable<string> GetSubDirectories(string path)
     {
-        var (shareInfo, connection, smbPath) = GetFullSMBInfo(path);
-        return connection.GetSubDirectories(smbPath).Select(dir => Path.Join(shareInfo.ToString(), dir));
+        return ExecuteWithConnection(path, (connection, smbPath, shareInfo) =>
+            connection.GetSubDirectories(smbPath).Select(dir => Path.Join(shareInfo.ToString(), dir)).ToList());
     }
 
     public IEnumerable<string> GetFiles(string path)
     {
-        var (shareInfo, connection, smbPath) = GetFullSMBInfo(path);
-        return connection.GetFiles(smbPath).Select(file => Path.Join(shareInfo.ToString(), file));
+        return ExecuteWithConnection(path, (connection, smbPath, shareInfo) =>
+            connection.GetFiles(smbPath).Select(file => Path.Join(shareInfo.ToString(), file)).ToList());
     }
 
     public bool FileExists(string path)
     {
-        var (shareInfo, connection, smbPath) = GetFullSMBInfo(path);
-        return connection.FileExists(smbPath);
+        return ExecuteWithConnection(path, (connection, smbPath, _) =>
+            connection.FileExists(smbPath));
     }
 
     public bool DirectoryExists(string path)
     {
-        var (shareInfo , connection, smbPath) = GetFullSMBInfo(path);
-        return connection.DirectoryExists(smbPath);
+        return ExecuteWithConnection(path, (connection, smbPath, _) =>
+            connection.DirectoryExists(smbPath));
     }
 
     public DateTime? GetFileLastWriteTime(string path)
     {
-        var (shareInfo , connection, smbPath) = GetFullSMBInfo(path);
-        return connection.GetFileLastWriteTime(smbPath);
+        return ExecuteWithConnection(path, (connection, smbPath, _) =>
+            connection.GetFileLastWriteTime(smbPath));
     }
 
     public DateTime? GetDirectoryLastWriteTime(string path)
     {
-        var (shareInfo, connection, smbPath) = GetFullSMBInfo(path);
-        return connection.GetDirectoryLastWriteTime(smbPath);
+        return ExecuteWithConnection(path, (connection, smbPath, _) =>
+            connection.GetDirectoryLastWriteTime(smbPath));
     }
 
-    private (SMBShareInfo shareInfo, SMBConnection connection, string smbPath) GetFullSMBInfo(string path)
+    public long GetFileSize(string path)
+    {
+        return ExecuteWithConnection(path, (connection, smbPath, _) =>
+            connection.GetFileSize(smbPath));
+    }
+
+    private T ExecuteWithConnection<T>(string path, Func<SMBConnection, string, SMBShareInfo, T> operation)
     {
         var shareInfo = SMBShareInfo.FromFilePath(path);
-        var connection = GetConnection(shareInfo, path);
         var smbPath = SMBHelper.StripShareInfo(path);
-        return (shareInfo, connection, smbPath);
-    }
-
-    private SMBConnection GetConnection(SMBShareInfo shareInfo, string path)
-    {
-        if (_connections.TryGetValue(shareInfo, out var connection))
+        var connection = _connectionPool.GetConnection(shareInfo);
+        
+        try
         {
-            if (connection.IsConnected)
-                return connection;
-
-            connection.Dispose();
-            _connections.Remove(shareInfo);
-            return GetConnection(shareInfo, path);
+            var result = operation(connection, smbPath, shareInfo);
+            _connectionPool.ReturnConnection(shareInfo, connection);
+            return result;
         }
-
-        var credential = GetCredential(shareInfo);
-        var smbConnection = new SMBConnection(
-            shareInfo.ServerIPAddress,
-            string.Empty,
-            shareInfo.ShareName,
-            credential.Username,
-            credential.Password
-        );
-        _connections[shareInfo] = smbConnection;
-        return smbConnection;
-    }
-
-    private SMBCredential GetCredential(SMBShareInfo shareInfo)
-    {
-        var credentialName = SMBCredentialHelper.GetSMBCredentialTitle(shareInfo.ServerIPAddress.ToString(), shareInfo.ShareName);
-        var credential = _credentialsProvider.GetCredential(credentialName);
-
-        if (credential == null)
+        catch
         {
-            throw new InvalidOperationException($"No credentials found for SMB share '{credentialName}'.");
+            _connectionPool.ReturnConnection(shareInfo, connection);
+            throw;
         }
-
-        return new SMBCredential(shareInfo.ServerIPAddress.ToString(), shareInfo.ShareName, credential.Username, credential.Password!);
     }
 
     public void Dispose()
     {
-        foreach (var connection in _connections.Values)
-        {
-            connection.Dispose();
-        }
+        _connectionPool.Dispose();
     }
 }

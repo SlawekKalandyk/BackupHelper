@@ -56,6 +56,9 @@ public class FileSystemSource : ISource
     public DateTime? GetDirectoryLastWriteTime(string path)
         => Directory.GetLastWriteTime(path);
 
+    public long GetFileSize(string path)
+        => new FileInfo(path).Length;
+
     private T GetFromFileInUseSource<T>(string path, Func<string, T> defaultFunc, Func<IFileInUseSource, string, T> fileInUseFunc,
                                         [CallerMemberName] string callerName = "")
     {

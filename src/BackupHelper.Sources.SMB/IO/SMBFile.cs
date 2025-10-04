@@ -161,6 +161,27 @@ public class SMBFile : SMBIOComponentBase
         return fileExists;
     }
 
+    public static long GetFileSize(ISMBFileStore fileStore, string filePath)
+    {
+        var status = fileStore.CreateFile(
+            out var fileHandle,
+            out var fileStatus,
+            filePath,
+            AccessMask.GENERIC_READ | AccessMask.SYNCHRONIZE,
+            FileAttributes.Normal,
+            ShareAccess.Read,
+            CreateDisposition.FILE_OPEN,
+            CreateOptions.FILE_NON_DIRECTORY_FILE | CreateOptions.FILE_SYNCHRONOUS_IO_NONALERT,
+            null);
+        SMBHelper.ThrowIfStatusNotSuccess(status, nameof(fileStore.CreateFile));
+        SMBHelper.ThrowIfFileStatusNotFileOpened(fileStatus, filePath, nameof(fileStore.CreateFile));
+
+        var fileInfo = GetFileInfo(fileStore, filePath, fileHandle);
+        fileStore.CloseFile(fileHandle);
+
+        return fileInfo.StandardInformation.EndOfFile;
+    }
+
     private static FileAllInformation GetFileInfo(ISMBFileStore fileStore, string filePath, object fileHandle)
     {
         var status = fileStore.GetFileInformation(
