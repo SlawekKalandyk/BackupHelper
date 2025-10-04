@@ -52,6 +52,7 @@ public class InMemoryFileZipper : FileZipperBase
     }
 
     public override bool HasToBeSaved => true;
+    public override bool CanEncryptHeaders => false;
 
     protected override void SaveCore()
     {
