@@ -45,6 +45,8 @@ public class BackupPlanZipper : IBackupPlanZipper
                 AddEntryToZip(fileZipper, entry, string.Empty, plan.CompressionLevel);
             }
 
+            fileZipper.Wait();
+
             if (fileZipper.HasToBeSaved)
             {
                 _logger.LogInformation("Saving zip to {OutputPath}", outputPath);

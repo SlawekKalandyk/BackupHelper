@@ -65,4 +65,9 @@ public interface IFileZipper : IDisposable
     /// Save created zip archive
     /// </summary>
     void Save();
+
+    /// <summary>
+    /// Wait for all queued operations to complete
+    /// </summary>
+    void Wait();
 }

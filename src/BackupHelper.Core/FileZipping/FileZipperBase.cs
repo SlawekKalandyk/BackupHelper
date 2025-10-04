@@ -26,6 +26,11 @@ public abstract class FileZipperBase : IFileZipper
         SaveCore();
     }
 
+    public virtual void Wait()
+    {
+        // Default implementation does nothing
+    }
+
     protected virtual void SaveCore()
     {
         // Default implementation does nothing
