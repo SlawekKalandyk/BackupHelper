@@ -9,4 +9,5 @@ public interface ISourceManager
     bool DirectoryExists(string path);
     DateTime? GetFileLastWriteTime(string path);
     DateTime? GetDirectoryLastWriteTime(string directoryPath);
+    long GetFileSize(string path);
 }

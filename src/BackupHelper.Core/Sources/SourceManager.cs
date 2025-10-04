@@ -62,6 +62,11 @@ public class SourceManager : ISourceManager
         return GetFromSource(path, (source, pathWithoutScheme) => source.GetDirectoryLastWriteTime(pathWithoutScheme));
     }
 
+    public long GetFileSize(string path)
+    {
+        return GetFromSource(path, (source, pathWithoutScheme) => source.GetFileSize(pathWithoutScheme));
+    }
+
     private T GetFromSource<T>(string path, Func<ISource, string, T> action)
     {
         var scheme = GetScheme(path);

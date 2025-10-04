@@ -52,7 +52,6 @@ public class InMemoryFileZipper : FileZipperBase
     }
 
     public override bool HasToBeSaved => true;
-    public override bool CanEncryptHeaders => false;
 
     protected override void SaveCore()
     {
@@ -68,7 +67,7 @@ public class InMemoryFileZipper : FileZipperBase
         _zipMemoryStream.CopyTo(fileStream);
     }
 
-    public override void AddFile(string filePath, string zipPath = "")
+    public override void AddFile(string filePath, string zipPath = "", int? compressionLevel = null)
     {
         var newZipPath = Path.Combine(zipPath, PathHelper.GetName(filePath)).Replace('\\', '/');
         try
@@ -78,6 +77,9 @@ public class InMemoryFileZipper : FileZipperBase
                 DateTime = File.GetLastWriteTime(filePath),
                 AESKeySize = _encrypt ? 256 : 0
             };
+
+            _zipOutputStream.SetLevel(compressionLevel ?? DefaultCompressionLevel);
+
             _zipOutputStream.PutNextEntry(entry);
 
             using var fileStream = _sourceManager.GetStream(filePath);
@@ -90,7 +92,7 @@ public class InMemoryFileZipper : FileZipperBase
         }
     }
 
-    public override void AddDirectory(string directoryPath, string zipPath = "")
+    public override void AddDirectory(string directoryPath, string zipPath = "", int? compressionLevel = null)
     {
         var newZipPath = Path.Combine(zipPath, PathHelper.GetName(directoryPath)).Replace('\\', '/') + '/';
 
@@ -99,6 +101,9 @@ public class InMemoryFileZipper : FileZipperBase
             DateTime = Directory.GetLastWriteTime(directoryPath),
             AESKeySize = _encrypt ? 256 : 0
         };
+
+        _zipOutputStream.SetLevel(compressionLevel ?? DefaultCompressionLevel);
+
         _zipOutputStream.PutNextEntry(entry);
         _zipOutputStream.CloseEntry();
 

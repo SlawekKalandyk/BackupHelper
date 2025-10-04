@@ -84,13 +84,15 @@ public class PerformBackupStep : IWizardStep<PerformBackupStepParameters>
             var logFilePath = Path.Combine(logDirectory, "backup-.log");
             var logger = new LoggerConfiguration()
                          .MinimumLevel.Is(LogEventLevel.Information)
+                         .Enrich.WithThreadId()
                          .WriteTo.File(
                              logFilePath,
                              rollingInterval: RollingInterval.Month,
-                             fileSizeLimitBytes: 1_000_000,
+                             fileSizeLimitBytes: 10_000_000,
                              rollOnFileSizeLimit: true,
                              retainedFileCountLimit: 12,
-                             shared: true)
+                             shared: true,
+                             outputTemplate: "{Timestamp:yyyy-MM-dd HH:mm:ss.fff} [{Level:u3}] [ThreadId:{ThreadId}] {Message:lj}{NewLine}{Exception}")
                          .CreateLogger();
 
             _loggerFactory.AddSerilog(logger, dispose: true);
