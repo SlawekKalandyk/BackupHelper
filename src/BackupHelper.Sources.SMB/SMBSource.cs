@@ -1,5 +1,6 @@
 ﻿using BackupHelper.Abstractions;
 using BackupHelper.Sources.Abstractions;
+using Microsoft.Extensions.Logging;
 
 namespace BackupHelper.Sources.SMB;
 
@@ -7,9 +8,9 @@ public class SMBSource : ISource
 {
     private readonly SMBConnectionPool _connectionPool;
 
-    public SMBSource(ICredentialsProvider credentialsProvider)
+    public SMBSource(ICredentialsProvider credentialsProvider, ILoggerFactory loggerFactory)
     {
-        _connectionPool = new SMBConnectionPool(credentialsProvider);
+        _connectionPool = new SMBConnectionPool(credentialsProvider, loggerFactory.CreateLogger<SMBConnectionPool>());
     }
 
     public static string Scheme => "smb";

@@ -3,7 +3,7 @@ using System.IO;
 
 namespace BackupHelper.Sources.SMB;
 
-public class PooledSMBStream : Stream
+internal class PooledSMBStream : Stream
 {
     private readonly Stream _innerStream;
     private readonly SMBConnection _connection;
