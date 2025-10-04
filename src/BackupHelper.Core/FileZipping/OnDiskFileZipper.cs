@@ -36,7 +36,6 @@ public class OnDiskFileZipper : FileZipperBase
     private readonly ZipOutputStream _zipOutputStream;
     private readonly bool _encrypt;
     private ZipTaskQueue? _zipTaskQueue;
-    private int _memoryLimitMB;
 
     public OnDiskFileZipper(ILoggerFactory loggerFactory,
                             ISourceManager sourceManager,
@@ -62,7 +61,6 @@ public class OnDiskFileZipper : FileZipperBase
     }
 
     public override bool HasToBeSaved => false;
-    public override bool CanEncryptHeaders => false;
 
     private ZipTaskQueue ZipTaskQueue
     {
@@ -92,11 +90,24 @@ public class OnDiskFileZipper : FileZipperBase
             entry.DateTime = lastWriteTime.Value;
         }
 
-        var fileSizeMB = (int)Math.Ceiling((double)_sourceManager.GetFileSize(filePath) / (1024 * 1024));
-        var zipTask = fileSizeMB < MemoryLimitMB
-                          ? new ZipTask(fileSizeMB, new Task(() => AddEntryToZipInParallel(entry, filePath, compressionLevel), TaskCreationOptions.None), filePath)
-                          : new ZipTask(fileSizeMB, new Task(() => AddEntryToZipSynchronously(entry, filePath, compressionLevel), TaskCreationOptions.None), filePath);
-        ZipTaskQueue.Enqueue(zipTask);
+        if (ThreadLimit <= 1)
+        {
+            AddEntryToZipSynchronously(entry, filePath, compressionLevel);
+        }
+        else
+        {
+            var fileSizeMB = (int)Math.Ceiling((double)_sourceManager.GetFileSize(filePath) / (1024 * 1024));
+            var zipTask = fileSizeMB < MemoryLimitMB
+                              ? new ZipTask(
+                                  fileSizeMB,
+                                  new Task(() => AddEntryToZipInParallel(entry, filePath, compressionLevel), TaskCreationOptions.None),
+                                  filePath)
+                              : new ZipTask(
+                                  fileSizeMB,
+                                  new Task(() => AddEntryToZipSynchronously(entry, filePath, compressionLevel), TaskCreationOptions.None),
+                                  filePath);
+            ZipTaskQueue.Enqueue(zipTask);
+        }
     #if !DEBUG
         }
         catch (IOException e)
@@ -205,7 +216,6 @@ public class OnDiskFileZipper : FileZipperBase
 
     public override void Dispose()
     {
-        _logger.LogInformation("Disposing OnDiskFileZipper for {ZipFileStreamName}, StackTrace: {StackTrace}", _zipFileStream.Name, Environment.StackTrace);
         base.Dispose();
         ZipTaskQueue.Stop();
         _zipOutputStream.Dispose();

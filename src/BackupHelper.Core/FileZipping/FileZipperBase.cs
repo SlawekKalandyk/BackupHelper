@@ -8,12 +8,10 @@ public abstract class FileZipperBase : IFileZipper
         OverwriteFileIfExists = overwriteFileIfExists;
     }
 
-    public bool EncryptHeaders { get; set; }
     public int ThreadLimit { get; set; } = 1;
     public int MemoryLimitMB { get; set; } = 0;
     public virtual int DefaultCompressionLevel => 9;
     public abstract bool HasToBeSaved { get; }
-    public abstract bool CanEncryptHeaders { get; }
     protected string ZipFilePath { get; }
     protected bool OverwriteFileIfExists { get; }
 
