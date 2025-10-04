@@ -137,9 +137,6 @@ public class BackupPlan
     [JsonProperty("logDirectory")]
     public string? LogDirectory { get; set; }
 
-    [JsonProperty("encryptHeaders")]
-    public bool EncryptHeaders { get; set; } = false;
-
     [JsonProperty("threadLimit")]
     public int? ThreadLimit { get; set; }
 

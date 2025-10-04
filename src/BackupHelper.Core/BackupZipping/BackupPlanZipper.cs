@@ -24,21 +24,17 @@ public class BackupPlanZipper : IBackupPlanZipper
     public void CreateZipFile(BackupPlan plan, string outputPath, string? password = null)
     {
         _logger.LogInformation("Creating backup file at {OutputPath}", outputPath);
-        var fileZipperCanEncryptHeaders = false;
 
         using var scope = _serviceScopeFactory.CreateScope();
         var fileZipperFactory = scope.ServiceProvider.GetRequiredService<IFileZipperFactory>();
 
-        using (var fileZipper = fileZipperFactory.Create(outputPath, overwriteFileIfExists: true, password))
+        using (var fileZipper = fileZipperFactory.Create(outputPath, overwriteFileIfExists: true))
         {
             if (plan.ThreadLimit.HasValue)
                 fileZipper.ThreadLimit = plan.ThreadLimit.Value;
 
             if (plan.MemoryLimitMB.HasValue)
                 fileZipper.MemoryLimitMB = plan.MemoryLimitMB.Value;
-
-            if (fileZipper.CanEncryptHeaders)
-                fileZipper.EncryptHeaders = plan.EncryptHeaders;
 
             foreach (var entry in plan.Items)
             {
@@ -52,13 +48,10 @@ public class BackupPlanZipper : IBackupPlanZipper
                 _logger.LogInformation("Saving zip to {OutputPath}", outputPath);
                 fileZipper.Save();
             }
-
-            fileZipperCanEncryptHeaders = fileZipper.CanEncryptHeaders;
         }
 
-        if (!string.IsNullOrWhiteSpace(password) && plan.EncryptHeaders && !fileZipperCanEncryptHeaders)
+        if (!string.IsNullOrWhiteSpace(password))
         {
-            _logger.LogInformation("Used file zipper doesn't encrypt headers by default. Fallback to encryption by double zipping");
             EncryptZipFile(outputPath, password);
         }
     }

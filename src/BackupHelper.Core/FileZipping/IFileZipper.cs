@@ -13,17 +13,6 @@ public interface IFileZipper : IDisposable
     bool HasToBeSaved { get; }
 
     /// <summary>
-    /// Can headers in zip archive be encrypted (i.e. file and directory names)
-    /// </summary>
-    bool CanEncryptHeaders { get; }
-
-    /// <summary>
-    /// Encrypt headers in zip archive (i.e. file and directory names) if supported by the implementation.
-    /// If not supported, this property is ignored.
-    /// </summary>
-    bool EncryptHeaders { get; set; }
-
-    /// <summary>
     /// Limit number of threads used for compression. Default is 1 (no multithreading).
     /// </summary>
     int ThreadLimit { get; set; }

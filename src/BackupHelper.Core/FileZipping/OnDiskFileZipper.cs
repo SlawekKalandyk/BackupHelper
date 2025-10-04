@@ -62,7 +62,6 @@ public class OnDiskFileZipper : FileZipperBase
     }
 
     public override bool HasToBeSaved => false;
-    public override bool CanEncryptHeaders => false;
 
     private ZipTaskQueue ZipTaskQueue
     {
