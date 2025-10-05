@@ -1,23 +1,23 @@
-﻿namespace BackupHelper.Abstractions.ConnectionPooling;
+﻿namespace BackupHelper.Abstractions.ResourcePooling;
 
-public class PooledConnectionStream<TConnection, TEndpoint> : Stream
-    where TEndpoint : notnull
+public class PooledResourceStream<TResource, TResourceId> : Stream
+    where TResourceId : notnull
 {
     private readonly Stream _innerStream;
-    private readonly TConnection _connection;
-    private readonly TEndpoint _connectionPoolKey;
-    private readonly ConnectionPoolBase<TConnection, TEndpoint> _connectionPoolBase;
+    private readonly TResource _resource;
+    private readonly TResourceId _resourceId;
+    private readonly ResourcePoolBase<TResource, TResourceId> _resourcePoolBase;
     private bool _disposed;
 
-    public PooledConnectionStream(Stream innerStream,
-                                  TConnection connection,
-                                  TEndpoint connectionPoolKey,
-                                  ConnectionPoolBase<TConnection, TEndpoint> connectionPoolBase)
+    public PooledResourceStream(Stream innerStream,
+                                  TResource resource,
+                                  TResourceId resourceId,
+                                  ResourcePoolBase<TResource, TResourceId> resourcePoolBase)
     {
         _innerStream = innerStream;
-        _connection = connection;
-        _connectionPoolKey = connectionPoolKey;
-        _connectionPoolBase = connectionPoolBase;
+        _resource = resource;
+        _resourceId = resourceId;
+        _resourcePoolBase = resourcePoolBase;
     }
 
     public override bool CanRead => _innerStream.CanRead;
@@ -53,7 +53,7 @@ public class PooledConnectionStream<TConnection, TEndpoint> : Stream
             if (disposing)
             {
                 _innerStream.Dispose();
-                _connectionPoolBase.ReturnConnection(_connectionPoolKey, _connection);
+                _resourcePoolBase.ReturnResource(_resourceId, _resource);
             }
             _disposed = true;
         }

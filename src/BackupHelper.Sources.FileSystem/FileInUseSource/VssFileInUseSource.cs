@@ -1,5 +1,5 @@
 ﻿using System.IO.Compression;
-using BackupHelper.Abstractions.ConnectionPooling;
+using BackupHelper.Abstractions.ResourcePooling;
 using BackupHelper.Sources.FileSystem.Vss;
 using Microsoft.Extensions.Logging;
 
@@ -22,31 +22,31 @@ public class VssFileInUseSourceFactory : IFileInUseSourceFactory
 
 public class VssFileInUseSource : IFileInUseSource
 {
-    private readonly VssConnectionPool _connectionPool;
+    private readonly VssBackupPool _vssBackupPool;
 
     public VssFileInUseSource(ILoggerFactory loggerFactory)
     {
-        _connectionPool = new VssConnectionPool(loggerFactory.CreateLogger<VssConnectionPool>(), loggerFactory.CreateLogger<VssBackup>());
+        _vssBackupPool = new VssBackupPool(loggerFactory.CreateLogger<VssBackupPool>(), loggerFactory.CreateLogger<VssBackup>());
     }
 
     public Stream GetStream(string path)
     {
         var volume = Path.GetPathRoot(path)!;
-        var vssBackup = _connectionPool.GetConnection(volume);
+        var vssBackup = _vssBackupPool.GetResource(volume);
 
         try
         {
             var snapshotPath = vssBackup.GetSnapshotPath(path);
 
-            return new PooledConnectionStream<VssBackup, string>(
+            return new PooledResourceStream<VssBackup, string>(
                 new FileStream(snapshotPath, FileMode.Open, FileAccess.Read, FileShare.Read),
                 vssBackup,
                 volume,
-                _connectionPool);
+                _vssBackupPool);
         }
         catch
         {
-            _connectionPool.ReturnConnection(volume, vssBackup);
+            _vssBackupPool.ReturnResource(volume, vssBackup);
 
             throw;
         }
@@ -65,19 +65,19 @@ public class VssFileInUseSource : IFileInUseSource
     private T ExecuteWithConnection<T>(string path, Func<string, T> operation)
     {
         var volume = Path.GetPathRoot(path)!;
-        var vssBackup = _connectionPool.GetConnection(volume);
+        var vssBackup = _vssBackupPool.GetResource(volume);
 
         try
         {
             var snapshotPath = vssBackup.GetSnapshotPath(path);
             var result = operation(snapshotPath);
-            _connectionPool.ReturnConnection(volume, vssBackup);
+            _vssBackupPool.ReturnResource(volume, vssBackup);
 
             return result;
         }
         catch
         {
-            _connectionPool.ReturnConnection(volume, vssBackup);
+            _vssBackupPool.ReturnResource(volume, vssBackup);
 
             throw;
         }
@@ -85,6 +85,6 @@ public class VssFileInUseSource : IFileInUseSource
 
     public void Dispose()
     {
-        _connectionPool.Dispose();
+        _vssBackupPool.Dispose();
     }
 }

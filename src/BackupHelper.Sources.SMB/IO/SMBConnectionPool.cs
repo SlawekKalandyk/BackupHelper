@@ -1,10 +1,10 @@
 ﻿using BackupHelper.Abstractions;
-using BackupHelper.Abstractions.ConnectionPooling;
+using BackupHelper.Abstractions.ResourcePooling;
 using Microsoft.Extensions.Logging;
 
 namespace BackupHelper.Sources.SMB;
 
-internal class SMBConnectionPool : ConnectionPoolBase<SMBConnection, SMBShareInfo>
+internal class SMBConnectionPool : ResourcePoolBase<SMBConnection, SMBShareInfo>
 {
     private readonly ICredentialsProvider _credentialsProvider;
 
@@ -14,7 +14,7 @@ internal class SMBConnectionPool : ConnectionPoolBase<SMBConnection, SMBShareInf
         _credentialsProvider = credentialsProvider;
     }
 
-    protected override SMBConnection CreateConnection(SMBShareInfo shareInfo)
+    protected override SMBConnection CreateResource(SMBShareInfo shareInfo)
     {
         var credential = GetCredential(shareInfo);
 
@@ -26,7 +26,7 @@ internal class SMBConnectionPool : ConnectionPoolBase<SMBConnection, SMBShareInf
             credential.Password);
     }
 
-    protected override bool ValidateConnection(SMBConnection connection)
+    protected override bool ValidateResource(SMBConnection connection)
     {
         try
         {
@@ -38,7 +38,7 @@ internal class SMBConnectionPool : ConnectionPoolBase<SMBConnection, SMBShareInf
         }
     }
 
-    protected override void DisposeConnection(SMBConnection connection)
+    protected override void DisposeResource(SMBConnection connection)
     {
         connection.Dispose();
     }

@@ -1,5 +1,5 @@
 ﻿using BackupHelper.Abstractions;
-using BackupHelper.Abstractions.ConnectionPooling;
+using BackupHelper.Abstractions.ResourcePooling;
 using BackupHelper.Sources.Abstractions;
 using Microsoft.Extensions.Logging;
 
@@ -22,16 +22,16 @@ public class SMBSource : ISource
     {
         var shareInfo = SMBShareInfo.FromFilePath(path);
         var smbPath = SMBHelper.StripShareInfo(path);
-        var connection = _connectionPool.GetConnection(shareInfo);
+        var connection = _connectionPool.GetResource(shareInfo);
         
         try
         {
             var stream = connection.GetStream(smbPath);
-            return new PooledConnectionStream<SMBConnection, SMBShareInfo>(stream, connection, shareInfo, _connectionPool);
+            return new PooledResourceStream<SMBConnection, SMBShareInfo>(stream, connection, shareInfo, _connectionPool);
         }
         catch
         {
-            _connectionPool.ReturnConnection(shareInfo, connection);
+            _connectionPool.ReturnResource(shareInfo, connection);
             throw;
         }
     }
@@ -82,17 +82,17 @@ public class SMBSource : ISource
     {
         var shareInfo = SMBShareInfo.FromFilePath(path);
         var smbPath = SMBHelper.StripShareInfo(path);
-        var connection = _connectionPool.GetConnection(shareInfo);
+        var connection = _connectionPool.GetResource(shareInfo);
         
         try
         {
             var result = operation(connection, smbPath, shareInfo);
-            _connectionPool.ReturnConnection(shareInfo, connection);
+            _connectionPool.ReturnResource(shareInfo, connection);
             return result;
         }
         catch
         {
-            _connectionPool.ReturnConnection(shareInfo, connection);
+            _connectionPool.ReturnResource(shareInfo, connection);
             throw;
         }
     }

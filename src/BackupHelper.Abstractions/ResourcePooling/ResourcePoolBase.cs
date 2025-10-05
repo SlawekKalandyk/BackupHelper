@@ -1,63 +1,64 @@
 ﻿using System.Collections.Concurrent;
 using Microsoft.Extensions.Logging;
 
-namespace BackupHelper.Abstractions.ConnectionPooling;
+namespace BackupHelper.Abstractions.ResourcePooling;
 
 /// <summary>
-/// Abstract connection pool for managing connections to various endpoints
+/// Abstract resource pool for managing resources like connections.
+/// Implements pooling, idle timeout management, and thread safety.
 /// </summary>
-/// <typeparam name="TConnection">The type of connection to manage</typeparam>
-/// <typeparam name="TEndpoint">The type of endpoint identifier</typeparam>
-public abstract class ConnectionPoolBase<TConnection, TEndpoint> : IDisposable
-    where TEndpoint : notnull
+/// <typeparam name="TResource">The type of resource to manage</typeparam>
+/// <typeparam name="TResourceId">The type of resource identifier</typeparam>
+public abstract class ResourcePoolBase<TResource, TResourceId> : IDisposable
+    where TResourceId : notnull
 {
     protected readonly ILogger _logger;
 
-    private readonly ConcurrentDictionary<TEndpoint, ConcurrentBag<ConnectionIdleWrapper>> _connectionPools = new();
-    private readonly int _maxConnectionsPerEndpoint;
+    private readonly ConcurrentDictionary<TResourceId, ConcurrentBag<ResourceIdleWrapper>> _resourcePools = new();
+    private readonly int _maxResourcesPerIdentifier;
     private readonly SemaphoreSlim _poolLock = new SemaphoreSlim(1, 1);
     private readonly TimeSpan _idleTimeout;
     private readonly CancellationTokenSource _cleanupCancellationSource = new CancellationTokenSource();
     private Task? _cleanupTask;
 
-    protected ConnectionPoolBase(ILogger logger, int maxConnectionsPerEndpoint, TimeSpan idleTimeout)
+    protected ResourcePoolBase(ILogger logger, int maxResourcesPerIdentifier, TimeSpan idleTimeout)
     {
         _logger = logger;
-        _maxConnectionsPerEndpoint = maxConnectionsPerEndpoint;
+        _maxResourcesPerIdentifier = maxResourcesPerIdentifier;
         _idleTimeout = idleTimeout;
         _cleanupTask = StartCleanupTask();
     }
 
-    public TConnection GetConnection(TEndpoint endpoint)
+    public TResource GetResource(TResourceId resourceId)
     {
         _poolLock.Wait();
 
         try
         {
-            // Create the pool for this endpoint if it doesn't exist
-            if (!_connectionPools.TryGetValue(endpoint, out var pool))
+            // Create the pool for this identifier if it doesn't exist
+            if (!_resourcePools.TryGetValue(resourceId, out var pool))
             {
-                pool = new ConcurrentBag<ConnectionIdleWrapper>();
-                _connectionPools[endpoint] = pool;
+                pool = new ConcurrentBag<ResourceIdleWrapper>();
+                _resourcePools[resourceId] = pool;
             }
 
-            // Try to get an existing connection from pool
+            // Try to get an existing resource from pool
             if (pool.TryTake(out var wrapper))
             {
-                if (ValidateConnection(wrapper.Connection))
+                if (ValidateResource(wrapper.Resource))
                 {
                     wrapper.LastUsed = DateTime.UtcNow;
 
-                    return wrapper.Connection;
+                    return wrapper.Resource;
                 }
                 else
                 {
-                    DisposeConnection(wrapper.Connection);
+                    DisposeResource(wrapper.Resource);
                 }
             }
 
-            // Create a new connection if needed
-            return CreateConnection(endpoint);
+            // Create a new resource if needed
+            return CreateResource(resourceId);
         }
         finally
         {
@@ -65,21 +66,21 @@ public abstract class ConnectionPoolBase<TConnection, TEndpoint> : IDisposable
         }
     }
 
-    public void ReturnConnection(TEndpoint endpoint, TConnection connection)
+    public void ReturnResource(TResourceId resourceId, TResource resource)
     {
         _poolLock.Wait();
 
         try
         {
-            if (_connectionPools.TryGetValue(endpoint, out var pool) &&
-                pool.Count < _maxConnectionsPerEndpoint &&
-                ValidateConnection(connection))
+            if (_resourcePools.TryGetValue(resourceId, out var pool) &&
+                pool.Count < _maxResourcesPerIdentifier &&
+                ValidateResource(resource))
             {
-                pool.Add(new ConnectionIdleWrapper(connection));
+                pool.Add(new ResourceIdleWrapper(resource));
             }
             else
             {
-                DisposeConnection(connection);
+                DisposeResource(resource);
             }
         }
         finally
@@ -88,10 +89,10 @@ public abstract class ConnectionPoolBase<TConnection, TEndpoint> : IDisposable
         }
     }
 
-    protected abstract TConnection CreateConnection(TEndpoint endpoint);
-    protected abstract void DisposeConnection(TConnection connection);
+    protected abstract TResource CreateResource(TResourceId resourceId);
+    protected abstract void DisposeResource(TResource resource);
 
-    protected virtual bool ValidateConnection(TConnection connection)
+    protected virtual bool ValidateResource(TResource resource)
     {
         return true;
     }
@@ -110,7 +111,7 @@ public abstract class ConnectionPoolBase<TConnection, TEndpoint> : IDisposable
                         if (_cleanupCancellationSource.IsCancellationRequested)
                             break;
 
-                        await CleanupIdleConnections();
+                        await CleanupIdleResources();
                     }
                 }
                 catch (OperationCanceledException)
@@ -119,7 +120,7 @@ public abstract class ConnectionPoolBase<TConnection, TEndpoint> : IDisposable
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogError(ex, "Error occurred during connection pool cleanup.");
+                    _logger.LogError(ex, "Error occurred during resource pool cleanup.");
 
                     // Restart the cleanup task in case of unexpected errors
                     _cleanupTask = StartCleanupTask();
@@ -127,7 +128,7 @@ public abstract class ConnectionPoolBase<TConnection, TEndpoint> : IDisposable
             });
     }
 
-    private async Task CleanupIdleConnections()
+    private async Task CleanupIdleResources()
     {
         await _poolLock.WaitAsync();
 
@@ -135,23 +136,23 @@ public abstract class ConnectionPoolBase<TConnection, TEndpoint> : IDisposable
         {
             var now = DateTime.UtcNow;
 
-            foreach (var endpoint in _connectionPools.Keys)
+            foreach (var resourceId in _resourcePools.Keys)
             {
-                if (_connectionPools.TryGetValue(endpoint, out var pool))
+                if (_resourcePools.TryGetValue(resourceId, out var pool))
                 {
-                    var tempPool = new List<ConnectionIdleWrapper>();
+                    var tempPool = new List<ResourceIdleWrapper>();
 
                     while (pool.TryTake(out var wrapper))
                     {
                         if (now - wrapper.LastUsed <= _idleTimeout)
                             tempPool.Add(wrapper);
                         else
-                            DisposeConnection(wrapper.Connection);
+                            DisposeResource(wrapper.Resource);
                     }
 
-                    foreach (var connection in tempPool)
+                    foreach (var resource in tempPool)
                     {
-                        pool.Add(connection);
+                        pool.Add(resource);
                     }
                 }
             }
@@ -167,11 +168,11 @@ public abstract class ConnectionPoolBase<TConnection, TEndpoint> : IDisposable
         _cleanupCancellationSource.Cancel();
         _cleanupTask?.Wait();
 
-        foreach (var pool in _connectionPools.Values)
+        foreach (var pool in _resourcePools.Values)
         {
             while (pool.TryTake(out var wrapper))
             {
-                DisposeConnection(wrapper.Connection);
+                DisposeResource(wrapper.Resource);
             }
         }
 
@@ -180,16 +181,16 @@ public abstract class ConnectionPoolBase<TConnection, TEndpoint> : IDisposable
     }
 
     /// <summary>
-    /// Wrapper over connection to track last used time for idle timeout management.
+    /// Wrapper over resource to track last used time for idle timeout management.
     /// </summary>
-    private class ConnectionIdleWrapper
+    private class ResourceIdleWrapper
     {
-        public TConnection Connection { get; }
+        public TResource Resource { get; }
         public DateTime LastUsed { get; set; }
 
-        public ConnectionIdleWrapper(TConnection connection)
+        public ResourceIdleWrapper(TResource resource)
         {
-            Connection = connection;
+            Resource = resource;
             LastUsed = DateTime.UtcNow;
         }
     }
