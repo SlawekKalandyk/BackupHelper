@@ -1,5 +1,4 @@
-﻿using System.IO.Compression;
-using BackupHelper.Abstractions.ResourcePooling;
+﻿using BackupHelper.Abstractions.ResourcePooling;
 using BackupHelper.Sources.FileSystem.Vss;
 using Microsoft.Extensions.Logging;
 
@@ -54,15 +53,15 @@ public class VssFileInUseSource : IFileInUseSource
 
     public IEnumerable<string> GetSubDirectories(string path)
     {
-        return ExecuteWithConnection(path, Directory.GetDirectories);
+        return ExecuteWithVssBackup(path, Directory.GetDirectories);
     }
 
     public IEnumerable<string> GetFiles(string path)
     {
-        return ExecuteWithConnection(path, Directory.GetFiles);
+        return ExecuteWithVssBackup(path, Directory.GetFiles);
     }
 
-    private T ExecuteWithConnection<T>(string path, Func<string, T> operation)
+    private T ExecuteWithVssBackup<T>(string path, Func<string, T> operation)
     {
         var volume = Path.GetPathRoot(path)!;
         var vssBackup = _vssBackupPool.GetResource(volume);
