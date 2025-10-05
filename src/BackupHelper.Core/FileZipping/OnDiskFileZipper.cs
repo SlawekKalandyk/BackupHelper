@@ -53,6 +53,7 @@ public class OnDiskFileZipper : FileZipperBase
         var fileMode = overwriteFileIfExists ? FileMode.Create : FileMode.CreateNew;
         _zipFileStream = new FileStream(zipFilePath, fileMode, FileAccess.ReadWrite);
         _zipOutputStream = new ZipOutputStream(_zipFileStream);
+        _zipOutputStream.UseZip64 = UseZip64.On;
 
         if (!string.IsNullOrEmpty(password))
         {

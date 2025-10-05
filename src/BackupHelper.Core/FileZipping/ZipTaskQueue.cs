@@ -66,7 +66,7 @@ internal class ZipTaskQueue
                                     if (t.IsFaulted)
                                     {
                                         _failedFiles.Add(taskToRun.FilePath);
-                                        _logger?.LogError(t.Exception, "Task failed in ZipTaskQueue");
+                                        _logger?.LogError(t.Exception, "Task failed in ZipTaskQueue for {FilePath}", taskToRun.FilePath);
                                     }
 
                                     Interlocked.Decrement(ref _currentThreads);
