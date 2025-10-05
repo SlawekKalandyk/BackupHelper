@@ -28,6 +28,11 @@ public interface IFileZipper : IDisposable
     int DefaultCompressionLevel { get; }
 
     /// <summary>
+    /// List of files that failed to be added to the zip archive
+    /// </summary>
+    IReadOnlyCollection<string> FailedFiles { get; }
+
+    /// <summary>
     /// Add file to zip archive
     /// </summary>
     /// <param name="filePath">Path to the file in the filesystem</param>

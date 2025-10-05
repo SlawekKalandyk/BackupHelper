@@ -1,7 +1,11 @@
-﻿namespace BackupHelper.Core.FileZipping;
+﻿using System.Collections.Concurrent;
+
+namespace BackupHelper.Core.FileZipping;
 
 public abstract class FileZipperBase : IFileZipper
 {
+    protected readonly ConcurrentBag<string> _failedFiles = new();
+
     protected FileZipperBase(string zipFilePath, bool overwriteFileIfExists)
     {
         ZipFilePath = zipFilePath;
@@ -10,6 +14,7 @@ public abstract class FileZipperBase : IFileZipper
 
     public int ThreadLimit { get; set; } = 1;
     public int MemoryLimitMB { get; set; } = 0;
+    public IReadOnlyCollection<string> FailedFiles => _failedFiles;
     public virtual int DefaultCompressionLevel => 9;
     public abstract bool HasToBeSaved { get; }
     protected string ZipFilePath { get; }

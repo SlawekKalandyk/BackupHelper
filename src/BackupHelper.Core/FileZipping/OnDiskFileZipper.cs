@@ -1,4 +1,5 @@
-﻿using BackupHelper.Core.Sources;
+﻿using System.Collections.Concurrent;
+using BackupHelper.Core.Sources;
 using BackupHelper.Core.Utilities;
 using ICSharpCode.SharpZipLib.Checksum;
 using ICSharpCode.SharpZipLib.Zip;
@@ -59,14 +60,13 @@ public class OnDiskFileZipper : FileZipperBase
             _encrypt = true;
         }
     }
-
     public override bool HasToBeSaved => false;
 
     private ZipTaskQueue ZipTaskQueue
     {
         get
         {
-            _zipTaskQueue ??= new ZipTaskQueue(ThreadLimit, MemoryLimitMB, _loggerFactory.CreateLogger<ZipTaskQueue>());
+            _zipTaskQueue ??= new ZipTaskQueue(ThreadLimit, MemoryLimitMB, _loggerFactory.CreateLogger<ZipTaskQueue>(), _failedFiles);
             return _zipTaskQueue;
         }
     }
@@ -92,7 +92,15 @@ public class OnDiskFileZipper : FileZipperBase
 
         if (ThreadLimit <= 1)
         {
-            AddEntryToZipSynchronously(entry, filePath, compressionLevel);
+            try
+            {
+                AddEntryToZipSynchronously(entry, filePath, compressionLevel);
+            }
+            catch
+            {
+                _failedFiles.Add(filePath);
+                throw;
+            }
         }
         else
         {

@@ -8,16 +8,18 @@ internal class ZipTaskQueue
     private readonly int _threadLimit;
     private readonly int _memoryLimitMb;
     private readonly ILogger<ZipTaskQueue> _logger;
+    private readonly ConcurrentBag<string> _failedFiles;
     private readonly ConcurrentQueue<ZipTask> _tasks = new();
     private int _currentThreads = 0;
     private int _currentMemoryUsageMb = 0;
     private bool _isRunning = true;
 
-    public ZipTaskQueue(int threadLimit, int memoryLimitMB, ILogger<ZipTaskQueue> logger)
+    public ZipTaskQueue(int threadLimit, int memoryLimitMB, ILogger<ZipTaskQueue> logger, ConcurrentBag<string> failedFiles)
     {
         _threadLimit = threadLimit;
         _memoryLimitMb = memoryLimitMB;
         _logger = logger;
+        _failedFiles = failedFiles;
         _logger.LogInformation(
             "ZipTaskQueue initialized with ThreadLimit: {ThreadLimit}, MemoryLimitMB: {MemoryLimitMB}",
             threadLimit,
@@ -63,6 +65,7 @@ internal class ZipTaskQueue
                                 {
                                     if (t.IsFaulted)
                                     {
+                                        _failedFiles.Add(taskToRun.FilePath);
                                         _logger?.LogError(t.Exception, "Task failed in ZipTaskQueue");
                                     }
 

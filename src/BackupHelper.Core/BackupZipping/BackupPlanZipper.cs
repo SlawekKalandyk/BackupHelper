@@ -48,6 +48,8 @@ public class BackupPlanZipper : IBackupPlanZipper
                 _logger.LogInformation("Saving zip to {OutputPath}", outputPath);
                 fileZipper.Save();
             }
+
+            LogFailedFiles(fileZipper.FailedFiles);
         }
 
         if (!string.IsNullOrWhiteSpace(password))
@@ -133,5 +135,19 @@ public class BackupPlanZipper : IBackupPlanZipper
         fastZip.CreateZip(zipPath, directory, false, innerZipName);
 
         File.Delete(innerZipPath);
+    }
+
+    private void LogFailedFiles(IReadOnlyCollection<string> failedFiles)
+    {
+        if (failedFiles.Count > 0)
+        {
+            var stringBuilder = new System.Text.StringBuilder();
+            stringBuilder.AppendLine("The following files failed to be added to the zip archive:");
+            foreach (var failedFile in failedFiles)
+            {
+                stringBuilder.AppendLine($" - {failedFile}");
+            }
+            _logger.LogWarning(stringBuilder.ToString());
+        }
     }
 }
