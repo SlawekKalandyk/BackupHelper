@@ -1,5 +1,4 @@
-﻿using System.Collections.Concurrent;
-using BackupHelper.Core.Sources;
+﻿using BackupHelper.Core.Sources;
 using BackupHelper.Core.Utilities;
 using ICSharpCode.SharpZipLib.Checksum;
 using ICSharpCode.SharpZipLib.Zip;
@@ -109,7 +108,7 @@ public class OnDiskFileZipper : FileZipperBase
             var zipTask = fileSizeMB < MemoryLimitMB
                               ? new ZipTask(
                                   fileSizeMB,
-                                  new Task(() => AddEntryToZipInParallel(entry, filePath, compressionLevel), TaskCreationOptions.None),
+                                  new Task(() => AddEntryToZipInParallel(entry, filePath, fileSizeMB, compressionLevel), TaskCreationOptions.None),
                                   filePath)
                               : new ZipTask(
                                   fileSizeMB,
@@ -148,22 +147,22 @@ public class OnDiskFileZipper : FileZipperBase
             _zipOutputStream.CloseEntry();
         }
 
-        AddDirectoryContent(directoryPath, newZipPath.TrimEnd('/'));
+        AddDirectoryContent(directoryPath, newZipPath.TrimEnd('/'), compressionLevel);
     }
 
-    public override void AddDirectoryContent(string directoryPath, string zipPath = "")
+    public override void AddDirectoryContent(string directoryPath, string zipPath = "", int? compressionLevel = null)
     {
         var subDirectories = _sourceManager.GetSubDirectories(directoryPath);
         var files = _sourceManager.GetFiles(directoryPath);
 
         foreach (var subDirectoryPath in subDirectories)
         {
-            AddDirectory(subDirectoryPath, zipPath);
+            AddDirectory(subDirectoryPath, zipPath, compressionLevel);
         }
 
         foreach (var filePath in files)
         {
-            AddFile(filePath, zipPath);
+            AddFile(filePath, zipPath, compressionLevel);
         }
     }
 
@@ -172,13 +171,14 @@ public class OnDiskFileZipper : FileZipperBase
         ZipTaskQueue.WaitForCompletion();
     }
 
-    private void AddEntryToZipInParallel(ZipEntry entry, string filePath, int? compressionLevel)
+    private void AddEntryToZipInParallel(ZipEntry entry, string filePath, int fileSizeMB, int? compressionLevel)
     {
         var deflater = new Deflater(compressionLevel ?? DefaultCompressionLevel, true);
         var crc32 = new Crc32();
-        long size = 0;
-        using var outputMemoryStream = new MemoryStream();
-        using var zipStream = new DeflaterOutputStream(outputMemoryStream, deflater);
+        long accurateSize = 0;
+
+        using var outputStream = new TemporaryZipStream(fileSizeMB);
+        using var zipStream = new DeflaterOutputStream(outputStream, deflater);
 
         using (var fileStream = _sourceManager.GetStream(filePath))
         {
@@ -189,23 +189,23 @@ public class OnDiskFileZipper : FileZipperBase
             {
                 crc32.Update(new ArraySegment<byte>(buffer, 0, bytesRead));
                 zipStream.Write(buffer, 0, bytesRead);
-                size += bytesRead;
+                accurateSize += bytesRead;
             }
 
             zipStream.Finish();
         }
 
         entry.CompressionMethod = CompressionMethod.Deflated;
-        entry.Size = size;
-        entry.CompressedSize = outputMemoryStream.Length;
+        entry.Size = accurateSize;
+        entry.CompressedSize = outputStream.Length;
         entry.Crc = crc32.Value;
 
-        outputMemoryStream.Position = 0;
+        outputStream.Position = 0;
 
         lock (_zipFileEntryLock)
         {
             _zipOutputStream.PutNextPassthroughEntry(entry);
-            outputMemoryStream.CopyTo(_zipOutputStream);
+            outputStream.CopyTo(_zipOutputStream);
             _zipOutputStream.CloseEntry();
         }
     }

@@ -53,7 +53,7 @@ public interface IFileZipper : IDisposable
     /// </summary>
     /// <param name="directoryPath">Path to the directory in the filesystem</param>
     /// <param name="zipPath">Path in zip archive the directory's contents should be saved under. If null or empty, save at the top level</param>
-    void AddDirectoryContent(string directoryPath, string zipPath = "");
+    void AddDirectoryContent(string directoryPath, string zipPath = "", int? compressionLevel = null);
 
     /// <summary>
     /// Save created zip archive

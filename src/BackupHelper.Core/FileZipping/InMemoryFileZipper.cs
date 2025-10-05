@@ -110,7 +110,7 @@ public class InMemoryFileZipper : FileZipperBase
         AddDirectoryContent(directoryPath, newZipPath.TrimEnd('/'));
     }
 
-    public override void AddDirectoryContent(string directoryPath, string zipPath = "")
+    public override void AddDirectoryContent(string directoryPath, string zipPath = "", int? compressionLevel = null)
     {
         var subDirectories = _sourceManager.GetSubDirectories(directoryPath);
         var files = _sourceManager.GetFiles(directoryPath);

@@ -22,7 +22,7 @@ public abstract class FileZipperBase : IFileZipper
 
     public abstract void AddFile(string filePath, string zipPath = "", int? compressionLevel = null);
     public abstract void AddDirectory(string directoryPath, string zipPath = "", int? compressionLevel = null);
-    public abstract void AddDirectoryContent(string directoryPath, string zipPath = "");
+    public abstract void AddDirectoryContent(string directoryPath, string zipPath = "", int? compressionLevel = null);
 
     public void Save()
     {
