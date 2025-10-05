@@ -7,6 +7,7 @@
     </PropertyGroup>
 
     <ItemGroup>
+      <ProjectReference Include="..\BackupHelper.Abstractions\BackupHelper.Abstractions.csproj" />
       <ProjectReference Include="..\BackupHelper.Sources.Abstractions\BackupHelper.Sources.Abstractions.csproj" />
     </ItemGroup>
 

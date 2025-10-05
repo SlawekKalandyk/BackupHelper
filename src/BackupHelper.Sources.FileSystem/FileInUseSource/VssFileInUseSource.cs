@@ -1,4 +1,5 @@
 ﻿using System.IO.Compression;
+using BackupHelper.Abstractions.ConnectionPooling;
 using BackupHelper.Sources.FileSystem.Vss;
 using Microsoft.Extensions.Logging;
 
@@ -6,72 +7,84 @@ namespace BackupHelper.Sources.FileSystem.FileInUseSource;
 
 public class VssFileInUseSourceFactory : IFileInUseSourceFactory
 {
-    private readonly ILogger<VssBackup> _logger;
+    private readonly ILoggerFactory _loggerFactory;
 
-    public VssFileInUseSourceFactory(ILogger<VssBackup> logger)
+    public VssFileInUseSourceFactory(ILoggerFactory loggerFactory)
     {
-        _logger = logger;
+        _loggerFactory = loggerFactory;
     }
 
     public IFileInUseSource Create()
     {
-        return new VssFileInUseSource(_logger);
+        return new VssFileInUseSource(_loggerFactory);
     }
 }
 
 public class VssFileInUseSource : IFileInUseSource
 {
-    private readonly ILogger<VssBackup> _logger;
-    private readonly IDictionary<string, VssBackup> _vssBackups = new Dictionary<string, VssBackup>();
+    private readonly VssConnectionPool _connectionPool;
 
-    public VssFileInUseSource(ILogger<VssBackup> logger)
+    public VssFileInUseSource(ILoggerFactory loggerFactory)
     {
-        _logger = logger;
-    }
-
-    public void AddEntry(ZipArchive zipArchive, string filePath, string zipPath, CompressionLevel compressionLevel)
-    {
-        var snapshotPath = GetSnapshotPath(filePath);
-        zipArchive.CreateEntryFromFile(snapshotPath, zipPath, compressionLevel);
+        _connectionPool = new VssConnectionPool(loggerFactory.CreateLogger<VssConnectionPool>(), loggerFactory.CreateLogger<VssBackup>());
     }
 
     public Stream GetStream(string path)
     {
-        var snapshotPath = GetSnapshotPath(path);
-        return new FileStream(snapshotPath, FileMode.Open, FileAccess.Read, FileShare.Read);
+        var volume = Path.GetPathRoot(path)!;
+        var vssBackup = _connectionPool.GetConnection(volume);
+
+        try
+        {
+            var snapshotPath = vssBackup.GetSnapshotPath(path);
+
+            return new PooledConnectionStream<VssBackup, string>(
+                new FileStream(snapshotPath, FileMode.Open, FileAccess.Read, FileShare.Read),
+                vssBackup,
+                volume,
+                _connectionPool);
+        }
+        catch
+        {
+            _connectionPool.ReturnConnection(volume, vssBackup);
+
+            throw;
+        }
     }
 
     public IEnumerable<string> GetSubDirectories(string path)
     {
-        var snapshotPath = GetSnapshotPath(path);
-        return Directory.GetDirectories(snapshotPath);
+        return ExecuteWithConnection(path, Directory.GetDirectories);
     }
 
     public IEnumerable<string> GetFiles(string path)
     {
-        var snapshotPath = GetSnapshotPath(path);
-        return Directory.GetFiles(snapshotPath);
+        return ExecuteWithConnection(path, Directory.GetFiles);
     }
 
-    private string GetSnapshotPath(string path)
+    private T ExecuteWithConnection<T>(string path, Func<string, T> operation)
     {
-        var volume = Path.GetPathRoot(path);
-        if (!_vssBackups.TryGetValue(volume, out var vssBackup))
-        {
-            vssBackup = new VssBackup(_logger);
-            _vssBackups[volume] = vssBackup;
-        }
+        var volume = Path.GetPathRoot(path)!;
+        var vssBackup = _connectionPool.GetConnection(volume);
 
-        vssBackup.Setup(volume);
-        return vssBackup.GetSnapshotPath(path);
+        try
+        {
+            var snapshotPath = vssBackup.GetSnapshotPath(path);
+            var result = operation(snapshotPath);
+            _connectionPool.ReturnConnection(volume, vssBackup);
+
+            return result;
+        }
+        catch
+        {
+            _connectionPool.ReturnConnection(volume, vssBackup);
+
+            throw;
+        }
     }
 
     public void Dispose()
     {
-        foreach (var vssBackup in _vssBackups.Values)
-        {
-            vssBackup.Dispose();
-        }
-        _vssBackups.Clear();
+        _connectionPool.Dispose();
     }
 }

@@ -1,4 +1,5 @@
 ﻿using BackupHelper.Abstractions;
+using BackupHelper.Abstractions.ConnectionPooling;
 using BackupHelper.Sources.Abstractions;
 using Microsoft.Extensions.Logging;
 
@@ -26,7 +27,7 @@ public class SMBSource : ISource
         try
         {
             var stream = connection.GetStream(smbPath);
-            return new PooledSMBStream(stream, connection, shareInfo, _connectionPool);
+            return new PooledConnectionStream<SMBConnection, SMBShareInfo>(stream, connection, shareInfo, _connectionPool);
         }
         catch
         {
