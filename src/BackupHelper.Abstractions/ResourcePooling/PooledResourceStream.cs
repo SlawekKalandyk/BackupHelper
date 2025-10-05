@@ -1,22 +1,23 @@
-﻿using System;
-using System.IO;
+﻿namespace BackupHelper.Abstractions.ResourcePooling;
 
-namespace BackupHelper.Sources.SMB;
-
-internal class PooledSMBStream : Stream
+public class PooledResourceStream<TResource, TResourceId> : Stream
+    where TResourceId : notnull
 {
     private readonly Stream _innerStream;
-    private readonly SMBConnection _connection;
-    private readonly SMBShareInfo _shareInfo;
-    private readonly SMBConnectionPool _connectionPool;
+    private readonly TResource _resource;
+    private readonly TResourceId _resourceId;
+    private readonly ResourcePoolBase<TResource, TResourceId> _resourcePoolBase;
     private bool _disposed;
 
-    public PooledSMBStream(Stream innerStream, SMBConnection connection, SMBShareInfo shareInfo, SMBConnectionPool connectionPool)
+    public PooledResourceStream(Stream innerStream,
+                                  TResource resource,
+                                  TResourceId resourceId,
+                                  ResourcePoolBase<TResource, TResourceId> resourcePoolBase)
     {
         _innerStream = innerStream;
-        _connection = connection;
-        _shareInfo = shareInfo;
-        _connectionPool = connectionPool;
+        _resource = resource;
+        _resourceId = resourceId;
+        _resourcePoolBase = resourcePoolBase;
     }
 
     public override bool CanRead => _innerStream.CanRead;
@@ -52,7 +53,7 @@ internal class PooledSMBStream : Stream
             if (disposing)
             {
                 _innerStream.Dispose();
-                _connectionPool.ReturnConnection(_shareInfo, _connection);
+                _resourcePoolBase.ReturnResource(_resourceId, _resource);
             }
             _disposed = true;
         }
