@@ -1,24 +1,23 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
-
-    <PropertyGroup>
-        <TargetFramework>net9.0</TargetFramework>
-        <ImplicitUsings>enable</ImplicitUsings>
-        <Nullable>enable</Nullable>
-        <UserSecretsId>01b7ddf9-a482-4bd9-9568-e7f7415bd875</UserSecretsId>
-    </PropertyGroup>
-
-    <ItemGroup>
-      <ProjectReference Include="..\..\src\BackupHelper.Abstractions\BackupHelper.Abstractions.csproj" />
-      <ProjectReference Include="..\..\src\BackupHelper.Api\BackupHelper.Api.csproj" />
-      <ProjectReference Include="..\..\src\BackupHelper.Core\BackupHelper.Core.csproj" />
-    </ItemGroup>
-
-    <ItemGroup>
-      <PackageReference Include="Microsoft.Extensions.Configuration" Version="9.0.8" />
-      <PackageReference Include="Microsoft.Extensions.Configuration.UserSecrets" Version="9.0.8" />
-      <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="9.0.8" />
-      <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="9.0.8" />
-      <PackageReference Include="NUnit" Version="4.3.2" />
-    </ItemGroup>
-
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <UserSecretsId>01b7ddf9-a482-4bd9-9568-e7f7415bd875</UserSecretsId>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\BackupHelper.Abstractions\BackupHelper.Abstractions.csproj" />
+    <ProjectReference Include="..\..\src\BackupHelper.Api\BackupHelper.Api.csproj" />
+    <ProjectReference Include="..\..\src\BackupHelper.Core\BackupHelper.Core.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.Configuration" Version="9.0.8" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.UserSecrets" Version="9.0.8" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="9.0.8" />
+    <PackageReference
+      Include="Microsoft.Extensions.DependencyInjection.Abstractions"
+      Version="9.0.8"
+    />
+    <PackageReference Include="NUnit" Version="4.3.2" />
+  </ItemGroup>
 </Project>

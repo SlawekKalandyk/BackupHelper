@@ -37,7 +37,12 @@ public abstract class FileInUseSourceTestsBase : ZipTestsBase
         using var testFileStructure = new TestFileStructure([testFile], []);
         testFileStructure.Generate(ZippedFilesDirectoryPath, UnzippedFilesDirectoryPath);
 
-        using var file = new FileStream(testFile.GeneratedFilePath, FileMode.Open, FileAccess.Read, FileShare.None);
+        using var file = new FileStream(
+            testFile.GeneratedFilePath,
+            FileMode.Open,
+            FileAccess.Read,
+            FileShare.None
+        );
 
         using var fileInUseStream = _fileInUseSource.GetStream(testFile.GeneratedFilePath);
     }

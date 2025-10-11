@@ -14,13 +14,19 @@ public class BackupPlanZipperTests : ZipTestsBase
     private Unzipper _unzipper;
     private SMBTestConfigurationProvider _smbTestConfigurationProvider;
 
-    protected override void OverrideServices(IServiceCollection services, IConfiguration configuration)
+    protected override void OverrideServices(
+        IServiceCollection services,
+        IConfiguration configuration
+    )
     {
         base.OverrideServices(services, configuration);
         services.AddSingleton<IDateTimeProvider, BackupPlanZipperTestsDateTimeProvider>();
     }
 
-    protected override void AddCredentials(TestCredentialsProvider credentialsProvider, IConfiguration configuration)
+    protected override void AddCredentials(
+        TestCredentialsProvider credentialsProvider,
+        IConfiguration configuration
+    )
     {
         base.AddCredentials(credentialsProvider, configuration);
         _smbTestConfigurationProvider = new SMBTestConfigurationProvider(configuration);
@@ -28,7 +34,8 @@ public class BackupPlanZipperTests : ZipTestsBase
         var credential = new CredentialEntry(
             _smbTestConfigurationProvider.SharePath,
             _smbTestConfigurationProvider.Username,
-            _smbTestConfigurationProvider.Password);
+            _smbTestConfigurationProvider.Password
+        );
         credentialsProvider.SetCredential(credential);
     }
 
@@ -36,7 +43,8 @@ public class BackupPlanZipperTests : ZipTestsBase
     protected override void Setup()
     {
         base.Setup();
-        _dateTimeProvider = (BackupPlanZipperTestsDateTimeProvider)ServiceScope.ServiceProvider.GetRequiredService<IDateTimeProvider>();
+        _dateTimeProvider = (BackupPlanZipperTestsDateTimeProvider)
+            ServiceScope.ServiceProvider.GetRequiredService<IDateTimeProvider>();
         _backupPlanZipper = ServiceScope.ServiceProvider.GetRequiredService<IBackupPlanZipper>();
 
         _dateTimeProvider.Now = new DateTime(2023, 10, 1, 12, 0, 0); // Set a fixed date for tests
@@ -87,7 +95,7 @@ public class BackupPlanZipperTests : ZipTestsBase
                 {
                     FilePath = Path.Combine(ZippedFilesDirectoryPath, "auto-%Y-%m-%d_%H-%M"),
                     CronExpression = "0 0 * * *",
-                    TimeZone = "local"
+                    TimeZone = "local",
                 },
                 new BackupDirectoryEntry
                 {
@@ -96,19 +104,21 @@ public class BackupPlanZipperTests : ZipTestsBase
                     {
                         new BackupFileEntry
                         {
-                            FilePath = Path.Combine(ZippedFilesDirectoryPath, "file1.txt")
-                        }
-                    }
+                            FilePath = Path.Combine(ZippedFilesDirectoryPath, "file1.txt"),
+                        },
+                    },
                 },
                 new BackupFileEntry
                 {
-                    FilePath = $@"smb://{_smbTestConfigurationProvider.TestsDirectoryPath}\smb_file1.txt"
+                    FilePath =
+                        $@"smb://{_smbTestConfigurationProvider.TestsDirectoryPath}\smb_file1.txt",
                 },
                 new BackupFileEntry
                 {
-                    FilePath = $@"smb://{_smbTestConfigurationProvider.TestsDirectoryPath}\smb_dir1"
-                }
-            }
+                    FilePath =
+                        $@"smb://{_smbTestConfigurationProvider.TestsDirectoryPath}\smb_dir1",
+                },
+            },
         };
     }
 
@@ -139,7 +149,9 @@ public class BackupPlanZipperTests : ZipTestsBase
         _unzipper.UnzipFile();
 
         // Assert
-        Assert.That(Directory.Exists(Path.Combine(UnzippedFilesDirectoryPath, "auto-2023-10-01_00-00")));
+        Assert.That(
+            Directory.Exists(Path.Combine(UnzippedFilesDirectoryPath, "auto-2023-10-01_00-00"))
+        );
     }
 
     [Test]
@@ -155,7 +167,10 @@ public class BackupPlanZipperTests : ZipTestsBase
 
         // Assert
         var expectedFile = Path.Combine(UnzippedFilesDirectoryPath, "smb_file1.txt");
-        Assert.That(File.Exists(expectedFile), $"Expected SMB file '{expectedFile}' to exist after unzip.");
+        Assert.That(
+            File.Exists(expectedFile),
+            $"Expected SMB file '{expectedFile}' to exist after unzip."
+        );
     }
 
     [Test]
@@ -171,6 +186,9 @@ public class BackupPlanZipperTests : ZipTestsBase
 
         // Assert
         var expectedDirectory = Path.Combine(UnzippedFilesDirectoryPath, "smb_dir1");
-        Assert.That(Directory.Exists(expectedDirectory), $"Expected SMB directory '{expectedDirectory}' to exist after unzip.");
+        Assert.That(
+            Directory.Exists(expectedDirectory),
+            $"Expected SMB directory '{expectedDirectory}' to exist after unzip."
+        );
     }
 }

@@ -1,12 +1,10 @@
 <Project Sdk="Microsoft.NET.Sdk">
-
   <PropertyGroup>
     <OutputType>Library</OutputType>
     <TargetFramework>net9.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
   </PropertyGroup>
-
   <ItemGroup>
     <PackageReference Include="AlphaVSS" Version="2.0.3" />
     <PackageReference Include="Cronos" Version="0.11.0" />
@@ -17,12 +15,10 @@
     <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
     <PackageReference Include="SharpZipLib" Version="1.4.2" />
   </ItemGroup>
-
   <ItemGroup>
     <ProjectReference Include="..\BackupHelper.Abstractions\BackupHelper.Abstractions.csproj" />
     <ProjectReference Include="..\BackupHelper.Sources.Abstractions\BackupHelper.Sources.Abstractions.csproj" />
     <ProjectReference Include="..\BackupHelper.Sources.FileSystem\BackupHelper.Sources.FileSystem.csproj" />
     <ProjectReference Include="..\BackupHelper.Sources.SMB\BackupHelper.Sources.SMB.csproj" />
   </ItemGroup>
-
 </Project>

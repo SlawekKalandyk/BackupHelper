@@ -22,12 +22,16 @@ public abstract class FileZipperTestsBase : ZipTestsBase
 
     protected IFileZipper CreateFileZipper()
     {
-        var fileZipperFactory = ServiceScope.ServiceProvider.GetRequiredService<IFileZipperFactory>();
+        var fileZipperFactory =
+            ServiceScope.ServiceProvider.GetRequiredService<IFileZipperFactory>();
 
         return fileZipperFactory.Create(ZipFilePath, true);
     }
 
-    protected void PrepareZipFile(TestFileStructure testFileStructure, Action<IFileZipper> addFilesToFileZipper)
+    protected void PrepareZipFile(
+        TestFileStructure testFileStructure,
+        Action<IFileZipper> addFilesToFileZipper
+    )
     {
         testFileStructure.Generate(ZippedFilesDirectoryPath, UnzippedFilesDirectoryPath);
 
@@ -40,12 +44,17 @@ public abstract class FileZipperTestsBase : ZipTestsBase
 
     protected IFileZipper CreateFileZipperWithPassword(string password)
     {
-        var fileZipperFactory = ServiceScope.ServiceProvider.GetRequiredService<IFileZipperFactory>();
+        var fileZipperFactory =
+            ServiceScope.ServiceProvider.GetRequiredService<IFileZipperFactory>();
 
         return fileZipperFactory.Create(ZipFilePath, true, password);
     }
 
-    protected void PrepareZipFileWithPassword(TestFileStructure testFileStructure, string password, Action<IFileZipper> addFilesToFileZipper)
+    protected void PrepareZipFileWithPassword(
+        TestFileStructure testFileStructure,
+        string password,
+        Action<IFileZipper> addFilesToFileZipper
+    )
     {
         testFileStructure.Generate(ZippedFilesDirectoryPath, UnzippedFilesDirectoryPath);
 
@@ -67,7 +76,8 @@ public abstract class FileZipperTestsBase : ZipTestsBase
             fileZipper =>
             {
                 fileZipper.AddFile(testFile);
-            });
+            }
+        );
         _unzipper.UnzipFile();
 
         testFileStructure.AssertCorrectUnzippedFileStructure();
@@ -84,7 +94,8 @@ public abstract class FileZipperTestsBase : ZipTestsBase
             fileZipper =>
             {
                 fileZipper.AddFile(testFile);
-            });
+            }
+        );
         _unzipper.UnzipFile();
 
         testFileStructure.AssertCorrectUnzippedFileStructure();
@@ -101,7 +112,8 @@ public abstract class FileZipperTestsBase : ZipTestsBase
             fileZipper =>
             {
                 fileZipper.AddDirectory(testDirectory);
-            });
+            }
+        );
         _unzipper.UnzipFile();
 
         testFileStructure.AssertCorrectUnzippedFileStructure();
@@ -118,7 +130,8 @@ public abstract class FileZipperTestsBase : ZipTestsBase
             fileZipper =>
             {
                 fileZipper.AddDirectory(testDirectory);
-            });
+            }
+        );
         _unzipper.UnzipFile();
 
         testFileStructure.AssertCorrectUnzippedFileStructure();
@@ -136,7 +149,8 @@ public abstract class FileZipperTestsBase : ZipTestsBase
             fileZipper =>
             {
                 fileZipper.AddDirectoryContent(testFileStructure);
-            });
+            }
+        );
         _unzipper.UnzipFile();
 
         testFileStructure.AssertCorrectUnzippedFileStructure();
@@ -152,14 +166,18 @@ public abstract class FileZipperTestsBase : ZipTestsBase
         var testFile5 = new TestFile("file5");
         var testDirectory1 = new TestDirectory("dir1", [testFile3, testFile4], []);
         var testDirectory2 = new TestDirectory("dir2", [testFile5], []);
-        using var testFileStructure = new TestFileStructure([testFile1, testFile2], [testDirectory1, testDirectory2]);
+        using var testFileStructure = new TestFileStructure(
+            [testFile1, testFile2],
+            [testDirectory1, testDirectory2]
+        );
 
         PrepareZipFile(
             testFileStructure,
             fileZipper =>
             {
                 fileZipper.AddDirectoryContent(testFileStructure);
-            });
+            }
+        );
         _unzipper.UnzipFile();
 
         testFileStructure.AssertCorrectUnzippedFileStructure();
@@ -175,14 +193,18 @@ public abstract class FileZipperTestsBase : ZipTestsBase
         var testFile5 = new TestFile("file5");
         var testDirectory1 = new TestDirectory("dir1", [testFile3, testFile4], []);
         var testDirectory2 = new TestDirectory("dir2", [testFile5], [], "zip-dir2");
-        using var testFileStructure = new TestFileStructure([testFile1, testFile2], [testDirectory1, testDirectory2]);
+        using var testFileStructure = new TestFileStructure(
+            [testFile1, testFile2],
+            [testDirectory1, testDirectory2]
+        );
 
         PrepareZipFile(
             testFileStructure,
             fileZipper =>
             {
                 fileZipper.AddTopLevelFilesAndDirectoriesSeparately(testFileStructure);
-            });
+            }
+        );
         _unzipper.UnzipFile();
 
         testFileStructure.AssertCorrectUnzippedFileStructure();
@@ -197,7 +219,8 @@ public abstract class FileZipperTestsBase : ZipTestsBase
         PrepareZipFileWithPassword(
             testFileStructure,
             TestPassword,
-            fileZipper => fileZipper.AddFile(testFile));
+            fileZipper => fileZipper.AddFile(testFile)
+        );
 
         _unzipper.UnzipFile(TestPassword);
         testFileStructure.AssertCorrectUnzippedFileStructure();
@@ -212,7 +235,8 @@ public abstract class FileZipperTestsBase : ZipTestsBase
         PrepareZipFileWithPassword(
             testFileStructure,
             TestPassword,
-            fileZipper => fileZipper.AddFile(testFile));
+            fileZipper => fileZipper.AddFile(testFile)
+        );
 
         Assert.Throws<ZipException>(() => _unzipper.UnzipFile(WrongPassword));
     }

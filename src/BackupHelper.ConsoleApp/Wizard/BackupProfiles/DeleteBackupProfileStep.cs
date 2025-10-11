@@ -15,9 +15,15 @@ public class DeleteBackupProfileStep : IWizardStep<DeleteBackupProfileStepParame
         _mediator = mediator;
     }
 
-    public async Task<IWizardParameters?> Handle(DeleteBackupProfileStepParameters request, CancellationToken cancellationToken)
+    public async Task<IWizardParameters?> Handle(
+        DeleteBackupProfileStepParameters request,
+        CancellationToken cancellationToken
+    )
     {
-        var backupProfileNames = await _mediator.Send(new GetBackupProfileNamesQuery(), cancellationToken);
+        var backupProfileNames = await _mediator.Send(
+            new GetBackupProfileNamesQuery(),
+            cancellationToken
+        );
 
         if (backupProfileNames.Count == 0)
         {
@@ -26,12 +32,21 @@ public class DeleteBackupProfileStep : IWizardStep<DeleteBackupProfileStepParame
             return new ManageBackupProfilesStepParameters();
         }
 
-        var backupProfileName = Prompt.Select("Select a backup profile to delete", backupProfileNames, 5);
-        var confirmation = Prompt.Confirm($"Are you sure you want to delete the backup profile '{backupProfileName}'?");
+        var backupProfileName = Prompt.Select(
+            "Select a backup profile to delete",
+            backupProfileNames,
+            5
+        );
+        var confirmation = Prompt.Confirm(
+            $"Are you sure you want to delete the backup profile '{backupProfileName}'?"
+        );
 
         if (confirmation)
         {
-            await _mediator.Send(new DeleteBackupProfileCommand(backupProfileName), cancellationToken);
+            await _mediator.Send(
+                new DeleteBackupProfileCommand(backupProfileName),
+                cancellationToken
+            );
         }
 
         Console.WriteLine($"Backup profile '{backupProfileName}' deleted successfully!");

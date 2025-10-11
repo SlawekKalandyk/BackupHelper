@@ -21,7 +21,13 @@ public class OnDiskFileZipperFactory : IFileZipperFactory
 
     public IFileZipper Create(string zipFilePath, bool overwriteFileIfExists, string? password)
     {
-        return new OnDiskFileZipper(_loggerFactory, _sourceManager, zipFilePath, overwriteFileIfExists, password);
+        return new OnDiskFileZipper(
+            _loggerFactory,
+            _sourceManager,
+            zipFilePath,
+            overwriteFileIfExists,
+            password
+        );
     }
 }
 
@@ -37,11 +43,13 @@ public class OnDiskFileZipper : FileZipperBase
     private readonly bool _encrypt;
     private ZipTaskQueue? _zipTaskQueue;
 
-    public OnDiskFileZipper(ILoggerFactory loggerFactory,
-                            ISourceManager sourceManager,
-                            string zipFilePath,
-                            bool overwriteFileIfExists,
-                            string? password)
+    public OnDiskFileZipper(
+        ILoggerFactory loggerFactory,
+        ISourceManager sourceManager,
+        string zipFilePath,
+        bool overwriteFileIfExists,
+        string? password
+    )
         : base(zipFilePath, overwriteFileIfExists)
     {
         _logger = loggerFactory.CreateLogger<OnDiskFileZipper>();
@@ -60,13 +68,19 @@ public class OnDiskFileZipper : FileZipperBase
             _encrypt = true;
         }
     }
+
     public override bool HasToBeSaved => false;
 
     private ZipTaskQueue ZipTaskQueue
     {
         get
         {
-            _zipTaskQueue ??= new ZipTaskQueue(ThreadLimit, MemoryLimitMB, _loggerFactory.CreateLogger<ZipTaskQueue>(), _failedFiles);
+            _zipTaskQueue ??= new ZipTaskQueue(
+                ThreadLimit,
+                MemoryLimitMB,
+                _loggerFactory.CreateLogger<ZipTaskQueue>(),
+                _failedFiles
+            );
             return _zipTaskQueue;
         }
     }
@@ -75,64 +89,84 @@ public class OnDiskFileZipper : FileZipperBase
     {
         var newZipPath = Path.Combine(zipPath, PathHelper.GetName(filePath)).Replace('\\', '/');
 
-    #if !DEBUG
+#if !DEBUG
         try
         {
-    #endif
-        var entry = new ZipEntry(newZipPath)
-        {
-            AESKeySize = _encrypt ? 256 : 0
-        };
-        var lastWriteTime = _sourceManager.GetFileLastWriteTime(filePath);
+#endif
+            var entry = new ZipEntry(newZipPath) { AESKeySize = _encrypt ? 256 : 0 };
+            var lastWriteTime = _sourceManager.GetFileLastWriteTime(filePath);
 
-        if (lastWriteTime.HasValue)
-        {
-            entry.DateTime = lastWriteTime.Value;
-        }
+            if (lastWriteTime.HasValue)
+            {
+                entry.DateTime = lastWriteTime.Value;
+            }
 
-        if (ThreadLimit <= 1)
-        {
-            try
+            if (ThreadLimit <= 1)
             {
-                AddEntryToZipSynchronously(entry, filePath, compressionLevel);
+                try
+                {
+                    AddEntryToZipSynchronously(entry, filePath, compressionLevel);
+                }
+                catch
+                {
+                    _failedFiles.Add(filePath);
+                    throw;
+                }
             }
-            catch
+            else
             {
-                _failedFiles.Add(filePath);
-                throw;
+                var fileSizeMB = (int)
+                    Math.Ceiling((double)_sourceManager.GetFileSize(filePath) / (1024 * 1024));
+                var zipTask =
+                    fileSizeMB < MemoryLimitMB
+                        ? new ZipTask(
+                            fileSizeMB,
+                            new Task(
+                                () =>
+                                    AddEntryToZipInParallel(
+                                        entry,
+                                        filePath,
+                                        fileSizeMB,
+                                        compressionLevel
+                                    ),
+                                TaskCreationOptions.None
+                            ),
+                            filePath
+                        )
+                        : new ZipTask(
+                            fileSizeMB,
+                            new Task(
+                                () => AddEntryToZipSynchronously(entry, filePath, compressionLevel),
+                                TaskCreationOptions.None
+                            ),
+                            filePath
+                        );
+                ZipTaskQueue.Enqueue(zipTask);
             }
-        }
-        else
-        {
-            var fileSizeMB = (int)Math.Ceiling((double)_sourceManager.GetFileSize(filePath) / (1024 * 1024));
-            var zipTask = fileSizeMB < MemoryLimitMB
-                              ? new ZipTask(
-                                  fileSizeMB,
-                                  new Task(() => AddEntryToZipInParallel(entry, filePath, fileSizeMB, compressionLevel), TaskCreationOptions.None),
-                                  filePath)
-                              : new ZipTask(
-                                  fileSizeMB,
-                                  new Task(() => AddEntryToZipSynchronously(entry, filePath, compressionLevel), TaskCreationOptions.None),
-                                  filePath);
-            ZipTaskQueue.Enqueue(zipTask);
-        }
-    #if !DEBUG
+#if !DEBUG
         }
         catch (IOException e)
         {
-            _logger.LogError("Failed to add file {FilePath} to zip file {ZipFileStreamName}: {ExMessage}", filePath, _zipFileStream.Name, e.Message);
+            _logger.LogError(
+                "Failed to add file {FilePath} to zip file {ZipFileStreamName}: {ExMessage}",
+                filePath,
+                _zipFileStream.Name,
+                e.Message
+            );
         }
-    #endif
+#endif
     }
 
-    public override void AddDirectory(string directoryPath, string zipPath = "", int? compressionLevel = null)
+    public override void AddDirectory(
+        string directoryPath,
+        string zipPath = "",
+        int? compressionLevel = null
+    )
     {
-        var newZipPath = Path.Combine(zipPath, PathHelper.GetName(directoryPath)).Replace('\\', '/') + '/';
+        var newZipPath =
+            Path.Combine(zipPath, PathHelper.GetName(directoryPath)).Replace('\\', '/') + '/';
 
-        var entry = new ZipEntry(newZipPath)
-        {
-            AESKeySize = _encrypt ? 256 : 0
-        };
+        var entry = new ZipEntry(newZipPath) { AESKeySize = _encrypt ? 256 : 0 };
         var lastWriteTime = _sourceManager.GetDirectoryLastWriteTime(directoryPath);
 
         if (lastWriteTime.HasValue)
@@ -150,7 +184,11 @@ public class OnDiskFileZipper : FileZipperBase
         AddDirectoryContent(directoryPath, newZipPath.TrimEnd('/'), compressionLevel);
     }
 
-    public override void AddDirectoryContent(string directoryPath, string zipPath = "", int? compressionLevel = null)
+    public override void AddDirectoryContent(
+        string directoryPath,
+        string zipPath = "",
+        int? compressionLevel = null
+    )
     {
         var subDirectories = _sourceManager.GetSubDirectories(directoryPath);
         var files = _sourceManager.GetFiles(directoryPath);
@@ -171,7 +209,12 @@ public class OnDiskFileZipper : FileZipperBase
         ZipTaskQueue.WaitForCompletion();
     }
 
-    private void AddEntryToZipInParallel(ZipEntry entry, string filePath, int fileSizeMB, int? compressionLevel)
+    private void AddEntryToZipInParallel(
+        ZipEntry entry,
+        string filePath,
+        int fileSizeMB,
+        int? compressionLevel
+    )
     {
         var deflater = new Deflater(compressionLevel ?? DefaultCompressionLevel, true);
         var crc32 = new Crc32();

@@ -93,7 +93,10 @@ public class SMBTestConfigurationProvider
         }
     }
 
-    private void ThrowIfNullOrEmpty(string? value, [CallerArgumentExpression("value")] string? name = null)
+    private void ThrowIfNullOrEmpty(
+        string? value,
+        [CallerArgumentExpression("value")] string? name = null
+    )
     {
         if (string.IsNullOrEmpty(value))
             throw new ArgumentNullException(name, $"{name} cannot be null or empty");

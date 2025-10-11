@@ -8,7 +8,13 @@ public abstract class BackupEntry { }
 
 public class BackupEntryConverter : JsonConverter<BackupEntry>
 {
-    public override BackupEntry? ReadJson(JsonReader reader, Type objectType, BackupEntry? existingValue, bool hasExistingValue, JsonSerializer serializer)
+    public override BackupEntry? ReadJson(
+        JsonReader reader,
+        Type objectType,
+        BackupEntry? existingValue,
+        bool hasExistingValue,
+        JsonSerializer serializer
+    )
     {
         if (reader.TokenType == JsonToken.StartObject)
         {
@@ -27,7 +33,7 @@ public class BackupEntryConverter : JsonConverter<BackupEntry>
                     FilePath = filePath,
                     CronExpression = cronExpression,
                     CompressionLevel = compressionLevel,
-                    TimeZone = timeZone ?? string.Empty
+                    TimeZone = timeZone ?? string.Empty,
                 };
             }
 
@@ -40,7 +46,7 @@ public class BackupEntryConverter : JsonConverter<BackupEntry>
                 return new BackupDirectoryEntry
                 {
                     DirectoryName = name,
-                    Items = items ?? new List<BackupEntry>()
+                    Items = items ?? new List<BackupEntry>(),
                 };
             }
         }
@@ -98,7 +104,9 @@ public class BackupFileEntry : BackupEntry
             }
             else
             {
-                throw new ArgumentException($"Invalid time zone type: {value}. Expected 'local', 'utc' or no value.");
+                throw new ArgumentException(
+                    $"Invalid time zone type: {value}. Expected 'local', 'utc' or no value."
+                );
             }
         }
     }
@@ -109,14 +117,14 @@ public class BackupFileEntry : BackupEntry
         {
             TimeZoneType.Local => TimeZoneInfo.Local,
             TimeZoneType.Utc => TimeZoneInfo.Utc,
-            _ => throw new InvalidOperationException("Time zone type is not set or invalid.")
+            _ => throw new InvalidOperationException("Time zone type is not set or invalid."),
         };
     }
 
     private enum TimeZoneType
     {
         Local,
-        Utc
+        Utc,
     }
 }
 

@@ -4,7 +4,10 @@ public record ExitStepParameters : IWizardParameters;
 
 public class ExitStep : IWizardStep<ExitStepParameters>
 {
-    public Task<IWizardParameters?> Handle(ExitStepParameters parameters, CancellationToken cancellationToken)
+    public Task<IWizardParameters?> Handle(
+        ExitStepParameters parameters,
+        CancellationToken cancellationToken
+    )
     {
         Console.WriteLine("Exiting the application. Goodbye!");
 

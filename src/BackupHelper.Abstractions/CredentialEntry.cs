@@ -1,9 +1,9 @@
 ﻿namespace BackupHelper.Abstractions;
 
-public record CredentialEntry(string Title, string Username, string Password) : IDisplayableCredentialEntry
+public record CredentialEntry(string Title, string Username, string Password)
+    : IDisplayableCredentialEntry
 {
-    public string ToDisplayString()
-        => $"- {Title}; {Username}";
+    public string ToDisplayString() => $"- {Title}; {Username}";
 }
 
 public interface IDisplayableCredentialEntry

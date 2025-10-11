@@ -5,7 +5,8 @@ namespace BackupHelper.Api.Features.Credentials;
 
 public record CheckCredentialProfileExistsQuery(string CredentialProfileName) : IRequest<bool>;
 
-public class CheckCredentialProfileExistsQueryHandler : IRequestHandler<CheckCredentialProfileExistsQuery, bool>
+public class CheckCredentialProfileExistsQueryHandler
+    : IRequestHandler<CheckCredentialProfileExistsQuery, bool>
 {
     private readonly IApplicationDataHandler _applicationDataHandler;
 
@@ -14,9 +15,15 @@ public class CheckCredentialProfileExistsQueryHandler : IRequestHandler<CheckCre
         _applicationDataHandler = applicationDataHandler;
     }
 
-    public Task<bool> Handle(CheckCredentialProfileExistsQuery request, CancellationToken cancellationToken)
+    public Task<bool> Handle(
+        CheckCredentialProfileExistsQuery request,
+        CancellationToken cancellationToken
+    )
     {
-        var credentialProfilePath = Path.Combine(_applicationDataHandler.GetCredentialProfilesPath(), request.CredentialProfileName);
+        var credentialProfilePath = Path.Combine(
+            _applicationDataHandler.GetCredentialProfilesPath(),
+            request.CredentialProfileName
+        );
         var credentialProfileExists = File.Exists(credentialProfilePath);
 
         return Task.FromResult(credentialProfileExists);

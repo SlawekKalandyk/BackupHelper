@@ -25,7 +25,10 @@ public class VssFileInUseSource : IFileInUseSource
 
     public VssFileInUseSource(ILoggerFactory loggerFactory)
     {
-        _vssBackupPool = new VssBackupPool(loggerFactory.CreateLogger<VssBackupPool>(), loggerFactory.CreateLogger<VssBackup>());
+        _vssBackupPool = new VssBackupPool(
+            loggerFactory.CreateLogger<VssBackupPool>(),
+            loggerFactory.CreateLogger<VssBackup>()
+        );
     }
 
     public Stream GetStream(string path)
@@ -41,7 +44,8 @@ public class VssFileInUseSource : IFileInUseSource
                 new FileStream(snapshotPath, FileMode.Open, FileAccess.Read, FileShare.Read),
                 vssBackup,
                 volume,
-                _vssBackupPool);
+                _vssBackupPool
+            );
         }
         catch
         {

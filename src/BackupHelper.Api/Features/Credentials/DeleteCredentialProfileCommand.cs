@@ -17,7 +17,7 @@ public class DeleteCredentialProfileCommandHandler : IRequestHandler<DeleteCrede
     public Task Handle(DeleteCredentialProfileCommand request, CancellationToken cancellationToken)
     {
         var credentialProfilesPath = _applicationDataHandler.GetCredentialProfilesPath();
-        var profileFilePath = Path.Combine(credentialProfilesPath,  request.CredentialProfileName);
+        var profileFilePath = Path.Combine(credentialProfilesPath, request.CredentialProfileName);
 
         if (File.Exists(profileFilePath))
         {

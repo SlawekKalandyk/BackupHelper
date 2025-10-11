@@ -1,19 +1,15 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
-
-    <PropertyGroup>
-        <TargetFramework>net9.0</TargetFramework>
-        <ImplicitUsings>enable</ImplicitUsings>
-        <Nullable>enable</Nullable>
-    </PropertyGroup>
-
-    <ItemGroup>
-      <ProjectReference Include="..\BackupHelper.Abstractions\BackupHelper.Abstractions.csproj" />
-      <ProjectReference Include="..\BackupHelper.Sources.Abstractions\BackupHelper.Sources.Abstractions.csproj" />
-    </ItemGroup>
-
-    <ItemGroup>
-      <PackageReference Include="AlphaVSS" Version="2.0.3" />
-      <PackageReference Include="Microsoft.Extensions.Logging" Version="9.0.8" />
-    </ItemGroup>
-
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\BackupHelper.Abstractions\BackupHelper.Abstractions.csproj" />
+    <ProjectReference Include="..\BackupHelper.Sources.Abstractions\BackupHelper.Sources.Abstractions.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="AlphaVSS" Version="2.0.3" />
+    <PackageReference Include="Microsoft.Extensions.Logging" Version="9.0.8" />
+  </ItemGroup>
 </Project>

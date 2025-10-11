@@ -20,9 +20,21 @@ public abstract class FileZipperBase : IFileZipper
     protected string ZipFilePath { get; }
     protected bool OverwriteFileIfExists { get; }
 
-    public abstract void AddFile(string filePath, string zipPath = "", int? compressionLevel = null);
-    public abstract void AddDirectory(string directoryPath, string zipPath = "", int? compressionLevel = null);
-    public abstract void AddDirectoryContent(string directoryPath, string zipPath = "", int? compressionLevel = null);
+    public abstract void AddFile(
+        string filePath,
+        string zipPath = "",
+        int? compressionLevel = null
+    );
+    public abstract void AddDirectory(
+        string directoryPath,
+        string zipPath = "",
+        int? compressionLevel = null
+    );
+    public abstract void AddDirectoryContent(
+        string directoryPath,
+        string zipPath = "",
+        int? compressionLevel = null
+    );
 
     public void Save()
     {

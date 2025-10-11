@@ -6,17 +6,17 @@ public class TestCredentialsProviderFactory : ICredentialsProviderFactory
 {
     public TestCredentialsProvider TestCredentialsProvider { get; } = new TestCredentialsProvider();
 
-    public ICredentialsProvider Create(ICredentialsProviderConfiguration configuration)
-        => TestCredentialsProvider;
+    public ICredentialsProvider Create(ICredentialsProviderConfiguration configuration) =>
+        TestCredentialsProvider;
 
-    public void SetDefaultCredentialsProviderConfiguration(ICredentialsProviderConfiguration configuration)
+    public void SetDefaultCredentialsProviderConfiguration(
+        ICredentialsProviderConfiguration configuration
+    )
     {
         throw new NotImplementedException();
     }
 
-    public ICredentialsProvider GetDefaultCredentialsProvider()
-        => TestCredentialsProvider;
-
+    public ICredentialsProvider GetDefaultCredentialsProvider() => TestCredentialsProvider;
 }
 
 public record TestCredentialsProviderConfiguration : ICredentialsProviderConfiguration;
@@ -25,8 +25,8 @@ public class TestCredentialsProvider : ICredentialsProvider
 {
     private readonly Dictionary<string, CredentialEntry> _credentials = new();
 
-    public CredentialEntry? GetCredential(string credentialName)
-        => _credentials.GetValueOrDefault(credentialName);
+    public CredentialEntry? GetCredential(string credentialName) =>
+        _credentials.GetValueOrDefault(credentialName);
 
     public void SetCredential(CredentialEntry credentialEntry)
     {
@@ -43,14 +43,8 @@ public class TestCredentialsProvider : ICredentialsProvider
         _credentials.Remove(credentialName);
     }
 
-    public IReadOnlyCollection<CredentialEntry> GetCredentials()
-        => _credentials
-            .Select(kvp => kvp.Value with { Title = kvp.Key })
-            .ToList()
-            .AsReadOnly();
+    public IReadOnlyCollection<CredentialEntry> GetCredentials() =>
+        _credentials.Select(kvp => kvp.Value with { Title = kvp.Key }).ToList().AsReadOnly();
 
-    public void Dispose()
-    {
-
-    }
+    public void Dispose() { }
 }

@@ -1,7 +1,7 @@
-﻿using ICSharpCode.SharpZipLib.Zip;
-using Microsoft.Extensions.Logging;
-using BackupHelper.Core.Sources;
+﻿using BackupHelper.Core.Sources;
 using BackupHelper.Core.Utilities;
+using ICSharpCode.SharpZipLib.Zip;
+using Microsoft.Extensions.Logging;
 
 namespace BackupHelper.Core.FileZipping;
 
@@ -10,7 +10,10 @@ public class InMemoryFileZipperFactory : IFileZipperFactory
     private readonly ILogger<InMemoryFileZipper> _logger;
     private readonly ISourceManager _sourceManager;
 
-    public InMemoryFileZipperFactory(ILogger<InMemoryFileZipper> logger, ISourceManager sourceManager)
+    public InMemoryFileZipperFactory(
+        ILogger<InMemoryFileZipper> logger,
+        ISourceManager sourceManager
+    )
     {
         _logger = logger;
         _sourceManager = sourceManager;
@@ -18,7 +21,13 @@ public class InMemoryFileZipperFactory : IFileZipperFactory
 
     public IFileZipper Create(string zipFilePath, bool overwriteFileIfExists, string? password)
     {
-        return new InMemoryFileZipper(_logger, _sourceManager, zipFilePath, overwriteFileIfExists, password);
+        return new InMemoryFileZipper(
+            _logger,
+            _sourceManager,
+            zipFilePath,
+            overwriteFileIfExists,
+            password
+        );
     }
 }
 
@@ -30,11 +39,13 @@ public class InMemoryFileZipper : FileZipperBase
     private readonly ZipOutputStream _zipOutputStream;
     private readonly bool _encrypt;
 
-    public InMemoryFileZipper(ILogger<InMemoryFileZipper> logger,
-                              ISourceManager sourceManager,
-                              string zipFilePath,
-                              bool overwriteFileIfExists,
-                              string? password)
+    public InMemoryFileZipper(
+        ILogger<InMemoryFileZipper> logger,
+        ISourceManager sourceManager,
+        string zipFilePath,
+        bool overwriteFileIfExists,
+        string? password
+    )
         : base(zipFilePath, overwriteFileIfExists)
     {
         _logger = logger;
@@ -75,7 +86,7 @@ public class InMemoryFileZipper : FileZipperBase
             var entry = new ZipEntry(newZipPath)
             {
                 DateTime = File.GetLastWriteTime(filePath),
-                AESKeySize = _encrypt ? 256 : 0
+                AESKeySize = _encrypt ? 256 : 0,
             };
 
             _zipOutputStream.SetLevel(compressionLevel ?? DefaultCompressionLevel);
@@ -88,18 +99,27 @@ public class InMemoryFileZipper : FileZipperBase
         }
         catch (Exception e)
         {
-            _logger.LogError("Failed to add file {FilePath} to zip file: {ExMessage}", filePath, e.Message);
+            _logger.LogError(
+                "Failed to add file {FilePath} to zip file: {ExMessage}",
+                filePath,
+                e.Message
+            );
         }
     }
 
-    public override void AddDirectory(string directoryPath, string zipPath = "", int? compressionLevel = null)
+    public override void AddDirectory(
+        string directoryPath,
+        string zipPath = "",
+        int? compressionLevel = null
+    )
     {
-        var newZipPath = Path.Combine(zipPath, PathHelper.GetName(directoryPath)).Replace('\\', '/') + '/';
+        var newZipPath =
+            Path.Combine(zipPath, PathHelper.GetName(directoryPath)).Replace('\\', '/') + '/';
 
         var entry = new ZipEntry(newZipPath)
         {
             DateTime = Directory.GetLastWriteTime(directoryPath),
-            AESKeySize = _encrypt ? 256 : 0
+            AESKeySize = _encrypt ? 256 : 0,
         };
 
         _zipOutputStream.SetLevel(compressionLevel ?? DefaultCompressionLevel);
@@ -110,7 +130,11 @@ public class InMemoryFileZipper : FileZipperBase
         AddDirectoryContent(directoryPath, newZipPath.TrimEnd('/'));
     }
 
-    public override void AddDirectoryContent(string directoryPath, string zipPath = "", int? compressionLevel = null)
+    public override void AddDirectoryContent(
+        string directoryPath,
+        string zipPath = "",
+        int? compressionLevel = null
+    )
     {
         var subDirectories = _sourceManager.GetSubDirectories(directoryPath);
         var files = _sourceManager.GetFiles(directoryPath);

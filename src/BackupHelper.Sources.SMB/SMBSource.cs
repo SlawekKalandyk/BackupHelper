@@ -11,7 +11,10 @@ public class SMBSource : ISource
 
     public SMBSource(ICredentialsProvider credentialsProvider, ILoggerFactory loggerFactory)
     {
-        _connectionPool = new SMBConnectionPool(credentialsProvider, loggerFactory.CreateLogger<SMBConnectionPool>());
+        _connectionPool = new SMBConnectionPool(
+            credentialsProvider,
+            loggerFactory.CreateLogger<SMBConnectionPool>()
+        );
     }
 
     public static string Scheme => "smb";
@@ -23,11 +26,16 @@ public class SMBSource : ISource
         var shareInfo = SMBShareInfo.FromFilePath(path);
         var smbPath = SMBHelper.StripShareInfo(path);
         var connection = _connectionPool.GetResource(shareInfo);
-        
+
         try
         {
             var stream = connection.GetStream(smbPath);
-            return new PooledResourceStream<SMBConnection, SMBShareInfo>(stream, connection, shareInfo, _connectionPool);
+            return new PooledResourceStream<SMBConnection, SMBShareInfo>(
+                stream,
+                connection,
+                shareInfo,
+                _connectionPool
+            );
         }
         catch
         {
@@ -38,52 +46,77 @@ public class SMBSource : ISource
 
     public IEnumerable<string> GetSubDirectories(string path)
     {
-        return ExecuteWithConnection(path, (connection, smbPath, shareInfo) =>
-            connection.GetSubDirectories(smbPath).Select(dir => Path.Join(shareInfo.ToString(), dir)).ToList());
+        return ExecuteWithConnection(
+            path,
+            (connection, smbPath, shareInfo) =>
+                connection
+                    .GetSubDirectories(smbPath)
+                    .Select(dir => Path.Join(shareInfo.ToString(), dir))
+                    .ToList()
+        );
     }
 
     public IEnumerable<string> GetFiles(string path)
     {
-        return ExecuteWithConnection(path, (connection, smbPath, shareInfo) =>
-            connection.GetFiles(smbPath).Select(file => Path.Join(shareInfo.ToString(), file)).ToList());
+        return ExecuteWithConnection(
+            path,
+            (connection, smbPath, shareInfo) =>
+                connection
+                    .GetFiles(smbPath)
+                    .Select(file => Path.Join(shareInfo.ToString(), file))
+                    .ToList()
+        );
     }
 
     public bool FileExists(string path)
     {
-        return ExecuteWithConnection(path, (connection, smbPath, _) =>
-            connection.FileExists(smbPath));
+        return ExecuteWithConnection(
+            path,
+            (connection, smbPath, _) => connection.FileExists(smbPath)
+        );
     }
 
     public bool DirectoryExists(string path)
     {
-        return ExecuteWithConnection(path, (connection, smbPath, _) =>
-            connection.DirectoryExists(smbPath));
+        return ExecuteWithConnection(
+            path,
+            (connection, smbPath, _) => connection.DirectoryExists(smbPath)
+        );
     }
 
     public DateTime? GetFileLastWriteTime(string path)
     {
-        return ExecuteWithConnection(path, (connection, smbPath, _) =>
-            connection.GetFileLastWriteTime(smbPath));
+        return ExecuteWithConnection(
+            path,
+            (connection, smbPath, _) => connection.GetFileLastWriteTime(smbPath)
+        );
     }
 
     public DateTime? GetDirectoryLastWriteTime(string path)
     {
-        return ExecuteWithConnection(path, (connection, smbPath, _) =>
-            connection.GetDirectoryLastWriteTime(smbPath));
+        return ExecuteWithConnection(
+            path,
+            (connection, smbPath, _) => connection.GetDirectoryLastWriteTime(smbPath)
+        );
     }
 
     public long GetFileSize(string path)
     {
-        return ExecuteWithConnection(path, (connection, smbPath, _) =>
-            connection.GetFileSize(smbPath));
+        return ExecuteWithConnection(
+            path,
+            (connection, smbPath, _) => connection.GetFileSize(smbPath)
+        );
     }
 
-    private T ExecuteWithConnection<T>(string path, Func<SMBConnection, string, SMBShareInfo, T> operation)
+    private T ExecuteWithConnection<T>(
+        string path,
+        Func<SMBConnection, string, SMBShareInfo, T> operation
+    )
     {
         var shareInfo = SMBShareInfo.FromFilePath(path);
         var smbPath = SMBHelper.StripShareInfo(path);
         var connection = _connectionPool.GetResource(shareInfo);
-        
+
         try
         {
             var result = operation(connection, smbPath, shareInfo);

@@ -14,7 +14,12 @@ internal class ZipTaskQueue
     private int _currentMemoryUsageMb = 0;
     private bool _isRunning = true;
 
-    public ZipTaskQueue(int threadLimit, int memoryLimitMB, ILogger<ZipTaskQueue> logger, ConcurrentBag<string> failedFiles)
+    public ZipTaskQueue(
+        int threadLimit,
+        int memoryLimitMB,
+        ILogger<ZipTaskQueue> logger,
+        ConcurrentBag<string> failedFiles
+    )
     {
         _threadLimit = threadLimit;
         _memoryLimitMb = memoryLimitMB;
@@ -23,7 +28,8 @@ internal class ZipTaskQueue
         _logger.LogInformation(
             "ZipTaskQueue initialized with ThreadLimit: {ThreadLimit}, MemoryLimitMB: {MemoryLimitMB}",
             threadLimit,
-            memoryLimitMB);
+            memoryLimitMB
+        );
         Run();
     }
 
@@ -39,52 +45,59 @@ internal class ZipTaskQueue
 
     private void Run()
     {
-        Task.Run(
-            async () =>
+        Task.Run(async () =>
+        {
+            var executedTask = false;
+
+            while (true)
             {
-                var executedTask = false;
-
-                while (true)
+                try
                 {
-                    try
-                    {
-                        if (!_isRunning && _tasks.IsEmpty && _currentThreads == 0)
-                            break;
+                    if (!_isRunning && _tasks.IsEmpty && _currentThreads == 0)
+                        break;
 
-                        if (_tasks.TryPeek(out var nextTask) &&
-                            _currentThreads < _threadLimit &&
-                            (_currentMemoryUsageMb + nextTask.FileSizeMB <= _memoryLimitMb || _currentThreads == 0) &&
-                            _tasks.TryDequeue(out var taskToRun))
+                    if (
+                        _tasks.TryPeek(out var nextTask)
+                        && _currentThreads < _threadLimit
+                        && (
+                            _currentMemoryUsageMb + nextTask.FileSizeMB <= _memoryLimitMb
+                            || _currentThreads == 0
+                        )
+                        && _tasks.TryDequeue(out var taskToRun)
+                    )
+                    {
+                        executedTask = true;
+                        Interlocked.Increment(ref _currentThreads);
+                        Interlocked.Add(ref _currentMemoryUsageMb, taskToRun.FileSizeMB);
+
+                        _ = taskToRun.Task.ContinueWith(t =>
                         {
-                            executedTask = true;
-                            Interlocked.Increment(ref _currentThreads);
-                            Interlocked.Add(ref _currentMemoryUsageMb, taskToRun.FileSizeMB);
+                            if (t.IsFaulted)
+                            {
+                                _failedFiles.Add(taskToRun.FilePath);
+                                _logger?.LogError(
+                                    t.Exception,
+                                    "Task failed in ZipTaskQueue for {FilePath}",
+                                    taskToRun.FilePath
+                                );
+                            }
 
-                            _ = taskToRun.Task.ContinueWith(
-                                t =>
-                                {
-                                    if (t.IsFaulted)
-                                    {
-                                        _failedFiles.Add(taskToRun.FilePath);
-                                        _logger?.LogError(t.Exception, "Task failed in ZipTaskQueue for {FilePath}", taskToRun.FilePath);
-                                    }
+                            Interlocked.Decrement(ref _currentThreads);
+                            Interlocked.Add(ref _currentMemoryUsageMb, -taskToRun.FileSizeMB);
+                        });
 
-                                    Interlocked.Decrement(ref _currentThreads);
-                                    Interlocked.Add(ref _currentMemoryUsageMb, -taskToRun.FileSizeMB);
-                                });
-
-                            taskToRun.Task.Start();
-                        }
-
-                        if (_tasks.IsEmpty || !executedTask)
-                            await Task.Delay(100); // Avoid busy waiting
+                        taskToRun.Task.Start();
                     }
-                    catch (Exception ex)
-                    {
-                        _logger?.LogError(ex, "Error in ZipTaskQueue");
-                    }
+
+                    if (_tasks.IsEmpty || !executedTask)
+                        await Task.Delay(100); // Avoid busy waiting
                 }
-            });
+                catch (Exception ex)
+                {
+                    _logger?.LogError(ex, "Error in ZipTaskQueue");
+                }
+            }
+        });
     }
 
     public void WaitForCompletion()

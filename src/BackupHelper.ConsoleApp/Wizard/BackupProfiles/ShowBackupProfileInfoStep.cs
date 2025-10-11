@@ -4,7 +4,8 @@ using Sharprompt;
 
 namespace BackupHelper.ConsoleApp.Wizard.BackupProfiles;
 
-public record ShowBackupProfileInfoStepParameters(BackupProfile? BackupProfile = null) : IWizardParameters;
+public record ShowBackupProfileInfoStepParameters(BackupProfile? BackupProfile = null)
+    : IWizardParameters;
 
 public class ShowBackupProfileInfoStep : IWizardStep<ShowBackupProfileInfoStepParameters>
 {
@@ -15,13 +16,19 @@ public class ShowBackupProfileInfoStep : IWizardStep<ShowBackupProfileInfoStepPa
         _mediator = mediator;
     }
 
-    public async Task<IWizardParameters?> Handle(ShowBackupProfileInfoStepParameters request, CancellationToken cancellationToken)
+    public async Task<IWizardParameters?> Handle(
+        ShowBackupProfileInfoStepParameters request,
+        CancellationToken cancellationToken
+    )
     {
         var backupProfile = request.BackupProfile;
 
         if (backupProfile == null)
         {
-            var backupProfileNames = await _mediator.Send(new GetBackupProfileNamesQuery(), cancellationToken);
+            var backupProfileNames = await _mediator.Send(
+                new GetBackupProfileNamesQuery(),
+                cancellationToken
+            );
 
             if (backupProfileNames.Count == 0)
             {
@@ -30,8 +37,15 @@ public class ShowBackupProfileInfoStep : IWizardStep<ShowBackupProfileInfoStepPa
                 return new ManageBackupProfilesStepParameters();
             }
 
-            var backupProfileName = Prompt.Select("Select a backup profile to view", backupProfileNames, 5);
-            backupProfile = await _mediator.Send(new GetBackupProfileQuery(backupProfileName), cancellationToken);
+            var backupProfileName = Prompt.Select(
+                "Select a backup profile to view",
+                backupProfileNames,
+                5
+            );
+            backupProfile = await _mediator.Send(
+                new GetBackupProfileQuery(backupProfileName),
+                cancellationToken
+            );
 
             if (backupProfile == null)
             {

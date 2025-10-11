@@ -6,8 +6,7 @@ public record NullCredentialsProviderConfiguration : ICredentialsProviderConfigu
 
 public class NullCredentialsProvider : ICredentialsProvider
 {
-    public CredentialEntry? GetCredential(string credentialName)
-        => null;
+    public CredentialEntry? GetCredential(string credentialName) => null;
 
     public void SetCredential(CredentialEntry credentialEntry)
     {
@@ -24,8 +23,7 @@ public class NullCredentialsProvider : ICredentialsProvider
         // No operation for null provider
     }
 
-    public IReadOnlyCollection<CredentialEntry> GetCredentials()
-        => [];
+    public IReadOnlyCollection<CredentialEntry> GetCredentials() => [];
 
     public void Dispose()
     {

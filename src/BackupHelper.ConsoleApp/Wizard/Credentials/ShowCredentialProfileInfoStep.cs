@@ -4,7 +4,8 @@ using Sharprompt;
 
 namespace BackupHelper.ConsoleApp.Wizard.Credentials;
 
-public record ShowCredentialProfileInfoStepParameters(CredentialProfile? CredentialProfile = null) : IWizardParameters;
+public record ShowCredentialProfileInfoStepParameters(CredentialProfile? CredentialProfile = null)
+    : IWizardParameters;
 
 public class ShowCredentialProfileInfoStep : IWizardStep<ShowCredentialProfileInfoStepParameters>
 {
@@ -15,13 +16,19 @@ public class ShowCredentialProfileInfoStep : IWizardStep<ShowCredentialProfileIn
         _mediator = mediator;
     }
 
-    public async Task<IWizardParameters?> Handle(ShowCredentialProfileInfoStepParameters request, CancellationToken cancellationToken)
+    public async Task<IWizardParameters?> Handle(
+        ShowCredentialProfileInfoStepParameters request,
+        CancellationToken cancellationToken
+    )
     {
         var credentialProfile = request.CredentialProfile;
 
         if (credentialProfile == null)
         {
-            var credentialProfileNames = await _mediator.Send(new GetCredentialProfileNamesQuery(), cancellationToken);
+            var credentialProfileNames = await _mediator.Send(
+                new GetCredentialProfileNamesQuery(),
+                cancellationToken
+            );
 
             if (credentialProfileNames.Count == 0)
             {
@@ -30,10 +37,20 @@ public class ShowCredentialProfileInfoStep : IWizardStep<ShowCredentialProfileIn
                 return new ManageCredentialProfilesStepParameters();
             }
 
-            var credentialProfileName = Prompt.Select("Select a credential profile to view", credentialProfileNames, 5);
+            var credentialProfileName = Prompt.Select(
+                "Select a credential profile to view",
+                credentialProfileNames,
+                5
+            );
 
-            var password = Prompt.Password("Enter the password for the credential profile", validators: [Validators.Required()]);
-            credentialProfile = await _mediator.Send(new GetCredentialProfileQuery(credentialProfileName, password), cancellationToken);
+            var password = Prompt.Password(
+                "Enter the password for the credential profile",
+                validators: [Validators.Required()]
+            );
+            credentialProfile = await _mediator.Send(
+                new GetCredentialProfileQuery(credentialProfileName, password),
+                cancellationToken
+            );
 
             if (credentialProfile == null)
             {

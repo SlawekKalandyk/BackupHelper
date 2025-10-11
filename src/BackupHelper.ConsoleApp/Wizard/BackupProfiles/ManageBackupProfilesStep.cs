@@ -6,7 +6,10 @@ public record ManageBackupProfilesStepParameters : IWizardParameters;
 
 public class ManageBackupProfilesStep : IWizardStep<ManageBackupProfilesStepParameters>
 {
-    public Task<IWizardParameters?> Handle(ManageBackupProfilesStepParameters request, CancellationToken cancellationToken)
+    public Task<IWizardParameters?> Handle(
+        ManageBackupProfilesStepParameters request,
+        CancellationToken cancellationToken
+    )
     {
         var choice = Prompt.Select(
             "Manage Backup Profiles",
@@ -15,8 +18,9 @@ public class ManageBackupProfilesStep : IWizardStep<ManageBackupProfilesStepPara
                 "Show backup profile info",
                 "Edit existing backup profile",
                 "Delete backup profile",
-                "Back to main menu"
-            ]);
+                "Back to main menu",
+            ]
+        );
 
         return Task.FromResult<IWizardParameters?>(
             choice switch
@@ -26,7 +30,11 @@ public class ManageBackupProfilesStep : IWizardStep<ManageBackupProfilesStepPara
                 "Edit existing backup profile" => new EditBackupProfileStepParameters(),
                 "Delete backup profile" => new DeleteBackupProfileStepParameters(),
                 "Back to main menu" => new MainMenuStepParameters(),
-                _ => throw new ArgumentOutOfRangeException(nameof(choice), $"Invalid choice: {choice}")
-            });
+                _ => throw new ArgumentOutOfRangeException(
+                    nameof(choice),
+                    $"Invalid choice: {choice}"
+                ),
+            }
+        );
     }
 }

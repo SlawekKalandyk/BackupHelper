@@ -8,20 +8,29 @@ using Sharprompt;
 
 namespace BackupHelper.ConsoleApp.Wizard.Credentials;
 
-public record DeleteSMBCredentialStepParameters(CredentialProfile CredentialProfile, CredentialEntry? CredentialToDelete = null) : IWizardParameters;
+public record DeleteSMBCredentialStepParameters(
+    CredentialProfile CredentialProfile,
+    CredentialEntry? CredentialToDelete = null
+) : IWizardParameters;
 
 public class DeleteSMBCredentialStep : IWizardStep<DeleteSMBCredentialStepParameters>
 {
     private readonly IMediator _mediator;
     private readonly IApplicationDataHandler _applicationDataHandler;
 
-    public DeleteSMBCredentialStep(IMediator mediator, IApplicationDataHandler applicationDataHandler)
+    public DeleteSMBCredentialStep(
+        IMediator mediator,
+        IApplicationDataHandler applicationDataHandler
+    )
     {
         _mediator = mediator;
         _applicationDataHandler = applicationDataHandler;
     }
 
-    public async Task<IWizardParameters?> Handle(DeleteSMBCredentialStepParameters request, CancellationToken cancellationToken)
+    public async Task<IWizardParameters?> Handle(
+        DeleteSMBCredentialStepParameters request,
+        CancellationToken cancellationToken
+    )
     {
         if (request.CredentialProfile.Credentials.Count == 0)
         {
@@ -34,9 +43,18 @@ public class DeleteSMBCredentialStep : IWizardStep<DeleteSMBCredentialStepParame
 
         if (credentialToDelete == null)
         {
-            var credentialDictionary = request.CredentialProfile.Credentials.ToDictionary(credential => credential.Title, credential => credential);
-            var credentialTitle = Prompt.Select("Select a credential to delete", credentialDictionary.Keys, 5);
-            var confirmation = Prompt.Confirm($"Are you sure you want to delete the credential '{credentialTitle}'?");
+            var credentialDictionary = request.CredentialProfile.Credentials.ToDictionary(
+                credential => credential.Title,
+                credential => credential
+            );
+            var credentialTitle = Prompt.Select(
+                "Select a credential to delete",
+                credentialDictionary.Keys,
+                5
+            );
+            var confirmation = Prompt.Confirm(
+                $"Are you sure you want to delete the credential '{credentialTitle}'?"
+            );
 
             if (!confirmation)
             {
@@ -48,12 +66,21 @@ public class DeleteSMBCredentialStep : IWizardStep<DeleteSMBCredentialStepParame
             credentialToDelete = credentialDictionary[credentialTitle];
         }
 
-        var (server, shareName) = SMBCredentialHelper.DeconstructSMBCredentialTitle(credentialToDelete.Title);
+        var (server, shareName) = SMBCredentialHelper.DeconstructSMBCredentialTitle(
+            credentialToDelete.Title
+        );
         var credentialsProviderConfiguration = new KeePassCredentialsProviderConfiguration(
-            Path.Combine(_applicationDataHandler.GetCredentialProfilesPath(), request.CredentialProfile.Name),
-            request.CredentialProfile.Password);
+            Path.Combine(
+                _applicationDataHandler.GetCredentialProfilesPath(),
+                request.CredentialProfile.Name
+            ),
+            request.CredentialProfile.Password
+        );
 
-        await _mediator.Send(new DeleteSMBCredentialCommand(credentialsProviderConfiguration, server, shareName), cancellationToken);
+        await _mediator.Send(
+            new DeleteSMBCredentialCommand(credentialsProviderConfiguration, server, shareName),
+            cancellationToken
+        );
         Console.WriteLine("SMB credential deleted successfully!");
 
         return new EditCredentialProfileStepParameters(request.CredentialProfile);

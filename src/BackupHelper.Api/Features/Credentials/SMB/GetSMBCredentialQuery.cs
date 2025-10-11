@@ -4,8 +4,11 @@ using MediatR;
 
 namespace BackupHelper.Api.Features.Credentials.SMB;
 
-public record GetSMBCredentialQuery(ICredentialsProviderConfiguration CredentialsProviderConfiguration, string Server, string ShareName)
-    : IRequest<CredentialEntry?>;
+public record GetSMBCredentialQuery(
+    ICredentialsProviderConfiguration CredentialsProviderConfiguration,
+    string Server,
+    string ShareName
+) : IRequest<CredentialEntry?>;
 
 public class GetSMBCredentialQueryHandler : IRequestHandler<GetSMBCredentialQuery, CredentialEntry?>
 {
@@ -16,10 +19,18 @@ public class GetSMBCredentialQueryHandler : IRequestHandler<GetSMBCredentialQuer
         _credentialsProviderFactory = credentialsProviderFactory;
     }
 
-    public Task<CredentialEntry?> Handle(GetSMBCredentialQuery request, CancellationToken cancellationToken)
+    public Task<CredentialEntry?> Handle(
+        GetSMBCredentialQuery request,
+        CancellationToken cancellationToken
+    )
     {
-        using var credentialsProvider = _credentialsProviderFactory.Create(request.CredentialsProviderConfiguration);
-        var credentialName = SMBCredentialHelper.GetSMBCredentialTitle(request.Server, request.ShareName);
+        using var credentialsProvider = _credentialsProviderFactory.Create(
+            request.CredentialsProviderConfiguration
+        );
+        var credentialName = SMBCredentialHelper.GetSMBCredentialTitle(
+            request.Server,
+            request.ShareName
+        );
         var credential = credentialsProvider.GetCredential(credentialName);
         return Task.FromResult(credential);
     }

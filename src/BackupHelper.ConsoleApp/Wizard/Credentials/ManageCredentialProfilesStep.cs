@@ -6,7 +6,10 @@ public record ManageCredentialProfilesStepParameters : IWizardParameters;
 
 public class ManageCredentialProfilesStep : IWizardStep<ManageCredentialProfilesStepParameters>
 {
-    public Task<IWizardParameters?> Handle(ManageCredentialProfilesStepParameters request, CancellationToken cancellationToken)
+    public Task<IWizardParameters?> Handle(
+        ManageCredentialProfilesStepParameters request,
+        CancellationToken cancellationToken
+    )
     {
         var choice = Prompt.Select(
             "Manage Credential Profiles",
@@ -15,8 +18,9 @@ public class ManageCredentialProfilesStep : IWizardStep<ManageCredentialProfiles
                 "Show credential profile info",
                 "Edit existing credential profile",
                 "Delete credential profile",
-                "Back to main menu"
-            ]);
+                "Back to main menu",
+            ]
+        );
 
         return Task.FromResult<IWizardParameters?>(
             choice switch
@@ -26,7 +30,11 @@ public class ManageCredentialProfilesStep : IWizardStep<ManageCredentialProfiles
                 "Edit existing credential profile" => new EditCredentialProfileStepParameters(),
                 "Delete credential profile" => new DeleteCredentialProfileStepParameters(),
                 "Back to main menu" => new MainMenuStepParameters(),
-                _ => throw new ArgumentOutOfRangeException(nameof(choice), $"Invalid choice: {choice}")
-            });
+                _ => throw new ArgumentOutOfRangeException(
+                    nameof(choice),
+                    $"Invalid choice: {choice}"
+                ),
+            }
+        );
     }
 }

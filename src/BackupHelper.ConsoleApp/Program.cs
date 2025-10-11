@@ -11,13 +11,12 @@ internal class Program
 {
     internal static async Task Main(string[] args)
     {
-        var configuration = new ConfigurationBuilder()
-            .Build();
+        var configuration = new ConfigurationBuilder().Build();
         var serviceCollection = new ServiceCollection()
-                                .AddCoreServices(configuration)
-                                .AddApiServices(configuration)
-                                .AddConsoleInterfaceServices(configuration)
-                                .AddLogging();
+            .AddCoreServices(configuration)
+            .AddApiServices(configuration)
+            .AddConsoleInterfaceServices(configuration)
+            .AddLogging();
 
         var serviceProvider = serviceCollection.BuildServiceProvider();
         var mediator = serviceProvider.GetRequiredService<IMediator>();

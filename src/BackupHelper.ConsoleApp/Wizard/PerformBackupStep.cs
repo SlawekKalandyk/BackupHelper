@@ -19,7 +19,12 @@ public class PerformBackupStepParameters : IWizardParameters
         OutputZipPath = outputZipPath;
     }
 
-    public PerformBackupStepParameters(string backupPlanLocation, string outputZipPath, string keePassDbLocation, string keePassDbPassword)
+    public PerformBackupStepParameters(
+        string backupPlanLocation,
+        string outputZipPath,
+        string keePassDbLocation,
+        string keePassDbPassword
+    )
         : this(backupPlanLocation, outputZipPath)
     {
         KeePassDbLocation = keePassDbLocation;
@@ -38,14 +43,21 @@ public class PerformBackupStep : IWizardStep<PerformBackupStepParameters>
     private readonly ICredentialsProviderFactory _credentialsProviderFactory;
     private readonly ILoggerFactory _loggerFactory;
 
-    public PerformBackupStep(IMediator mediator, ICredentialsProviderFactory credentialsProviderFactory, ILoggerFactory loggerFactory)
+    public PerformBackupStep(
+        IMediator mediator,
+        ICredentialsProviderFactory credentialsProviderFactory,
+        ILoggerFactory loggerFactory
+    )
     {
         _mediator = mediator;
         _credentialsProviderFactory = credentialsProviderFactory;
         _loggerFactory = loggerFactory;
     }
 
-    public async Task<IWizardParameters?> Handle(PerformBackupStepParameters parameters, CancellationToken cancellationToken)
+    public async Task<IWizardParameters?> Handle(
+        PerformBackupStepParameters parameters,
+        CancellationToken cancellationToken
+    )
     {
         var useEncryption = Prompt.Confirm("Do you want to encrypt the backup?");
         string? backupPassword = null;
@@ -62,15 +74,20 @@ public class PerformBackupStep : IWizardStep<PerformBackupStepParameters>
             AddBackupLogSink(backupPlan.LogDirectory);
 
         var backupSavePath = BackupSavePathHelper.GetBackupSavePath(parameters.OutputZipPath);
-        await _mediator.Send(
-                           new CreateBackupCommand(backupPlan, backupSavePath, backupPassword),
-                           cancellationToken)
-                       .ContinueWith(
-                           _ =>
-                           {
-                               Console.WriteLine($"Backup completed successfully. Output file: {backupSavePath}");
-                           },
-                           cancellationToken);
+        await _mediator
+            .Send(
+                new CreateBackupCommand(backupPlan, backupSavePath, backupPassword),
+                cancellationToken
+            )
+            .ContinueWith(
+                _ =>
+                {
+                    Console.WriteLine(
+                        $"Backup completed successfully. Output file: {backupSavePath}"
+                    );
+                },
+                cancellationToken
+            );
 
         return new MainMenuStepParameters();
     }
@@ -83,17 +100,18 @@ public class PerformBackupStep : IWizardStep<PerformBackupStepParameters>
 
             var logFilePath = Path.Combine(logDirectory, "backup-.log");
             var logger = new LoggerConfiguration()
-                         .MinimumLevel.Is(LogEventLevel.Information)
-                         .Enrich.WithThreadId()
-                         .WriteTo.File(
-                             logFilePath,
-                             rollingInterval: RollingInterval.Month,
-                             fileSizeLimitBytes: 10_000_000,
-                             rollOnFileSizeLimit: true,
-                             retainedFileCountLimit: 12,
-                             shared: true,
-                             outputTemplate: "{Timestamp:yyyy-MM-dd HH:mm:ss.fff} [{Level:u3}] [ThreadId:{ThreadId}] {Message:lj}{NewLine}{Exception}")
-                         .CreateLogger();
+                .MinimumLevel.Is(LogEventLevel.Information)
+                .Enrich.WithThreadId()
+                .WriteTo.File(
+                    logFilePath,
+                    rollingInterval: RollingInterval.Month,
+                    fileSizeLimitBytes: 10_000_000,
+                    rollOnFileSizeLimit: true,
+                    retainedFileCountLimit: 12,
+                    shared: true,
+                    outputTemplate: "{Timestamp:yyyy-MM-dd HH:mm:ss.fff} [{Level:u3}] [ThreadId:{ThreadId}] {Message:lj}{NewLine}{Exception}"
+                )
+                .CreateLogger();
 
             _loggerFactory.AddSerilog(logger, dispose: true);
         }
@@ -108,7 +126,8 @@ public class PerformBackupStep : IWizardStep<PerformBackupStepParameters>
 
         var keePassCredentialsConfiguration = new KeePassCredentialsProviderConfiguration(
             parameters.KeePassDbLocation,
-            parameters.KeePassDbPassword);
+            parameters.KeePassDbPassword
+        );
 
         return _credentialsProviderFactory.Create(keePassCredentialsConfiguration);
     }

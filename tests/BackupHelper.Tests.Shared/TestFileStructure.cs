@@ -6,7 +6,12 @@ public class TestDirectory : IDisposable
 {
     private bool directoryHasBeenGenerated = false;
 
-    public TestDirectory(string name, List<TestFile> files, List<TestDirectory> directories, string? zipPath = null)
+    public TestDirectory(
+        string name,
+        List<TestFile> files,
+        List<TestDirectory> directories,
+        string? zipPath = null
+    )
     {
         Check.IsNull(name);
         Check.IsNull(files);
@@ -34,7 +39,9 @@ public class TestDirectory : IDisposable
 
         Directory.CreateDirectory(GeneratedDirectoryPath);
         Files.ForEach(file => file.Generate(UnzippedFilesDirectoryPath, GeneratedDirectoryPath));
-        Directories.ForEach(directory => directory.Generate(UnzippedFilesDirectoryPath, GeneratedDirectoryPath));
+        Directories.ForEach(directory =>
+            directory.Generate(UnzippedFilesDirectoryPath, GeneratedDirectoryPath)
+        );
 
         directoryHasBeenGenerated = true;
     }
@@ -140,8 +147,12 @@ public class TestFileStructure : IDisposable
 
         ZippedFilesDirectoryRootPath = zippedFilesDirectoryRootPath;
         UnzippedFilesDirectoryRootPath = unzippedFilesDirectoryRootPath;
-        Files.ForEach(file => file.Generate(UnzippedFilesDirectoryRootPath, ZippedFilesDirectoryRootPath));
-        Directories.ForEach(directory => directory.Generate(UnzippedFilesDirectoryRootPath, ZippedFilesDirectoryRootPath));
+        Files.ForEach(file =>
+            file.Generate(UnzippedFilesDirectoryRootPath, ZippedFilesDirectoryRootPath)
+        );
+        Directories.ForEach(directory =>
+            directory.Generate(UnzippedFilesDirectoryRootPath, ZippedFilesDirectoryRootPath)
+        );
 
         fileStructureHasBeenGenerated = true;
     }

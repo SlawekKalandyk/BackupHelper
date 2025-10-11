@@ -14,7 +14,11 @@ public class BackupPlanZipper : IBackupPlanZipper
     private readonly IServiceScopeFactory _serviceScopeFactory;
     private readonly IDateTimeProvider _dateTimeProvider;
 
-    public BackupPlanZipper(ILogger<BackupPlanZipper> logger, IServiceScopeFactory serviceScopeFactory, IDateTimeProvider dateTimeProvider)
+    public BackupPlanZipper(
+        ILogger<BackupPlanZipper> logger,
+        IServiceScopeFactory serviceScopeFactory,
+        IDateTimeProvider dateTimeProvider
+    )
     {
         _logger = logger;
         _serviceScopeFactory = serviceScopeFactory;
@@ -58,7 +62,12 @@ public class BackupPlanZipper : IBackupPlanZipper
         }
     }
 
-    private void AddEntryToZip(IFileZipper zipper, BackupEntry entry, string zipPath, int? planCompressionLevel)
+    private void AddEntryToZip(
+        IFileZipper zipper,
+        BackupEntry entry,
+        string zipPath,
+        int? planCompressionLevel
+    )
     {
         switch (entry)
         {
@@ -71,7 +80,12 @@ public class BackupPlanZipper : IBackupPlanZipper
         }
     }
 
-    private void AddBackupFileEntryToZip(IFileZipper zipper, BackupFileEntry fileEntry, string zipPath, int? planCompressionLevel)
+    private void AddBackupFileEntryToZip(
+        IFileZipper zipper,
+        BackupFileEntry fileEntry,
+        string zipPath,
+        int? planCompressionLevel
+    )
     {
         var filePath = fileEntry.FilePath;
         if (!string.IsNullOrEmpty(fileEntry.CronExpression))
@@ -79,7 +93,8 @@ public class BackupPlanZipper : IBackupPlanZipper
             var lastOccurence = CronExpressionResolver.GetLastOccurrenceBeforeDateTime(
                 fileEntry.CronExpression,
                 _dateTimeProvider.Now,
-                fileEntry.GetTimeZoneInfo());
+                fileEntry.GetTimeZoneInfo()
+            );
             filePath = SimplifiedPOSIXDateTimeResolver.Resolve(filePath, lastOccurence);
         }
 
@@ -90,14 +105,20 @@ public class BackupPlanZipper : IBackupPlanZipper
 
         if (sourceManager.FileExists(filePath))
         {
-            _logger.LogInformation("Adding file to zip file '{FileEntryFilePath}' under zip path '{ZipPath}'",
-                                   filePath, string.IsNullOrEmpty(zipPath) ? "<root>" : zipPath + '/');
+            _logger.LogInformation(
+                "Adding file to zip file '{FileEntryFilePath}' under zip path '{ZipPath}'",
+                filePath,
+                string.IsNullOrEmpty(zipPath) ? "<root>" : zipPath + '/'
+            );
             zipper.AddFile(filePath, zipPath, effectiveCompressionLevel);
         }
         else if (sourceManager.DirectoryExists(filePath))
         {
-            _logger.LogInformation("Adding directory to zip file '{FileEntryFilePath}' under zip path '{ZipPath}'",
-                                   filePath, string.IsNullOrEmpty(zipPath) ? "<root>" : zipPath + '/');
+            _logger.LogInformation(
+                "Adding directory to zip file '{FileEntryFilePath}' under zip path '{ZipPath}'",
+                filePath,
+                string.IsNullOrEmpty(zipPath) ? "<root>" : zipPath + '/'
+            );
             zipper.AddDirectory(filePath, zipPath, effectiveCompressionLevel);
         }
         else
@@ -106,9 +127,16 @@ public class BackupPlanZipper : IBackupPlanZipper
         }
     }
 
-    private void AddBackupDirectoryEntryToZip(IFileZipper zipper, BackupDirectoryEntry dirEntry, string zipPath, int? planCompressionLevel)
+    private void AddBackupDirectoryEntryToZip(
+        IFileZipper zipper,
+        BackupDirectoryEntry dirEntry,
+        string zipPath,
+        int? planCompressionLevel
+    )
     {
-        var newZipPath = string.IsNullOrEmpty(zipPath) ? dirEntry.DirectoryName : Path.Combine(zipPath, dirEntry.DirectoryName);
+        var newZipPath = string.IsNullOrEmpty(zipPath)
+            ? dirEntry.DirectoryName
+            : Path.Combine(zipPath, dirEntry.DirectoryName);
         foreach (var subEntry in dirEntry.Items)
         {
             AddEntryToZip(zipper, subEntry, newZipPath, planCompressionLevel);
@@ -120,7 +148,11 @@ public class BackupPlanZipper : IBackupPlanZipper
         var extension = Path.GetExtension(zipPath);
         var pathWithoutExtension = Path.GetFileNameWithoutExtension(zipPath);
         var innerZipName = pathWithoutExtension + ".inner" + extension;
-        var directory = Path.GetDirectoryName(zipPath) ?? throw new InvalidOperationException("Zip file path does not have a valid directory.");
+        var directory =
+            Path.GetDirectoryName(zipPath)
+            ?? throw new InvalidOperationException(
+                "Zip file path does not have a valid directory."
+            );
         var innerZipPath = Path.Combine(directory, innerZipName);
 
         File.Move(zipPath, innerZipPath, true);
@@ -130,7 +162,7 @@ public class BackupPlanZipper : IBackupPlanZipper
             Password = password,
             CreateEmptyDirectories = true,
             EntryEncryptionMethod = ZipEncryptionMethod.AES256,
-            CompressionLevel = 0
+            CompressionLevel = 0,
         };
         fastZip.CreateZip(zipPath, directory, false, innerZipName);
 

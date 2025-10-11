@@ -5,7 +5,8 @@ namespace BackupHelper.Api.Features.BackupProfiles;
 
 public record GetBackupProfileNamesQuery : IRequest<IReadOnlyList<string>>;
 
-public class GetBackupProfileNamesQueryHandler : IRequestHandler<GetBackupProfileNamesQuery, IReadOnlyList<string>>
+public class GetBackupProfileNamesQueryHandler
+    : IRequestHandler<GetBackupProfileNamesQuery, IReadOnlyList<string>>
 {
     private readonly IApplicationDataHandler _applicationDataHandler;
 
@@ -14,7 +15,10 @@ public class GetBackupProfileNamesQueryHandler : IRequestHandler<GetBackupProfil
         _applicationDataHandler = applicationDataHandler;
     }
 
-    public Task<IReadOnlyList<string>> Handle(GetBackupProfileNamesQuery request, CancellationToken cancellationToken)
+    public Task<IReadOnlyList<string>> Handle(
+        GetBackupProfileNamesQuery request,
+        CancellationToken cancellationToken
+    )
     {
         var backupProfilesPath = _applicationDataHandler.GetBackupProfilesPath();
         var backupProfiles = Directory.GetFiles(backupProfilesPath).Select(Path.GetFileName);

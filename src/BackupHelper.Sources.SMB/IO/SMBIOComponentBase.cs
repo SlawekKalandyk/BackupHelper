@@ -12,7 +12,6 @@ public abstract class SMBIOComponentBase : IDisposable
         FilePurpose = filePurpose;
     }
 
-
     protected ISMBFileStore SMBFileStore { get; }
     public object Handle { get; }
     public FilePurpose FilePurpose { get; }

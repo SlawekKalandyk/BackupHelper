@@ -15,9 +15,15 @@ public class DeleteCredentialProfileStep : IWizardStep<DeleteCredentialProfileSt
         _mediator = mediator;
     }
 
-    public async Task<IWizardParameters?> Handle(DeleteCredentialProfileStepParameters request, CancellationToken cancellationToken)
+    public async Task<IWizardParameters?> Handle(
+        DeleteCredentialProfileStepParameters request,
+        CancellationToken cancellationToken
+    )
     {
-        var credentialProfileNames = await _mediator.Send(new GetCredentialProfileNamesQuery(), cancellationToken);
+        var credentialProfileNames = await _mediator.Send(
+            new GetCredentialProfileNamesQuery(),
+            cancellationToken
+        );
 
         if (credentialProfileNames.Count == 0)
         {
@@ -25,13 +31,24 @@ public class DeleteCredentialProfileStep : IWizardStep<DeleteCredentialProfileSt
             return new ManageCredentialProfilesStepParameters();
         }
 
-        var credentialProfileName = Prompt.Select("Select a credential profile to delete", credentialProfileNames, 5);
-        var confirmation = Prompt.Confirm($"Are you sure you want to delete the credential profile '{credentialProfileName}'?");
+        var credentialProfileName = Prompt.Select(
+            "Select a credential profile to delete",
+            credentialProfileNames,
+            5
+        );
+        var confirmation = Prompt.Confirm(
+            $"Are you sure you want to delete the credential profile '{credentialProfileName}'?"
+        );
 
         if (confirmation)
         {
-            await _mediator.Send(new DeleteCredentialProfileCommand(credentialProfileName), cancellationToken);
-            Console.WriteLine($"Credential profile '{credentialProfileName}' deleted successfully!");
+            await _mediator.Send(
+                new DeleteCredentialProfileCommand(credentialProfileName),
+                cancellationToken
+            );
+            Console.WriteLine(
+                $"Credential profile '{credentialProfileName}' deleted successfully!"
+            );
         }
 
         return new ManageCredentialProfilesStepParameters();

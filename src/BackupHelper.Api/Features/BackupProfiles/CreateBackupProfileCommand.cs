@@ -4,9 +4,12 @@ using Newtonsoft.Json;
 
 namespace BackupHelper.Api.Features.BackupProfiles;
 
-public record CreateBackupProfileCommand(string Name, string BackupPlanLocation, string BackupDirectory, string CredentialProfileName)
-    : IRequest;
-
+public record CreateBackupProfileCommand(
+    string Name,
+    string BackupPlanLocation,
+    string BackupDirectory,
+    string CredentialProfileName
+) : IRequest;
 
 public class CreateBackupProfileCommandHandler : IRequestHandler<CreateBackupProfileCommand>
 {
@@ -19,20 +22,29 @@ public class CreateBackupProfileCommandHandler : IRequestHandler<CreateBackupPro
 
     public Task Handle(CreateBackupProfileCommand request, CancellationToken cancellationToken)
     {
-        var backupProfilePath = Path.Combine(_applicationDataHandler.GetBackupProfilesPath(), request.Name);
+        var backupProfilePath = Path.Combine(
+            _applicationDataHandler.GetBackupProfilesPath(),
+            request.Name
+        );
 
         if (File.Exists(backupProfilePath))
         {
-            throw new InvalidOperationException($"Backup profile with name '{request.Name}' already exists.");
+            throw new InvalidOperationException(
+                $"Backup profile with name '{request.Name}' already exists."
+            );
         }
 
         var backupProfile = new BackupProfile(
             request.Name,
             request.BackupPlanLocation,
             request.BackupDirectory,
-            request.CredentialProfileName);
+            request.CredentialProfileName
+        );
 
-        File.WriteAllText(backupProfilePath, JsonConvert.SerializeObject(backupProfile, Formatting.Indented));
+        File.WriteAllText(
+            backupProfilePath,
+            JsonConvert.SerializeObject(backupProfile, Formatting.Indented)
+        );
 
         return Task.CompletedTask;
     }

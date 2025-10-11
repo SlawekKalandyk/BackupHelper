@@ -10,17 +10,20 @@ public abstract class ZipTestsBase : TestsBase
     /// <summary>
     /// Directory where files to be zipped will be stored during tests.
     /// </summary>
-    protected string ZippedFilesDirectoryPath => Path.Combine(TestsDirectoryRootPath, "file-zipper-tests-zipped");
+    protected string ZippedFilesDirectoryPath =>
+        Path.Combine(TestsDirectoryRootPath, "file-zipper-tests-zipped");
 
     /// <summary>
     /// Directory where unzipped files will be stored during tests.
     /// </summary>
-    protected string UnzippedFilesDirectoryPath => Path.Combine(TestsDirectoryRootPath, "file-zipper-tests-unzipped");
+    protected string UnzippedFilesDirectoryPath =>
+        Path.Combine(TestsDirectoryRootPath, "file-zipper-tests-unzipped");
 
     /// <summary>
     /// File path for the zip file used in tests.
     /// </summary>
-    protected string ZipFilePath => Path.Combine(TestsDirectoryRootPath, "file-zipper-tests-zipped-file.zip");
+    protected string ZipFilePath =>
+        Path.Combine(TestsDirectoryRootPath, "file-zipper-tests-zipped-file.zip");
 
     [SetUp]
     protected override void Setup()

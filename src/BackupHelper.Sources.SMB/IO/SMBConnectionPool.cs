@@ -8,7 +8,10 @@ internal class SMBConnectionPool : ResourcePoolBase<SMBConnection, SMBShareInfo>
 {
     private readonly ICredentialsProvider _credentialsProvider;
 
-    public SMBConnectionPool(ICredentialsProvider credentialsProvider, ILogger<SMBConnectionPool> logger)
+    public SMBConnectionPool(
+        ICredentialsProvider credentialsProvider,
+        ILogger<SMBConnectionPool> logger
+    )
         : base(logger, 5, TimeSpan.FromSeconds(90))
     {
         _credentialsProvider = credentialsProvider;
@@ -23,7 +26,8 @@ internal class SMBConnectionPool : ResourcePoolBase<SMBConnection, SMBShareInfo>
             string.Empty,
             shareInfo.ShareName,
             credential.Username,
-            credential.Password);
+            credential.Password
+        );
     }
 
     protected override bool ValidateResource(SMBConnection connection)
@@ -45,12 +49,22 @@ internal class SMBConnectionPool : ResourcePoolBase<SMBConnection, SMBShareInfo>
 
     private SMBCredential GetCredential(SMBShareInfo shareInfo)
     {
-        var credentialName = SMBCredentialHelper.GetSMBCredentialTitle(shareInfo.ServerIPAddress.ToString(), shareInfo.ShareName);
+        var credentialName = SMBCredentialHelper.GetSMBCredentialTitle(
+            shareInfo.ServerIPAddress.ToString(),
+            shareInfo.ShareName
+        );
         var credential = _credentialsProvider.GetCredential(credentialName);
 
         if (credential == null)
-            throw new InvalidOperationException($"No credentials found for SMB share '{credentialName}'.");
+            throw new InvalidOperationException(
+                $"No credentials found for SMB share '{credentialName}'."
+            );
 
-        return new SMBCredential(shareInfo.ServerIPAddress.ToString(), shareInfo.ShareName, credential.Username, credential.Password!);
+        return new SMBCredential(
+            shareInfo.ServerIPAddress.ToString(),
+            shareInfo.ShareName,
+            credential.Username,
+            credential.Password!
+        );
     }
 }

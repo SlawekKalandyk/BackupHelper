@@ -15,7 +15,10 @@ public class GetBackupProfileQueryHandler : IRequestHandler<GetBackupProfileQuer
         _applicationDataHandler = applicationDataHandler;
     }
 
-    public Task<BackupProfile?> Handle(GetBackupProfileQuery request, CancellationToken cancellationToken)
+    public Task<BackupProfile?> Handle(
+        GetBackupProfileQuery request,
+        CancellationToken cancellationToken
+    )
     {
         var backupProfilesPath = _applicationDataHandler.GetBackupProfilesPath();
         var backupProfileFilePath = Path.Combine(backupProfilesPath, request.Name);

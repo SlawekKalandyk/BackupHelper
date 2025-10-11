@@ -6,7 +6,8 @@ namespace BackupHelper.Api.Features.BackupProfiles;
 
 public record GetBackupProfilesQuery : IRequest<IReadOnlyCollection<BackupProfile>>;
 
-public class GetBackupProfilesQueryHandler : IRequestHandler<GetBackupProfilesQuery, IReadOnlyCollection<BackupProfile>>
+public class GetBackupProfilesQueryHandler
+    : IRequestHandler<GetBackupProfilesQuery, IReadOnlyCollection<BackupProfile>>
 {
     private readonly IApplicationDataHandler _applicationDataHandler;
 
@@ -15,11 +16,15 @@ public class GetBackupProfilesQueryHandler : IRequestHandler<GetBackupProfilesQu
         _applicationDataHandler = applicationDataHandler;
     }
 
-    public Task<IReadOnlyCollection<BackupProfile>> Handle(GetBackupProfilesQuery request, CancellationToken cancellationToken)
+    public Task<IReadOnlyCollection<BackupProfile>> Handle(
+        GetBackupProfilesQuery request,
+        CancellationToken cancellationToken
+    )
     {
         var backupProfilesPath = _applicationDataHandler.GetBackupProfilesPath();
-        var backupProfiles = Directory.GetFiles(backupProfilesPath)
-                                      .Select(path => JsonConvert.DeserializeObject<BackupProfile>(File.ReadAllText(path)));
+        var backupProfiles = Directory
+            .GetFiles(backupProfilesPath)
+            .Select(path => JsonConvert.DeserializeObject<BackupProfile>(File.ReadAllText(path)));
 
         return Task.FromResult<IReadOnlyCollection<BackupProfile>>(backupProfiles.ToList());
     }

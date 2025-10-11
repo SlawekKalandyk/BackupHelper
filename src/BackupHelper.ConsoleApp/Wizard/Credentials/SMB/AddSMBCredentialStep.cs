@@ -8,7 +8,8 @@ using Sharprompt;
 
 namespace BackupHelper.ConsoleApp.Wizard.Credentials;
 
-public record AddSMBCredentialStepParameters(CredentialProfile CredentialProfile) : IWizardParameters;
+public record AddSMBCredentialStepParameters(CredentialProfile CredentialProfile)
+    : IWizardParameters;
 
 public class AddSMBCredentialStep : IWizardStep<AddSMBCredentialStepParameters>
 {
@@ -21,19 +22,39 @@ public class AddSMBCredentialStep : IWizardStep<AddSMBCredentialStepParameters>
         _applicationDataHandler = applicationDataHandler;
     }
 
-    public async Task<IWizardParameters?> Handle(AddSMBCredentialStepParameters request, CancellationToken cancellationToken)
+    public async Task<IWizardParameters?> Handle(
+        AddSMBCredentialStepParameters request,
+        CancellationToken cancellationToken
+    )
     {
-        var keePassDbLocation = Path.Combine(_applicationDataHandler.GetCredentialProfilesPath(), request.CredentialProfile.Name);
-        var credentialsProviderConfiguration = new KeePassCredentialsProviderConfiguration(keePassDbLocation, request.CredentialProfile.Password);
+        var keePassDbLocation = Path.Combine(
+            _applicationDataHandler.GetCredentialProfilesPath(),
+            request.CredentialProfile.Name
+        );
+        var credentialsProviderConfiguration = new KeePassCredentialsProviderConfiguration(
+            keePassDbLocation,
+            request.CredentialProfile.Password
+        );
 
-        var server = Prompt.Input<string>("Enter SMB server address", validators: [Validators.Required()]);
-        var share = Prompt.Input<string>("Enter SMB share name", validators: [Validators.Required()]);
-        var credential = await _mediator.Send(new GetSMBCredentialQuery(credentialsProviderConfiguration, server, share), cancellationToken);
+        var server = Prompt.Input<string>(
+            "Enter SMB server address",
+            validators: [Validators.Required()]
+        );
+        var share = Prompt.Input<string>(
+            "Enter SMB share name",
+            validators: [Validators.Required()]
+        );
+        var credential = await _mediator.Send(
+            new GetSMBCredentialQuery(credentialsProviderConfiguration, server, share),
+            cancellationToken
+        );
 
         if (credential != null)
         {
             var title = SMBCredentialHelper.GetSMBCredentialTitle(server, share);
-            var editCredential = Prompt.Confirm($"SMB credential for {title} exists. Do you want to edit it?");
+            var editCredential = Prompt.Confirm(
+                $"SMB credential for {title} exists. Do you want to edit it?"
+            );
 
             if (editCredential)
             {
@@ -45,17 +66,23 @@ public class AddSMBCredentialStep : IWizardStep<AddSMBCredentialStepParameters>
             }
         }
 
-        var username = Prompt.Input<string>("Enter SMB username", validators: [Validators.Required()]);
+        var username = Prompt.Input<string>(
+            "Enter SMB username",
+            validators: [Validators.Required()]
+        );
         var password = Prompt.Password("Enter SMB password", validators: [Validators.Required()]);
 
         var smbCredential = new SMBCredential(server, share, username, password);
-        await _mediator.Send(new AddSMBCredentialCommand(credentialsProviderConfiguration, smbCredential), cancellationToken);
+        await _mediator.Send(
+            new AddSMBCredentialCommand(credentialsProviderConfiguration, smbCredential),
+            cancellationToken
+        );
 
         Console.WriteLine("SMB credential added successfully.");
         var addAnother = Prompt.Confirm("Do you want to add another SMB credential?");
 
         return addAnother
-                   ? new AddSMBCredentialStepParameters(request.CredentialProfile)
-                   : new EditCredentialProfileStepParameters(request.CredentialProfile);
+            ? new AddSMBCredentialStepParameters(request.CredentialProfile)
+            : new EditCredentialProfileStepParameters(request.CredentialProfile);
     }
 }

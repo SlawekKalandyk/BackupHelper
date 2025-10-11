@@ -4,10 +4,16 @@ using MediatR;
 
 namespace BackupHelper.Api.Features.Credentials;
 
-public record CheckCredentialsConnectivityQuery(string CredentialProfileName, string CredentialProfilePassword)
-    : IRequest<IReadOnlyCollection<IDisplayableCredentialEntry>>;
+public record CheckCredentialsConnectivityQuery(
+    string CredentialProfileName,
+    string CredentialProfilePassword
+) : IRequest<IReadOnlyCollection<IDisplayableCredentialEntry>>;
 
-public class CheckCredentialsConnectivityQueryHandler : IRequestHandler<CheckCredentialsConnectivityQuery, IReadOnlyCollection<IDisplayableCredentialEntry>>
+public class CheckCredentialsConnectivityQueryHandler
+    : IRequestHandler<
+        CheckCredentialsConnectivityQuery,
+        IReadOnlyCollection<IDisplayableCredentialEntry>
+    >
 {
     private readonly IMediator _mediator;
 
@@ -16,15 +22,24 @@ public class CheckCredentialsConnectivityQueryHandler : IRequestHandler<CheckCre
         _mediator = mediator;
     }
 
-    public async Task<IReadOnlyCollection<IDisplayableCredentialEntry>> Handle(CheckCredentialsConnectivityQuery request, CancellationToken cancellationToken)
+    public async Task<IReadOnlyCollection<IDisplayableCredentialEntry>> Handle(
+        CheckCredentialsConnectivityQuery request,
+        CancellationToken cancellationToken
+    )
     {
         var credentialProfile = await _mediator.Send(
-                                    new GetCredentialProfileQuery(request.CredentialProfileName, request.CredentialProfilePassword),
-                                    cancellationToken);
+            new GetCredentialProfileQuery(
+                request.CredentialProfileName,
+                request.CredentialProfilePassword
+            ),
+            cancellationToken
+        );
 
         if (credentialProfile == null)
         {
-            throw new ArgumentException($"Credential profile '{request.CredentialProfileName}' not found.");
+            throw new ArgumentException(
+                $"Credential profile '{request.CredentialProfileName}' not found."
+            );
         }
 
         var nonConnectedEntries = new List<IDisplayableCredentialEntry>();
@@ -33,7 +48,10 @@ public class CheckCredentialsConnectivityQueryHandler : IRequestHandler<CheckCre
         {
             if (IsSMBCredential(credentialEntry))
             {
-                var isConnected = await _mediator.Send(new CheckSMBCredentialConnectivityQuery(credentialEntry), cancellationToken);
+                var isConnected = await _mediator.Send(
+                    new CheckSMBCredentialConnectivityQuery(credentialEntry),
+                    cancellationToken
+                );
                 if (!isConnected)
                     nonConnectedEntries.Add(credentialEntry);
             }

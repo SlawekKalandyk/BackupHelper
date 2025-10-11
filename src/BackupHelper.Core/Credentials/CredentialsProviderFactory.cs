@@ -10,17 +10,28 @@ public class CredentialsProviderFactory : ICredentialsProviderFactory
     {
         return configuration switch
         {
-            KeePassCredentialsProviderConfiguration keepass => new KeePassCredentialsProvider(keepass),
+            KeePassCredentialsProviderConfiguration keepass => new KeePassCredentialsProvider(
+                keepass
+            ),
             NullCredentialsProviderConfiguration => new NullCredentialsProvider(),
-            _ => throw new NotSupportedException($"Configuration type '{configuration.GetType().Name}' is not supported.")
+            _ => throw new NotSupportedException(
+                $"Configuration type '{configuration.GetType().Name}' is not supported."
+            ),
         };
     }
 
-    public void SetDefaultCredentialsProviderConfiguration(ICredentialsProviderConfiguration configuration)
+    public void SetDefaultCredentialsProviderConfiguration(
+        ICredentialsProviderConfiguration configuration
+    )
     {
-        _defaultConfiguration = configuration ?? throw new ArgumentNullException(nameof(configuration), "Configuration cannot be null.");
+        _defaultConfiguration =
+            configuration
+            ?? throw new ArgumentNullException(
+                nameof(configuration),
+                "Configuration cannot be null."
+            );
     }
 
-    public ICredentialsProvider GetDefaultCredentialsProvider()
-        => Create(_defaultConfiguration ?? new NullCredentialsProviderConfiguration());
+    public ICredentialsProvider GetDefaultCredentialsProvider() =>
+        Create(_defaultConfiguration ?? new NullCredentialsProviderConfiguration());
 }

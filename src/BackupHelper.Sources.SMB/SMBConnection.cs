@@ -10,7 +10,13 @@ public class SMBConnection : IDisposable
     private readonly SMB2Client _smb2Client;
     private readonly ISMBFileStore _smbFileStore;
 
-    public SMBConnection(string serverName, string domainName, string shareName, string username, string password)
+    public SMBConnection(
+        string serverName,
+        string domainName,
+        string shareName,
+        string username,
+        string password
+    )
     {
         _smb2Client = new SMB2Client();
         var connected = _smb2Client.Connect(serverName, SMBTransportType.DirectTCPTransport);
@@ -25,7 +31,13 @@ public class SMBConnection : IDisposable
         SMBHelper.ThrowIfStatusNotSuccess(status, nameof(_smb2Client.TreeConnect));
     }
 
-    public SMBConnection(IPAddress ipAddress, string domainName, string shareName, string username, string password)
+    public SMBConnection(
+        IPAddress ipAddress,
+        string domainName,
+        string shareName,
+        string username,
+        string password
+    )
     {
         _smb2Client = new SMB2Client();
         var connected = _smb2Client.Connect(ipAddress, SMBTransportType.DirectTCPTransport);
@@ -72,15 +84,16 @@ public class SMBConnection : IDisposable
 
     public void DeleteDirectory(string directoryPath)
     {
-        using var smbDirectory = SMBDirectory.OpenDirectoryForDeletion(_smbFileStore, directoryPath);
+        using var smbDirectory = SMBDirectory.OpenDirectoryForDeletion(
+            _smbFileStore,
+            directoryPath
+        );
         smbDirectory.Delete(recursive: true);
     }
 
     public Stream CreateFile(string filePath)
     {
-        using (var _ = SMBFile.CreateFile(_smbFileStore, filePath))
-        {
-        }
+        using (var _ = SMBFile.CreateFile(_smbFileStore, filePath)) { }
         return new SMBWriteOnlyFileStream(_smbFileStore, filePath);
     }
 
@@ -98,20 +111,18 @@ public class SMBConnection : IDisposable
         return IsConnected && SMBDirectory.CanTraverseDirectory(_smbFileStore, string.Empty);
     }
 
-    public bool FileExists(string filePath)
-        => SMBFile.Exists(_smbFileStore, filePath);
+    public bool FileExists(string filePath) => SMBFile.Exists(_smbFileStore, filePath);
 
-    public bool DirectoryExists(string directoryPath)
-        => SMBDirectory.Exists(_smbFileStore, directoryPath);
+    public bool DirectoryExists(string directoryPath) =>
+        SMBDirectory.Exists(_smbFileStore, directoryPath);
 
-    public DateTime? GetFileLastWriteTime(string filePath)
-        => SMBFile.GetLastWriteTime(_smbFileStore, filePath);
+    public DateTime? GetFileLastWriteTime(string filePath) =>
+        SMBFile.GetLastWriteTime(_smbFileStore, filePath);
 
-    public DateTime? GetDirectoryLastWriteTime(string directoryPath)
-        => SMBDirectory.GetLastWriteTime(_smbFileStore, directoryPath);
+    public DateTime? GetDirectoryLastWriteTime(string directoryPath) =>
+        SMBDirectory.GetLastWriteTime(_smbFileStore, directoryPath);
 
-    public long GetFileSize(string smbPath)
-        => SMBFile.GetFileSize(_smbFileStore, smbPath);
+    public long GetFileSize(string smbPath) => SMBFile.GetFileSize(_smbFileStore, smbPath);
 
     public void Dispose()
     {

@@ -82,7 +82,10 @@ public class Snapshot : IDisposable
     /// </summary>
     public void Dispose()
     {
-        try { Delete(); }
+        try
+        {
+            Delete();
+        }
         catch { }
     }
 }

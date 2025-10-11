@@ -9,10 +9,12 @@ public class PooledResourceStream<TResource, TResourceId> : Stream
     private readonly ResourcePoolBase<TResource, TResourceId> _resourcePoolBase;
     private bool _disposed;
 
-    public PooledResourceStream(Stream innerStream,
-                                  TResource resource,
-                                  TResourceId resourceId,
-                                  ResourcePoolBase<TResource, TResourceId> resourcePoolBase)
+    public PooledResourceStream(
+        Stream innerStream,
+        TResource resource,
+        TResourceId resourceId,
+        ResourcePoolBase<TResource, TResourceId> resourcePoolBase
+    )
     {
         _innerStream = innerStream;
         _resource = resource;
@@ -31,20 +33,17 @@ public class PooledResourceStream<TResource, TResourceId> : Stream
         set => _innerStream.Position = value;
     }
 
-    public override void Flush()
-        => _innerStream.Flush();
+    public override void Flush() => _innerStream.Flush();
 
-    public override int Read(byte[] buffer, int offset, int count)
-        => _innerStream.Read(buffer, offset, count);
+    public override int Read(byte[] buffer, int offset, int count) =>
+        _innerStream.Read(buffer, offset, count);
 
-    public override long Seek(long offset, SeekOrigin origin)
-        => _innerStream.Seek(offset, origin);
+    public override long Seek(long offset, SeekOrigin origin) => _innerStream.Seek(offset, origin);
 
-    public override void SetLength(long value)
-        => _innerStream.SetLength(value);
+    public override void SetLength(long value) => _innerStream.SetLength(value);
 
-    public override void Write(byte[] buffer, int offset, int count)
-        => _innerStream.Write(buffer, offset, count);
+    public override void Write(byte[] buffer, int offset, int count) =>
+        _innerStream.Write(buffer, offset, count);
 
     protected override void Dispose(bool disposing)
     {

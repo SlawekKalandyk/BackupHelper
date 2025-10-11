@@ -17,30 +17,56 @@ public class CreateBackupProfileStep : IWizardStep<CreateBackupProfileStepParame
         _mediator = mediator;
     }
 
-    public async Task<IWizardParameters?> Handle(CreateBackupProfileStepParameters request, CancellationToken cancellationToken)
+    public async Task<IWizardParameters?> Handle(
+        CreateBackupProfileStepParameters request,
+        CancellationToken cancellationToken
+    )
     {
-        var name = Prompt.Input<string>("Enter backup profile name", validators: [Validators.Required()]);
-        var profileExists = await _mediator.Send(new CheckBackupProfileExistsQuery(name), cancellationToken);
+        var name = Prompt.Input<string>(
+            "Enter backup profile name",
+            validators: [Validators.Required()]
+        );
+        var profileExists = await _mediator.Send(
+            new CheckBackupProfileExistsQuery(name),
+            cancellationToken
+        );
 
         if (profileExists)
         {
-            Console.WriteLine($"Backup profile '{name}' already exists. Please choose a different name.");
+            Console.WriteLine(
+                $"Backup profile '{name}' already exists. Please choose a different name."
+            );
 
             return new CreateBackupProfileStepParameters();
         }
 
-        var backupPlanLocation = Prompt.Input<string>("Select backup plan location", validators: [Validators.Required(), ValidatorsHelper.FileExists]);
-        var backupDirectory = Prompt.Input<string>("Select backup directory", validators: [Validators.Required(), ValidatorsHelper.DirectoryExists]);
-        var credentialProfileNames = await _mediator.Send(new GetCredentialProfileNamesQuery(), cancellationToken);
-        var credentialProfileName = Prompt.Select("Select a credential profile to use for this backup profile", credentialProfileNames, pageSize: 5);
+        var backupPlanLocation = Prompt.Input<string>(
+            "Select backup plan location",
+            validators: [Validators.Required(), ValidatorsHelper.FileExists]
+        );
+        var backupDirectory = Prompt.Input<string>(
+            "Select backup directory",
+            validators: [Validators.Required(), ValidatorsHelper.DirectoryExists]
+        );
+        var credentialProfileNames = await _mediator.Send(
+            new GetCredentialProfileNamesQuery(),
+            cancellationToken
+        );
+        var credentialProfileName = Prompt.Select(
+            "Select a credential profile to use for this backup profile",
+            credentialProfileNames,
+            pageSize: 5
+        );
 
         await _mediator.Send(
             new CreateBackupProfileCommand(
                 name,
                 backupPlanLocation,
                 backupDirectory,
-                credentialProfileName),
-            cancellationToken);
+                credentialProfileName
+            ),
+            cancellationToken
+        );
 
         Console.WriteLine("Backup profile created successfully!");
 

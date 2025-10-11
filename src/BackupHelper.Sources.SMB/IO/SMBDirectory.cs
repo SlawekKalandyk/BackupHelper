@@ -9,7 +9,12 @@ public class SMBDirectory : SMBIOComponentBase
 {
     private readonly string _directoryPath;
 
-    private SMBDirectory(ISMBFileStore fileStore, object handle, FilePurpose filePurpose, string directoryPath)
+    private SMBDirectory(
+        ISMBFileStore fileStore,
+        object handle,
+        FilePurpose filePurpose,
+        string directoryPath
+    )
         : base(fileStore, handle, filePurpose)
     {
         _directoryPath = directoryPath;
@@ -20,8 +25,10 @@ public class SMBDirectory : SMBIOComponentBase
         var fileInfos = GetFileInfos();
 
         return fileInfos
-               .Where(info => (info.FileAttributes & FileAttributes.Directory) == FileAttributes.Directory)
-               .Select(info => Path.Join(_directoryPath, info.FileName));
+            .Where(info =>
+                (info.FileAttributes & FileAttributes.Directory) == FileAttributes.Directory
+            )
+            .Select(info => Path.Join(_directoryPath, info.FileName));
     }
 
     public IEnumerable<string> GetFiles()
@@ -29,22 +36,23 @@ public class SMBDirectory : SMBIOComponentBase
         var fileInfos = GetFileInfos();
 
         return fileInfos
-               .Where(info => (info.FileAttributes & FileAttributes.Directory) != FileAttributes.Directory)
-               .Select(info => Path.Join(_directoryPath, info.FileName));
+            .Where(info =>
+                (info.FileAttributes & FileAttributes.Directory) != FileAttributes.Directory
+            )
+            .Select(info => Path.Join(_directoryPath, info.FileName));
     }
 
     public void Delete(bool recursive = false)
     {
         if ((FilePurpose & FilePurpose.Delete) != FilePurpose.Delete)
-            throw new InvalidOperationException("This file cannot be deleted. It was not opened for deletion.");
+            throw new InvalidOperationException(
+                "This file cannot be deleted. It was not opened for deletion."
+            );
 
         if (recursive)
             ClearDirectory();
 
-        var fileDispositionInformation = new FileDispositionInformation
-        {
-            DeletePending = true,
-        };
+        var fileDispositionInformation = new FileDispositionInformation { DeletePending = true };
         var status = SMBFileStore.SetFileInformation(Handle, fileDispositionInformation);
         SMBHelper.ThrowIfStatusNotSuccess(status, nameof(SMBFileStore.SetFileInformation));
     }
@@ -71,13 +79,16 @@ public class SMBDirectory : SMBIOComponentBase
     private IEnumerable<FileFullDirectoryInformation> GetFileInfos()
     {
         if ((FilePurpose & FilePurpose.Read) != FilePurpose.Read)
-            throw new InvalidOperationException("This directory cannot be read. It was not opened for reading.");
+            throw new InvalidOperationException(
+                "This directory cannot be read. It was not opened for reading."
+            );
 
         var status = SMBFileStore.QueryDirectory(
             out var fileInfoList,
             Handle,
             "*",
-            FileInformationClass.FileFullDirectoryInformation);
+            FileInformationClass.FileFullDirectoryInformation
+        );
         SMBHelper.ThrowIfStatusNotNoMoreFiles(status, nameof(SMBFileStore.QueryDirectory));
 
         var fileInfoCount = fileInfoList.Count;
@@ -86,20 +97,25 @@ public class SMBDirectory : SMBIOComponentBase
 
         if (fileInfoCount != castedFileInfoCount)
         {
-            throw new InvalidOperationException($"Mismatch in file information count: expected {fileInfoCount}, got {castedFileInfoCount}");
+            throw new InvalidOperationException(
+                $"Mismatch in file information count: expected {fileInfoCount}, got {castedFileInfoCount}"
+            );
         }
 
         return RemoveDotDirectories(castedFileInfoList);
     }
 
-    private List<FileFullDirectoryInformation> RemoveDotDirectories(List<FileFullDirectoryInformation> fileInfoList)
+    private List<FileFullDirectoryInformation> RemoveDotDirectories(
+        List<FileFullDirectoryInformation> fileInfoList
+    )
     {
-        return fileInfoList
-               .Where(info => info.FileName != "." && info.FileName != "..")
-               .ToList();
+        return fileInfoList.Where(info => info.FileName != "." && info.FileName != "..").ToList();
     }
 
-    public static SMBDirectory OpenDirectoryForReading(ISMBFileStore fileStore, string directoryPath)
+    public static SMBDirectory OpenDirectoryForReading(
+        ISMBFileStore fileStore,
+        string directoryPath
+    )
     {
         var status = fileStore.CreateFile(
             out var fileHandle,
@@ -110,14 +126,22 @@ public class SMBDirectory : SMBIOComponentBase
             ShareAccess.Read,
             CreateDisposition.FILE_OPEN,
             CreateOptions.FILE_DIRECTORY_FILE | CreateOptions.FILE_SYNCHRONOUS_IO_NONALERT,
-            null);
+            null
+        );
         SMBHelper.ThrowIfStatusNotSuccess(status, nameof(fileStore.CreateFile));
-        SMBHelper.ThrowIfFileStatusNotFileOpened(fileStatus, directoryPath, nameof(fileStore.CreateFile));
+        SMBHelper.ThrowIfFileStatusNotFileOpened(
+            fileStatus,
+            directoryPath,
+            nameof(fileStore.CreateFile)
+        );
 
         return new SMBDirectory(fileStore, fileHandle, FilePurpose.Read, directoryPath);
     }
 
-    public static SMBDirectory OpenDirectoryForDeletion(ISMBFileStore fileStore, string directoryPath)
+    public static SMBDirectory OpenDirectoryForDeletion(
+        ISMBFileStore fileStore,
+        string directoryPath
+    )
     {
         var status = fileStore.CreateFile(
             out var fileHandle,
@@ -128,11 +152,21 @@ public class SMBDirectory : SMBIOComponentBase
             ShareAccess.None,
             CreateDisposition.FILE_OPEN,
             CreateOptions.FILE_DIRECTORY_FILE | CreateOptions.FILE_SYNCHRONOUS_IO_ALERT,
-            null);
+            null
+        );
         SMBHelper.ThrowIfStatusNotSuccess(status, nameof(fileStore.CreateFile));
-        SMBHelper.ThrowIfFileStatusNotFileOpened(fileStatus, directoryPath, nameof(fileStore.CreateFile));
+        SMBHelper.ThrowIfFileStatusNotFileOpened(
+            fileStatus,
+            directoryPath,
+            nameof(fileStore.CreateFile)
+        );
 
-        return new SMBDirectory(fileStore, fileHandle, FilePurpose.Read | FilePurpose.Delete, directoryPath);
+        return new SMBDirectory(
+            fileStore,
+            fileHandle,
+            FilePurpose.Read | FilePurpose.Delete,
+            directoryPath
+        );
     }
 
     public static bool CanTraverseDirectory(ISMBFileStore fileStore, string directoryPath)
@@ -146,7 +180,8 @@ public class SMBDirectory : SMBIOComponentBase
             ShareAccess.Read | ShareAccess.Write,
             CreateDisposition.FILE_OPEN,
             CreateOptions.FILE_DIRECTORY_FILE | CreateOptions.FILE_SYNCHRONOUS_IO_NONALERT,
-            null);
+            null
+        );
 
         var canTraverse = status == NTStatus.STATUS_SUCCESS && fileStatus == FileStatus.FILE_OPENED;
 
@@ -167,9 +202,14 @@ public class SMBDirectory : SMBIOComponentBase
             ShareAccess.Read,
             CreateDisposition.FILE_CREATE,
             CreateOptions.FILE_DIRECTORY_FILE | CreateOptions.FILE_SYNCHRONOUS_IO_NONALERT,
-            null);
+            null
+        );
         SMBHelper.ThrowIfStatusNotSuccess(status, nameof(fileStore.CreateFile));
-        SMBHelper.ThrowIfFileStatusNotFileCreated(fileStatus, directoryPath, nameof(fileStore.CreateFile));
+        SMBHelper.ThrowIfFileStatusNotFileCreated(
+            fileStatus,
+            directoryPath,
+            nameof(fileStore.CreateFile)
+        );
 
         return new SMBDirectory(fileStore, fileHandle, FilePurpose.Read, directoryPath);
     }
@@ -185,9 +225,11 @@ public class SMBDirectory : SMBIOComponentBase
             ShareAccess.Read,
             CreateDisposition.FILE_OPEN,
             CreateOptions.FILE_DIRECTORY_FILE | CreateOptions.FILE_SYNCHRONOUS_IO_NONALERT,
-            null);
+            null
+        );
 
-        var directoryExists = status == NTStatus.STATUS_SUCCESS && fileStatus == FileStatus.FILE_OPENED;
+        var directoryExists =
+            status == NTStatus.STATUS_SUCCESS && fileStatus == FileStatus.FILE_OPENED;
 
         if (directoryExists)
             fileStore.CloseFile(fileHandle);
@@ -206,9 +248,14 @@ public class SMBDirectory : SMBIOComponentBase
             ShareAccess.Read,
             CreateDisposition.FILE_OPEN,
             CreateOptions.FILE_DIRECTORY_FILE | CreateOptions.FILE_SYNCHRONOUS_IO_NONALERT,
-            null);
+            null
+        );
         SMBHelper.ThrowIfStatusNotSuccess(status, nameof(smbFileStore.CreateFile));
-        SMBHelper.ThrowIfFileStatusNotFileOpened(fileStatus, directoryPath, nameof(smbFileStore.CreateFile));
+        SMBHelper.ThrowIfFileStatusNotFileOpened(
+            fileStatus,
+            directoryPath,
+            nameof(smbFileStore.CreateFile)
+        );
 
         var directoryInfo = GetDirectoryInfo(smbFileStore, directoryPath, fileHandle);
         smbFileStore.CloseFile(fileHandle);
@@ -216,17 +263,24 @@ public class SMBDirectory : SMBIOComponentBase
         return directoryInfo.BasicInformation.LastWriteTime.Time;
     }
 
-    private static FileAllInformation GetDirectoryInfo(ISMBFileStore fileStore, string directoryPath, object fileHandle)
+    private static FileAllInformation GetDirectoryInfo(
+        ISMBFileStore fileStore,
+        string directoryPath,
+        object fileHandle
+    )
     {
         var status = fileStore.GetFileInformation(
             out var directoryInfo,
             fileHandle,
-            FileInformationClass.FileAllInformation);
+            FileInformationClass.FileAllInformation
+        );
         SMBHelper.ThrowIfStatusNotSuccess(status, nameof(fileStore.GetFileInformation));
 
         if (directoryInfo is not FileAllInformation fullDirectoryInfo)
         {
-            throw new InvalidOperationException($"Failed to retrieve directory information for '{directoryPath}'");
+            throw new InvalidOperationException(
+                $"Failed to retrieve directory information for '{directoryPath}'"
+            );
         }
 
         return fullDirectoryInfo;

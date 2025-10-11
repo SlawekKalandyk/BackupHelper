@@ -14,11 +14,15 @@ public abstract class ResourcePoolBase<TResource, TResourceId> : IDisposable
 {
     protected readonly ILogger _logger;
 
-    private readonly ConcurrentDictionary<TResourceId, ConcurrentBag<ResourceIdleWrapper>> _resourcePools = new();
+    private readonly ConcurrentDictionary<
+        TResourceId,
+        ConcurrentBag<ResourceIdleWrapper>
+    > _resourcePools = new();
     private readonly int _maxResourcesPerIdentifier;
     private readonly SemaphoreSlim _poolLock = new SemaphoreSlim(1, 1);
     private readonly TimeSpan _idleTimeout;
-    private readonly CancellationTokenSource _cleanupCancellationSource = new CancellationTokenSource();
+    private readonly CancellationTokenSource _cleanupCancellationSource =
+        new CancellationTokenSource();
     private Task? _cleanupTask;
 
     protected ResourcePoolBase(ILogger logger, int maxResourcesPerIdentifier, TimeSpan idleTimeout)
@@ -72,9 +76,11 @@ public abstract class ResourcePoolBase<TResource, TResourceId> : IDisposable
 
         try
         {
-            if (_resourcePools.TryGetValue(resourceId, out var pool) &&
-                pool.Count < _maxResourcesPerIdentifier &&
-                ValidateResource(resource))
+            if (
+                _resourcePools.TryGetValue(resourceId, out var pool)
+                && pool.Count < _maxResourcesPerIdentifier
+                && ValidateResource(resource)
+            )
             {
                 pool.Add(new ResourceIdleWrapper(resource));
             }
@@ -99,33 +105,32 @@ public abstract class ResourcePoolBase<TResource, TResourceId> : IDisposable
 
     private Task StartCleanupTask()
     {
-        return Task.Run(
-            async () =>
+        return Task.Run(async () =>
+        {
+            try
             {
-                try
+                while (!_cleanupCancellationSource.IsCancellationRequested)
                 {
-                    while (!_cleanupCancellationSource.IsCancellationRequested)
-                    {
-                        await Task.Delay(TimeSpan.FromSeconds(30), _cleanupCancellationSource.Token);
+                    await Task.Delay(TimeSpan.FromSeconds(30), _cleanupCancellationSource.Token);
 
-                        if (_cleanupCancellationSource.IsCancellationRequested)
-                            break;
+                    if (_cleanupCancellationSource.IsCancellationRequested)
+                        break;
 
-                        await CleanupIdleResources();
-                    }
+                    await CleanupIdleResources();
                 }
-                catch (OperationCanceledException)
-                {
-                    // Expected when cancellation is requested
-                }
-                catch (Exception ex)
-                {
-                    _logger.LogError(ex, "Error occurred during resource pool cleanup.");
+            }
+            catch (OperationCanceledException)
+            {
+                // Expected when cancellation is requested
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error occurred during resource pool cleanup.");
 
-                    // Restart the cleanup task in case of unexpected errors
-                    _cleanupTask = StartCleanupTask();
-                }
-            });
+                // Restart the cleanup task in case of unexpected errors
+                _cleanupTask = StartCleanupTask();
+            }
+        });
     }
 
     private async Task CleanupIdleResources()

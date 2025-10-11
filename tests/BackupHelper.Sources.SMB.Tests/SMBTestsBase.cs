@@ -9,7 +9,10 @@ public abstract class SMBTestsBase : TestsBase
 {
     protected SMBTestConfigurationProvider SMBTestConfigurationProvider { get; private set; }
 
-    protected override void AddCredentials(TestCredentialsProvider credentialsProvider, IConfiguration configuration)
+    protected override void AddCredentials(
+        TestCredentialsProvider credentialsProvider,
+        IConfiguration configuration
+    )
     {
         base.AddCredentials(credentialsProvider, configuration);
 
@@ -17,7 +20,8 @@ public abstract class SMBTestsBase : TestsBase
         var credential = new CredentialEntry(
             SMBTestConfigurationProvider.SharePath,
             SMBTestConfigurationProvider.Username,
-            SMBTestConfigurationProvider.Password);
+            SMBTestConfigurationProvider.Password
+        );
         credentialsProvider.SetCredential(credential);
     }
 

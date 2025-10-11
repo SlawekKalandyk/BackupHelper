@@ -4,13 +4,19 @@ namespace BackupHelper.Core.Utilities;
 
 public static class CronExpressionResolver
 {
-    public static DateTime GetLastOccurrenceBeforeDateTime(string cronExpression, DateTime dateTime, TimeZoneInfo timeZoneInfo)
+    public static DateTime GetLastOccurrenceBeforeDateTime(
+        string cronExpression,
+        DateTime dateTime,
+        TimeZoneInfo timeZoneInfo
+    )
     {
         var utcDateTime = ToUtcTime(dateTime);
 
         var expression = CronExpression.Parse(cronExpression);
-        var nextOccurrence = expression.GetNextOccurrence(utcDateTime, timeZoneInfo) ?? DateTime.MaxValue;
-        var secondNextOccurrence = expression.GetNextOccurrence(nextOccurrence, timeZoneInfo) ?? DateTime.MaxValue;
+        var nextOccurrence =
+            expression.GetNextOccurrence(utcDateTime, timeZoneInfo) ?? DateTime.MaxValue;
+        var secondNextOccurrence =
+            expression.GetNextOccurrence(nextOccurrence, timeZoneInfo) ?? DateTime.MaxValue;
 
         // TODO: handle both at max value
 
@@ -33,11 +39,15 @@ public static class CronExpressionResolver
 
     private static DateTime ToUtcTime(DateTime dateTime)
     {
-        return dateTime.Kind == DateTimeKind.Utc ? dateTime : TimeZoneInfo.ConvertTimeToUtc(dateTime);
+        return dateTime.Kind == DateTimeKind.Utc
+            ? dateTime
+            : TimeZoneInfo.ConvertTimeToUtc(dateTime);
     }
 
     private static DateTime ToLocalTime(DateTime dateTime, TimeZoneInfo timeZoneInfo)
     {
-        return dateTime.Kind == DateTimeKind.Utc ? TimeZoneInfo.ConvertTimeFromUtc(dateTime, timeZoneInfo) : dateTime;
+        return dateTime.Kind == DateTimeKind.Utc
+            ? TimeZoneInfo.ConvertTimeFromUtc(dateTime, timeZoneInfo)
+            : dateTime;
     }
 }

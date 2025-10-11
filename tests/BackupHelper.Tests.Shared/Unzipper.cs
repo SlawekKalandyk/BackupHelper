@@ -15,10 +15,7 @@ public class Unzipper
 
     public void UnzipFile(string? password = null)
     {
-        var fastZip = new FastZip()
-        {
-            CreateEmptyDirectories = true
-        };
+        var fastZip = new FastZip() { CreateEmptyDirectories = true };
 
         if (!string.IsNullOrEmpty(password))
         {

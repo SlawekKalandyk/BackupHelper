@@ -4,21 +4,28 @@ using MediatR;
 
 namespace BackupHelper.Api.Features.Credentials;
 
-public record GetCredentialProfileQuery(string Name, string Password) : IRequest<CredentialProfile?>;
+public record GetCredentialProfileQuery(string Name, string Password)
+    : IRequest<CredentialProfile?>;
 
-public class GetCredentialProfileQueryHandler : IRequestHandler<GetCredentialProfileQuery, CredentialProfile?>
+public class GetCredentialProfileQueryHandler
+    : IRequestHandler<GetCredentialProfileQuery, CredentialProfile?>
 {
     private readonly IApplicationDataHandler _applicationDataHandler;
     private readonly ICredentialsProviderFactory _credentialsProviderFactory;
 
-    public GetCredentialProfileQueryHandler(IApplicationDataHandler applicationDataHandler,
-                                            ICredentialsProviderFactory credentialsProviderFactory)
+    public GetCredentialProfileQueryHandler(
+        IApplicationDataHandler applicationDataHandler,
+        ICredentialsProviderFactory credentialsProviderFactory
+    )
     {
         _applicationDataHandler = applicationDataHandler;
         _credentialsProviderFactory = credentialsProviderFactory;
     }
 
-    public Task<CredentialProfile?> Handle(GetCredentialProfileQuery request, CancellationToken cancellationToken)
+    public Task<CredentialProfile?> Handle(
+        GetCredentialProfileQuery request,
+        CancellationToken cancellationToken
+    )
     {
         var credentialProfilesPath = _applicationDataHandler.GetCredentialProfilesPath();
         var credentialProfileFilePath = Path.Combine(credentialProfilesPath, request.Name);
@@ -30,8 +37,11 @@ public class GetCredentialProfileQueryHandler : IRequestHandler<GetCredentialPro
 
         var keePassCredentialsProviderConfiguration = new KeePassCredentialsProviderConfiguration(
             credentialProfileFilePath,
-            request.Password);
-        using var credentialsProvider = _credentialsProviderFactory.Create(keePassCredentialsProviderConfiguration);
+            request.Password
+        );
+        using var credentialsProvider = _credentialsProviderFactory.Create(
+            keePassCredentialsProviderConfiguration
+        );
         var credentials = credentialsProvider.GetCredentials();
         var credentialProfile = new CredentialProfile(request.Name, request.Password, credentials);
 

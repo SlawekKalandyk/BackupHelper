@@ -15,56 +15,82 @@ public class SourceManager : ISourceManager
 
     public Stream GetStream(string path)
     {
-        return GetFromSource(path, (source, pathWithoutScheme) => source.GetStream(pathWithoutScheme));
+        return GetFromSource(
+            path,
+            (source, pathWithoutScheme) => source.GetStream(pathWithoutScheme)
+        );
     }
 
     public IEnumerable<string> GetSubDirectories(string path)
     {
-        return GetFromSource(path, (source, pathWithoutScheme) =>
-                                   {
-                                       var scheme = GetScheme(path);
-                                       return string.IsNullOrEmpty(scheme)
-                                           ? source.GetSubDirectories(pathWithoutScheme)
-                                           : source.GetSubDirectories(pathWithoutScheme)
-                                                   .Select(dir => Path.Join(scheme + ISource.PrefixSeparator, dir));
-                                   });
+        return GetFromSource(
+            path,
+            (source, pathWithoutScheme) =>
+            {
+                var scheme = GetScheme(path);
+                return string.IsNullOrEmpty(scheme)
+                    ? source.GetSubDirectories(pathWithoutScheme)
+                    : source
+                        .GetSubDirectories(pathWithoutScheme)
+                        .Select(dir => Path.Join(scheme + ISource.PrefixSeparator, dir));
+            }
+        );
     }
 
     public IEnumerable<string> GetFiles(string path)
     {
-        return GetFromSource(path, (source, pathWithoutScheme) =>
-                                   {
-                                       var scheme = GetScheme(path);
-                                       return string.IsNullOrEmpty(scheme)
-                                                  ? source.GetFiles(pathWithoutScheme)
-                                                  : source.GetFiles(pathWithoutScheme)
-                                                          .Select(dir => Path.Join(scheme + ISource.PrefixSeparator, dir));
-                                   });
+        return GetFromSource(
+            path,
+            (source, pathWithoutScheme) =>
+            {
+                var scheme = GetScheme(path);
+                return string.IsNullOrEmpty(scheme)
+                    ? source.GetFiles(pathWithoutScheme)
+                    : source
+                        .GetFiles(pathWithoutScheme)
+                        .Select(dir => Path.Join(scheme + ISource.PrefixSeparator, dir));
+            }
+        );
     }
 
     public bool FileExists(string path)
     {
-        return GetFromSource(path, (source, pathWithoutScheme) => source.FileExists(pathWithoutScheme));
+        return GetFromSource(
+            path,
+            (source, pathWithoutScheme) => source.FileExists(pathWithoutScheme)
+        );
     }
 
     public bool DirectoryExists(string path)
     {
-        return GetFromSource(path, (source, pathWithoutScheme) => source.DirectoryExists(pathWithoutScheme));
+        return GetFromSource(
+            path,
+            (source, pathWithoutScheme) => source.DirectoryExists(pathWithoutScheme)
+        );
     }
 
     public DateTime? GetFileLastWriteTime(string path)
     {
-        return GetFromSource(path, (source, pathWithoutScheme) => source.GetFileLastWriteTime(pathWithoutScheme));
+        return GetFromSource(
+            path,
+            (source, pathWithoutScheme) => source.GetFileLastWriteTime(pathWithoutScheme)
+        );
     }
 
     public DateTime? GetDirectoryLastWriteTime(string path)
     {
-        return GetFromSource(path, (source, pathWithoutScheme) => source.GetDirectoryLastWriteTime(pathWithoutScheme));
+        return GetFromSource(
+            path,
+            (source, pathWithoutScheme) => source.GetDirectoryLastWriteTime(pathWithoutScheme)
+        );
     }
 
     public long GetFileSize(string path)
     {
-        return GetFromSource(path, (source, pathWithoutScheme) => source.GetFileSize(pathWithoutScheme));
+        return GetFromSource(
+            path,
+            (source, pathWithoutScheme) => source.GetFileSize(pathWithoutScheme)
+        );
     }
 
     private T GetFromSource<T>(string path, Func<ISource, string, T> action)
@@ -87,7 +113,6 @@ public class SourceManager : ISourceManager
 
         return action(source, pathWithoutScheme);
     }
-
 
     private ISource GetSource(string scheme)
     {

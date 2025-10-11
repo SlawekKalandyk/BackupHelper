@@ -10,7 +10,8 @@ public interface IFileInUseSourceManager : IDisposable
 public class FileInUseSourceManager : IFileInUseSourceManager
 {
     private readonly VssFileInUseSourceFactory _vssFileInUseSourceFactory;
-    private IDictionary<string, IFileInUseSource> _sources = new Dictionary<string, IFileInUseSource>();
+    private IDictionary<string, IFileInUseSource> _sources =
+        new Dictionary<string, IFileInUseSource>();
 
     public FileInUseSourceManager(VssFileInUseSourceFactory vssFileInUseSourceFactory)
     {
@@ -32,10 +33,11 @@ public class FileInUseSourceManager : IFileInUseSourceManager
 
         if (OperatingSystem.IsWindows())
         {
-            #pragma warning disable CA1416
-            var hasWindowsAdminRights = new WindowsPrincipal(WindowsIdentity.GetCurrent())
-                .IsInRole(WindowsBuiltInRole.Administrator);
-            #pragma warning restore CA1416
+#pragma warning disable CA1416
+            var hasWindowsAdminRights = new WindowsPrincipal(WindowsIdentity.GetCurrent()).IsInRole(
+                WindowsBuiltInRole.Administrator
+            );
+#pragma warning restore CA1416
 
             switch (hasWindowsAdminRights, driveFormat)
             {
@@ -44,9 +46,13 @@ public class FileInUseSourceManager : IFileInUseSourceManager
                     _sources[volume] = source;
                     return source;
                 case (false, "ntfs"):
-                    throw new UnauthorizedAccessException("You need administrative rights to safely copy files in use on NTFS volumes.");
+                    throw new UnauthorizedAccessException(
+                        "You need administrative rights to safely copy files in use on NTFS volumes."
+                    );
                 case (_, _):
-                    throw new NotSupportedException($"Unsupported file system format: {driveFormat}.");
+                    throw new NotSupportedException(
+                        $"Unsupported file system format: {driveFormat}."
+                    );
             }
         }
 

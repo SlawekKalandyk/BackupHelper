@@ -22,7 +22,12 @@ internal class TemporaryZipStream : Stream
         else
         {
             _temporaryFile = new TemporaryFile();
-            _fileStream = new FileStream(_temporaryFile.FilePath, FileMode.CreateNew, FileAccess.ReadWrite, FileShare.None);
+            _fileStream = new FileStream(
+                _temporaryFile.FilePath,
+                FileMode.CreateNew,
+                FileAccess.ReadWrite,
+                FileShare.None
+            );
         }
     }
 
@@ -38,20 +43,17 @@ internal class TemporaryZipStream : Stream
         set => ActiveStream.Position = value;
     }
 
-    public override void Flush()
-        => ActiveStream.Flush();
+    public override void Flush() => ActiveStream.Flush();
 
-    public override int Read(byte[] buffer, int offset, int count)
-        => ActiveStream.Read(buffer, offset, count);
+    public override int Read(byte[] buffer, int offset, int count) =>
+        ActiveStream.Read(buffer, offset, count);
 
-    public override long Seek(long offset, SeekOrigin origin)
-        => ActiveStream.Seek(offset, origin);
+    public override long Seek(long offset, SeekOrigin origin) => ActiveStream.Seek(offset, origin);
 
-    public override void SetLength(long value)
-        => ActiveStream.SetLength(value);
+    public override void SetLength(long value) => ActiveStream.SetLength(value);
 
-    public override void Write(byte[] buffer, int offset, int count)
-        => ActiveStream.Write(buffer, offset, count);
+    public override void Write(byte[] buffer, int offset, int count) =>
+        ActiveStream.Write(buffer, offset, count);
 
     protected override void Dispose(bool disposing)
     {

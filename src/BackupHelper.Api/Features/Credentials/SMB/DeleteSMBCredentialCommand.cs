@@ -4,7 +4,11 @@ using MediatR;
 
 namespace BackupHelper.Api.Features.Credentials.SMB;
 
-public record DeleteSMBCredentialCommand(ICredentialsProviderConfiguration CredentialsProviderConfiguration, string Server, string ShareName) : IRequest;
+public record DeleteSMBCredentialCommand(
+    ICredentialsProviderConfiguration CredentialsProviderConfiguration,
+    string Server,
+    string ShareName
+) : IRequest;
 
 public class DeleteSMBCredentialCommandHandler : IRequestHandler<DeleteSMBCredentialCommand>
 {
@@ -17,7 +21,9 @@ public class DeleteSMBCredentialCommandHandler : IRequestHandler<DeleteSMBCreden
 
     public Task Handle(DeleteSMBCredentialCommand request, CancellationToken cancellationToken)
     {
-        using var credentialsProvider = _credentialsProviderFactory.Create(request.CredentialsProviderConfiguration);
+        using var credentialsProvider = _credentialsProviderFactory.Create(
+            request.CredentialsProviderConfiguration
+        );
         var title = SMBCredentialHelper.GetSMBCredentialTitle(request.Server, request.ShareName);
         credentialsProvider.DeleteCredential(title);
 

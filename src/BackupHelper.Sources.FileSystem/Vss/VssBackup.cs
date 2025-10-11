@@ -129,7 +129,7 @@ public class VssBackup : IDisposable
         return File.OpenRead(GetSnapshotPath(localPath));
     }
 
-        /// <summary>
+    /// <summary>
     /// This stage initializes both the requester (this program) and
     /// any writers on the system in preparation for a backup and sets
     /// up a communication channel between the two.
@@ -196,11 +196,7 @@ public class VssBackup : IDisposable
         // backup and, depending on whether we are in component mode, either
         // a full-volume backup or a backup that only requires specific
         // components.
-        _backup.SetBackupState(
-            false,
-            true,
-            VssBackupType.Full,
-            false);
+        _backup.SetBackupState(false, true, VssBackupType.Full, false);
 
         // From here we just need to send messages to each writer that our
         // snapshot is imminent,

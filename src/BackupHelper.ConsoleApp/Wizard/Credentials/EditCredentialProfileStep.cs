@@ -5,26 +5,36 @@ using Sharprompt;
 
 namespace BackupHelper.ConsoleApp.Wizard.Credentials;
 
-public record EditCredentialProfileStepParameters(CredentialProfile? CredentialProfile = null) : IWizardParameters;
+public record EditCredentialProfileStepParameters(CredentialProfile? CredentialProfile = null)
+    : IWizardParameters;
 
 public class EditCredentialProfileStep : IWizardStep<EditCredentialProfileStepParameters>
 {
     private readonly IMediator _mediator;
     private readonly IApplicationDataHandler _applicationDataHandler;
 
-    public EditCredentialProfileStep(IMediator mediator, IApplicationDataHandler applicationDataHandler)
+    public EditCredentialProfileStep(
+        IMediator mediator,
+        IApplicationDataHandler applicationDataHandler
+    )
     {
         _mediator = mediator;
         _applicationDataHandler = applicationDataHandler;
     }
 
-    public async Task<IWizardParameters?> Handle(EditCredentialProfileStepParameters request, CancellationToken cancellationToken)
+    public async Task<IWizardParameters?> Handle(
+        EditCredentialProfileStepParameters request,
+        CancellationToken cancellationToken
+    )
     {
         var credentialProfile = request.CredentialProfile;
 
         if (credentialProfile == null)
         {
-            var credentialProfileNames = await _mediator.Send(new GetCredentialProfileNamesQuery(), cancellationToken);
+            var credentialProfileNames = await _mediator.Send(
+                new GetCredentialProfileNamesQuery(),
+                cancellationToken
+            );
 
             if (credentialProfileNames.Count == 0)
             {
@@ -33,27 +43,34 @@ public class EditCredentialProfileStep : IWizardStep<EditCredentialProfileStepPa
                 return new ManageCredentialProfilesStepParameters();
             }
 
-            var credentialProfileName = Prompt.Select("Select a credential profile to edit", credentialProfileNames, 5);
-            var password = Prompt.Password("Enter the password for the credential profile", validators: [Validators.Required()]);
-            credentialProfile = await _mediator.Send(new GetCredentialProfileQuery(credentialProfileName, password), cancellationToken);
+            var credentialProfileName = Prompt.Select(
+                "Select a credential profile to edit",
+                credentialProfileNames,
+                5
+            );
+            var password = Prompt.Password(
+                "Enter the password for the credential profile",
+                validators: [Validators.Required()]
+            );
+            credentialProfile = await _mediator.Send(
+                new GetCredentialProfileQuery(credentialProfileName, password),
+                cancellationToken
+            );
         }
 
         if (credentialProfile == null)
         {
-            Console.WriteLine("Credential profile not found or incorrect password. Please try again.");
+            Console.WriteLine(
+                "Credential profile not found or incorrect password. Please try again."
+            );
 
             return new ManageCredentialProfilesStepParameters();
         }
 
         var choice = Prompt.Select(
             "Select property to edit",
-            [
-                "Name",
-                "Add Credential",
-                "Edit Credential",
-                "Delete Credential",
-                "Cancel"
-            ]);
+            ["Name", "Add Credential", "Edit Credential", "Delete Credential", "Cancel"]
+        );
 
         if (choice == "Cancel")
         {

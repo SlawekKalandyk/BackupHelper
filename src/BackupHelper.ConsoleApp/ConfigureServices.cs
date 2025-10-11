@@ -6,9 +6,14 @@ namespace BackupHelper.Api;
 
 public static class ConfigureServices
 {
-    public static IServiceCollection AddConsoleInterfaceServices(this IServiceCollection services, IConfiguration configuration)
+    public static IServiceCollection AddConsoleInterfaceServices(
+        this IServiceCollection services,
+        IConfiguration configuration
+    )
     {
-        services.AddMediatR(serviceConfiguration => serviceConfiguration.RegisterServicesFromAssembly(Assembly.GetExecutingAssembly()));
+        services.AddMediatR(serviceConfiguration =>
+            serviceConfiguration.RegisterServicesFromAssembly(Assembly.GetExecutingAssembly())
+        );
 
         return services;
     }

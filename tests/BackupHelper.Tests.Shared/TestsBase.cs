@@ -27,15 +27,15 @@ public abstract class TestsBase
     [OneTimeSetUp]
     protected virtual void OneTimeSetup()
     {
-        var configuration = new ConfigurationBuilder()
-                            .AddUserSecrets<TestsBase>()
-                            .Build();
+        var configuration = new ConfigurationBuilder().AddUserSecrets<TestsBase>().Build();
 
         var testsDirectoryPath = configuration["TestsDirectory"];
 
         if (string.IsNullOrEmpty(testsDirectoryPath))
         {
-            throw new ArgumentNullException($"{nameof(testsDirectoryPath)} cannot be null or empty");
+            throw new ArgumentNullException(
+                $"{nameof(testsDirectoryPath)} cannot be null or empty"
+            );
         }
 
         TestsDirectoryRootPath = testsDirectoryPath;
@@ -65,18 +65,24 @@ public abstract class TestsBase
         Directory.Delete(TestsDirectoryRootPath, true);
     }
 
-    protected virtual void OverrideServices(IServiceCollection services, IConfiguration configuration) { }
+    protected virtual void OverrideServices(
+        IServiceCollection services,
+        IConfiguration configuration
+    ) { }
 
-    protected virtual void AddCredentials(TestCredentialsProvider credentialsProvider, IConfiguration configuration) { }
+    protected virtual void AddCredentials(
+        TestCredentialsProvider credentialsProvider,
+        IConfiguration configuration
+    ) { }
 
     private ServiceProvider CreateServiceProvider(IConfiguration configuration)
     {
         var credentialsProviderFactory = new TestCredentialsProviderFactory();
         var serviceCollection = new ServiceCollection()
-                                .AddCoreServices(configuration)
-                                .AddApiServices(configuration)
-                                .AddSingleton<ICredentialsProviderFactory>(credentialsProviderFactory)
-                                .AddLogging(builder => builder.AddProvider(NullLoggerProvider.Instance));
+            .AddCoreServices(configuration)
+            .AddApiServices(configuration)
+            .AddSingleton<ICredentialsProviderFactory>(credentialsProviderFactory)
+            .AddLogging(builder => builder.AddProvider(NullLoggerProvider.Instance));
 
         OverrideServices(serviceCollection, configuration);
         AddCredentials(credentialsProviderFactory.TestCredentialsProvider, configuration);

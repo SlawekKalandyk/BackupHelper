@@ -15,18 +15,20 @@ namespace BackupHelper.Core;
 
 public static class ConfigureServices
 {
-    public static IServiceCollection AddCoreServices(this IServiceCollection services, IConfiguration configuration)
+    public static IServiceCollection AddCoreServices(
+        this IServiceCollection services,
+        IConfiguration configuration
+    )
     {
         services.AddSources();
         services.AddSingleton<IDateTimeProvider, DateTimeProvider>();
         services.AddSingleton<IBackupPlanZipper, BackupPlanZipper>();
         services.AddSingleton<ICredentialsProviderFactory, CredentialsProviderFactory>();
-        services.AddTransient<ICredentialsProvider>(
-            serviceProvider =>
-            {
-                var factory = serviceProvider.GetRequiredService<ICredentialsProviderFactory>();
-                return factory.GetDefaultCredentialsProvider();
-            });
+        services.AddTransient<ICredentialsProvider>(serviceProvider =>
+        {
+            var factory = serviceProvider.GetRequiredService<ICredentialsProviderFactory>();
+            return factory.GetDefaultCredentialsProvider();
+        });
         services.AddTransient<IFileZipperFactory, OnDiskFileZipperFactory>();
 
         return services;

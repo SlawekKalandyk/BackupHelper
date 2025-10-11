@@ -8,16 +8,15 @@ public record MainMenuStepParameters : IWizardParameters;
 
 public class MainMenuStep : IWizardStep<MainMenuStepParameters>
 {
-    public Task<IWizardParameters?> Handle(MainMenuStepParameters parameters, CancellationToken cancellationToken)
+    public Task<IWizardParameters?> Handle(
+        MainMenuStepParameters parameters,
+        CancellationToken cancellationToken
+    )
     {
         var choice = Prompt.Select(
             "Main Menu",
-            [
-                "Create backup",
-                "Manage backup profiles",
-                "Manage credential profiles",
-                "Exit"
-            ]);
+            ["Create backup", "Manage backup profiles", "Manage credential profiles", "Exit"]
+        );
 
         return Task.FromResult<IWizardParameters?>(
             choice switch
@@ -26,7 +25,11 @@ public class MainMenuStep : IWizardStep<MainMenuStepParameters>
                 "Manage backup profiles" => new ManageBackupProfilesStepParameters(),
                 "Manage credential profiles" => new ManageCredentialProfilesStepParameters(),
                 "Exit" => null,
-                _ => throw new ArgumentOutOfRangeException(nameof(choice), $"Invalid choice: {choice}")
-            });
+                _ => throw new ArgumentOutOfRangeException(
+                    nameof(choice),
+                    $"Invalid choice: {choice}"
+                ),
+            }
+        );
     }
 }
