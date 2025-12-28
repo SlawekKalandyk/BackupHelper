@@ -73,7 +73,10 @@ public class PerformBackupStep : IWizardStep<PerformBackupStepParameters>
         if (!string.IsNullOrEmpty(backupPlan.LogDirectory))
             AddBackupLogSink(backupPlan.LogDirectory);
 
-        var backupSavePath = BackupSavePathHelper.GetBackupSavePath(parameters.OutputZipPath);
+        var backupSavePath = BackupSavePathHelper.GetBackupSavePath(
+            parameters.OutputZipPath,
+            backupPlan.ZipFileNameSuffix
+        );
         await _mediator
             .Send(
                 new CreateBackupCommand(backupPlan, backupSavePath, backupPassword),
