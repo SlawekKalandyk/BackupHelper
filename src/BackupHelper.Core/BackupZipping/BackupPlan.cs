@@ -157,6 +157,9 @@ public class BackupPlan
     [JsonProperty("compressionLevel")]
     public int? CompressionLevel { get; set; }
 
+    [JsonProperty("zipFileNameSuffix")]
+    public string? ZipFileNameSuffix { get; set; }
+
     public static BackupPlan FromJsonFile(string inputPath)
     {
         var json = File.ReadAllText(inputPath);
