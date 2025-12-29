@@ -6,7 +6,7 @@ namespace BackupHelper.Core.Features;
 
 public record CreateBackupCommand(
     BackupPlan BackupPlan,
-    string BackupFilePath,
+    string BackupFileName,
     string? Password = null
 ) : IRequest<CreateBackupCommandResult>;
 
@@ -36,17 +36,17 @@ public class CreateBackupCommandHandler
         {
             _backupPlanZipper.CreateZipFile(
                 request.BackupPlan,
-                request.BackupFilePath,
+                request.BackupFileName,
                 request.Password
             );
-            _logger.LogInformation("Backup created at {BackupFilePath}", request.BackupFilePath);
+            _logger.LogInformation("Backup created at {BackupFilePath}", request.BackupFileName);
         }
         catch (Exception ex)
         {
             _logger.LogError(
                 ex,
                 "Failed to create backup at {BackupFilePath}",
-                request.BackupFilePath
+                Path.Join(request.BackupPlan.OutputDirectory, request.BackupFileName)
             );
         }
 

@@ -13,25 +13,22 @@ namespace BackupHelper.ConsoleApp.Wizard;
 
 public class PerformBackupStepParameters : IWizardParameters
 {
-    public PerformBackupStepParameters(string backupPlanLocation, string outputZipPath)
+    public PerformBackupStepParameters(string backupPlanLocation)
     {
         BackupPlanLocation = backupPlanLocation;
-        OutputZipPath = outputZipPath;
     }
 
     public PerformBackupStepParameters(
         string backupPlanLocation,
-        string outputZipPath,
         string keePassDbLocation,
         string keePassDbPassword
     )
-        : this(backupPlanLocation, outputZipPath)
+        : this(backupPlanLocation)
     {
         KeePassDbLocation = keePassDbLocation;
         KeePassDbPassword = keePassDbPassword;
     }
 
-    public string OutputZipPath { get; }
     public string BackupPlanLocation { get; }
     public string? KeePassDbLocation { get; }
     public string? KeePassDbPassword { get; }
@@ -73,8 +70,7 @@ public class PerformBackupStep : IWizardStep<PerformBackupStepParameters>
         if (!string.IsNullOrEmpty(backupPlan.LogDirectory))
             AddBackupLogSink(backupPlan.LogDirectory);
 
-        var backupSavePath = BackupSavePathHelper.GetBackupSavePath(
-            parameters.OutputZipPath,
+        var backupSavePath = BackupSavePathHelper.GetBackupSaveFileName(
             backupPlan.ZipFileNameSuffix
         );
         await _mediator

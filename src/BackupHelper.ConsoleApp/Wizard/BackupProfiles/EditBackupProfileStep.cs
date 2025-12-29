@@ -63,7 +63,6 @@ public class EditBackupProfileStep : IWizardStep<EditBackupProfileStepParameters
                 "Show Backup Profile Info",
                 "Name",
                 "Backup Plan Location",
-                "Backup Directory",
                 "Change Credential Profile",
                 "Cancel",
             ]
@@ -106,19 +105,6 @@ public class EditBackupProfileStep : IWizardStep<EditBackupProfileStepParameters
                 cancellationToken
             );
             Console.WriteLine("Backup plan location updated successfully!");
-        }
-        else if (choice == "Backup Directory")
-        {
-            var newDirectory = Prompt.Input<string>(
-                "Enter new backup directory",
-                validators: [Validators.Required(), ValidatorsHelper.DirectoryExists]
-            );
-            var updatedBackupProfile = backupProfile with { BackupDirectory = newDirectory };
-            await _mediator.Send(
-                new UpdateBackupProfileCommand(backupProfile, updatedBackupProfile),
-                cancellationToken
-            );
-            Console.WriteLine("Backup directory updated successfully!");
         }
         else if (choice == "Change Credential Profile")
         {

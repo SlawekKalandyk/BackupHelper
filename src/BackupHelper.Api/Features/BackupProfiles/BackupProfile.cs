@@ -1,8 +1,3 @@
 ﻿namespace BackupHelper.Api.Features.BackupProfiles;
 
-public record BackupProfile(
-    string Name,
-    string BackupPlanLocation,
-    string BackupDirectory,
-    string CredentialProfileName
-);
+public record BackupProfile(string Name, string BackupPlanLocation, string CredentialProfileName);

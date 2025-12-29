@@ -57,7 +57,6 @@ public class ShowBackupProfileInfoStep : IWizardStep<ShowBackupProfileInfoStepPa
 
         Console.WriteLine($"Backup Profile Name: {backupProfile.Name}");
         Console.WriteLine($"Backup Plan Location: {backupProfile.BackupPlanLocation}");
-        Console.WriteLine($"Backup Directory: {backupProfile.BackupDirectory}");
         Console.WriteLine($"Credential Profile: {backupProfile.CredentialProfileName}");
 
         return new ManageBackupProfilesStepParameters();

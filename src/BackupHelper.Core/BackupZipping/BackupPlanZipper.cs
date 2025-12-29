@@ -25,8 +25,9 @@ public class BackupPlanZipper : IBackupPlanZipper
         _dateTimeProvider = dateTimeProvider;
     }
 
-    public void CreateZipFile(BackupPlan plan, string outputPath, string? password = null)
+    public void CreateZipFile(BackupPlan plan, string outputFileName, string? password = null)
     {
+        var outputPath = Path.Join(plan.OutputDirectory, outputFileName);
         _logger.LogInformation("Creating backup file at {OutputPath}", outputPath);
 
         using var scope = _serviceScopeFactory.CreateScope();

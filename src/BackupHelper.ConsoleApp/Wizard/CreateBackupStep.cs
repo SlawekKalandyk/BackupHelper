@@ -90,7 +90,6 @@ public class CreateBackupStep : IWizardStep<CreateBackupStepParameters>
             return canBackup
                 ? new PerformBackupStepParameters(
                     backupProfile.BackupPlanLocation,
-                    backupProfile.BackupDirectory,
                     keePassDbLocation,
                     credentialProfilePassword
                 )

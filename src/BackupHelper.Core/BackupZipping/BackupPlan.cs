@@ -160,6 +160,9 @@ public class BackupPlan
     [JsonProperty("zipFileNameSuffix")]
     public string? ZipFileNameSuffix { get; set; }
 
+    [JsonProperty("outputDirectory"), JsonRequired]
+    public required string OutputDirectory { get; set; }
+
     public static BackupPlan FromJsonFile(string inputPath)
     {
         var json = File.ReadAllText(inputPath);

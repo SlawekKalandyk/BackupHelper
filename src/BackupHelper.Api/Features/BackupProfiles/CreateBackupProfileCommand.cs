@@ -7,7 +7,6 @@ namespace BackupHelper.Api.Features.BackupProfiles;
 public record CreateBackupProfileCommand(
     string Name,
     string BackupPlanLocation,
-    string BackupDirectory,
     string CredentialProfileName
 ) : IRequest;
 
@@ -37,7 +36,6 @@ public class CreateBackupProfileCommandHandler : IRequestHandler<CreateBackupPro
         var backupProfile = new BackupProfile(
             request.Name,
             request.BackupPlanLocation,
-            request.BackupDirectory,
             request.CredentialProfileName
         );
 

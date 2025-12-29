@@ -33,10 +33,7 @@ public class SelectKeePassDatabaseStep : IWizardStep<SelectKeePassDatabaseStepPa
             if (!selectKeePassDb)
             {
                 return Task.FromResult<IWizardParameters?>(
-                    new PerformBackupStepParameters(
-                        parameters.BackupPlanLocation,
-                        parameters.OutputZipPath
-                    )
+                    new PerformBackupStepParameters(parameters.BackupPlanLocation)
                 );
             }
 
@@ -58,7 +55,6 @@ public class SelectKeePassDatabaseStep : IWizardStep<SelectKeePassDatabaseStepPa
             return Task.FromResult<IWizardParameters?>(
                 new PerformBackupStepParameters(
                     parameters.BackupPlanLocation,
-                    parameters.OutputZipPath,
                     keePassDbLocation,
                     keePassDbPassword
                 )
