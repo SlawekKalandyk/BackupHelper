@@ -2,7 +2,7 @@
 using BackupHelper.Core.Credentials;
 using MediatR;
 
-namespace BackupHelper.Api.Features.Credentials;
+namespace BackupHelper.Api.Features.Credentials.CredentialProfiles;
 
 public record GetCredentialProfileQuery(string Name, string Password)
     : IRequest<CredentialProfile?>;

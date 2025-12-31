@@ -1,6 +1,8 @@
 ﻿using BackupHelper.Abstractions;
 using BackupHelper.Api.Features.BackupProfiles;
 using BackupHelper.Api.Features.Credentials;
+using BackupHelper.Api.Features.Credentials.CredentialProfiles;
+using BackupHelper.Api.Features.Credentials.SMB;
 using BackupHelper.Core.Credentials;
 using BackupHelper.Core.Features;
 using MediatR;
@@ -138,7 +140,10 @@ public class CreateBackupStep : IWizardStep<CreateBackupStepParameters>
     )
     {
         var nonConnectedCredentials = await _mediator.Send(
-            new CheckCredentialsConnectivityQuery(credentialProfileName, credentialProfilePassword),
+            new CheckSMBCredentialsConnectivityQuery(
+                credentialProfileName,
+                credentialProfilePassword
+            ),
             cancellationToken
         );
 

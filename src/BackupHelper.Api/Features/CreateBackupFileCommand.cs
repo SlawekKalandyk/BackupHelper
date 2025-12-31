@@ -5,22 +5,22 @@ using Microsoft.Extensions.Logging;
 
 namespace BackupHelper.Core.Features;
 
-public record CreateBackupCommand(
+public record CreateBackupFileCommand(
     BackupPlan BackupPlan,
     string? OutputDirectory,
     string? Password = null
-) : IRequest<CreateBackupCommandResult>;
+) : IRequest<CreateBackupFileCommandResult>;
 
-public record CreateBackupCommandResult(string OutputFilePath);
+public record CreateBackupFileCommandResult(string OutputFilePath);
 
-public class CreateBackupCommandHandler
-    : IRequestHandler<CreateBackupCommand, CreateBackupCommandResult>
+public class CreateBackupFileCommandHandler
+    : IRequestHandler<CreateBackupFileCommand, CreateBackupFileCommandResult>
 {
-    private readonly ILogger<CreateBackupCommandHandler> _logger;
+    private readonly ILogger<CreateBackupFileCommandHandler> _logger;
     private readonly IBackupPlanZipper _backupPlanZipper;
 
-    public CreateBackupCommandHandler(
-        ILogger<CreateBackupCommandHandler> logger,
+    public CreateBackupFileCommandHandler(
+        ILogger<CreateBackupFileCommandHandler> logger,
         IBackupPlanZipper backupPlanZipper
     )
     {
@@ -28,8 +28,8 @@ public class CreateBackupCommandHandler
         _backupPlanZipper = backupPlanZipper;
     }
 
-    public Task<CreateBackupCommandResult> Handle(
-        CreateBackupCommand request,
+    public Task<CreateBackupFileCommandResult> Handle(
+        CreateBackupFileCommand request,
         CancellationToken cancellationToken
     )
     {
@@ -49,6 +49,6 @@ public class CreateBackupCommandHandler
             throw;
         }
 
-        return Task.FromResult(new CreateBackupCommandResult(outputFilePath));
+        return Task.FromResult(new CreateBackupFileCommandResult(outputFilePath));
     }
 }

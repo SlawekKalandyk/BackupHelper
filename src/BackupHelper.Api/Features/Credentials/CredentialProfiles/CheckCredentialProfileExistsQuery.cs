@@ -1,7 +1,7 @@
 ﻿using BackupHelper.Abstractions;
 using MediatR;
 
-namespace BackupHelper.Api.Features.Credentials;
+namespace BackupHelper.Api.Features.Credentials.CredentialProfiles;
 
 public record CheckCredentialProfileExistsQuery(string CredentialProfileName) : IRequest<bool>;
 

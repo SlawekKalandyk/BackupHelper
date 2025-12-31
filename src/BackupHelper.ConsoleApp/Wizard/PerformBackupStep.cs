@@ -1,7 +1,4 @@
-﻿using BackupHelper.Abstractions;
-using BackupHelper.ConsoleApp.Utilities;
-using BackupHelper.Core.BackupZipping;
-using BackupHelper.Core.Credentials;
+﻿using BackupHelper.Core.BackupZipping;
 using BackupHelper.Core.Features;
 using BackupHelper.Sinks.Abstractions;
 using MediatR;
@@ -41,17 +38,11 @@ public class PerformBackupStepParameters : IWizardParameters
 public class PerformBackupStep : IWizardStep<PerformBackupStepParameters>
 {
     private readonly IMediator _mediator;
-    private readonly ICredentialsProviderFactory _credentialsProviderFactory;
     private readonly ILoggerFactory _loggerFactory;
 
-    public PerformBackupStep(
-        IMediator mediator,
-        ICredentialsProviderFactory credentialsProviderFactory,
-        ILoggerFactory loggerFactory
-    )
+    public PerformBackupStep(IMediator mediator, ILoggerFactory loggerFactory)
     {
         _mediator = mediator;
-        _credentialsProviderFactory = credentialsProviderFactory;
         _loggerFactory = loggerFactory;
     }
 
@@ -69,16 +60,19 @@ public class PerformBackupStep : IWizardStep<PerformBackupStepParameters>
         }
 
         var backupPlan = BackupPlan.FromJsonFile(parameters.BackupPlanLocation);
-        using var credentialsProvider = GetCredentialsProvider(parameters);
 
         if (!string.IsNullOrEmpty(backupPlan.LogDirectory))
             AddBackupLogSink(backupPlan.LogDirectory);
 
-        CreateBackupCommandResult? result = null;
+        CreateBackupFileCommandResult? result = null;
         try
         {
             result = await _mediator.Send(
-                new CreateBackupCommand(backupPlan, parameters.WorkingDirectory, backupPassword),
+                new CreateBackupFileCommand(
+                    backupPlan,
+                    parameters.WorkingDirectory,
+                    backupPassword
+                ),
                 cancellationToken
             );
 
@@ -130,21 +124,6 @@ public class PerformBackupStep : IWizardStep<PerformBackupStepParameters>
 
             _loggerFactory.AddSerilog(logger, dispose: true);
         }
-    }
-
-    private ICredentialsProvider GetCredentialsProvider(PerformBackupStepParameters parameters)
-    {
-        if (parameters.KeePassDbLocation == null || parameters.KeePassDbPassword == null)
-        {
-            return _credentialsProviderFactory.Create(new NullCredentialsProviderConfiguration());
-        }
-
-        var keePassCredentialsConfiguration = new KeePassCredentialsProviderConfiguration(
-            parameters.KeePassDbLocation,
-            parameters.KeePassDbPassword
-        );
-
-        return _credentialsProviderFactory.Create(keePassCredentialsConfiguration);
     }
 
     private string GetBackupPassword()

@@ -1,29 +1,29 @@
 ﻿using BackupHelper.Abstractions;
-using BackupHelper.Api.Features.Credentials.SMB;
+using BackupHelper.Api.Features.Credentials.CredentialProfiles;
 using MediatR;
 
-namespace BackupHelper.Api.Features.Credentials;
+namespace BackupHelper.Api.Features.Credentials.SMB;
 
-public record CheckCredentialsConnectivityQuery(
+public record CheckSMBCredentialsConnectivityQuery(
     string CredentialProfileName,
     string CredentialProfilePassword
 ) : IRequest<IReadOnlyCollection<IDisplayableCredentialEntry>>;
 
-public class CheckCredentialsConnectivityQueryHandler
+public class CheckSMBCredentialsConnectivityQueryHandler
     : IRequestHandler<
-        CheckCredentialsConnectivityQuery,
+        CheckSMBCredentialsConnectivityQuery,
         IReadOnlyCollection<IDisplayableCredentialEntry>
     >
 {
     private readonly IMediator _mediator;
 
-    public CheckCredentialsConnectivityQueryHandler(IMediator mediator)
+    public CheckSMBCredentialsConnectivityQueryHandler(IMediator mediator)
     {
         _mediator = mediator;
     }
 
     public async Task<IReadOnlyCollection<IDisplayableCredentialEntry>> Handle(
-        CheckCredentialsConnectivityQuery request,
+        CheckSMBCredentialsConnectivityQuery request,
         CancellationToken cancellationToken
     )
     {
@@ -60,6 +60,5 @@ public class CheckCredentialsConnectivityQueryHandler
         return nonConnectedEntries;
     }
 
-    // At the moment, we assume all credentials are SMB credentials.
     private bool IsSMBCredential(CredentialEntry credentialEntry) => true;
 }

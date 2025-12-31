@@ -1,5 +1,6 @@
 ﻿using BackupHelper.Abstractions;
 using BackupHelper.Api.Features.Credentials;
+using BackupHelper.Api.Features.Credentials.CredentialProfiles;
 using MediatR;
 using Sharprompt;
 
