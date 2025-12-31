@@ -64,6 +64,7 @@ public class EditBackupProfileStep : IWizardStep<EditBackupProfileStepParameters
                 "Name",
                 "Backup Plan Location",
                 "Change Credential Profile",
+                "Change Working Directory",
                 "Cancel",
             ]
         );
@@ -126,6 +127,23 @@ public class EditBackupProfileStep : IWizardStep<EditBackupProfileStepParameters
                 cancellationToken
             );
             Console.WriteLine("Credential profile updated successfully!");
+        }
+        else if (choice == "Change Working Directory")
+        {
+            var newWorkingDirectory = Prompt.Input<string>(
+                "Enter new working directory for temporary files (leave blank to use temp directory)",
+                defaultValue: string.Empty,
+                validators: [ValidatorsHelper.DirectoryExistsIfNotEmpty]
+            );
+            var updatedBackupProfile = backupProfile with
+            {
+                WorkingDirectory = newWorkingDirectory,
+            };
+            await _mediator.Send(
+                new UpdateBackupProfileCommand(backupProfile, updatedBackupProfile),
+                cancellationToken
+            );
+            Console.WriteLine("Working directory updated successfully!");
         }
 
         return new ManageBackupProfilesStepParameters();

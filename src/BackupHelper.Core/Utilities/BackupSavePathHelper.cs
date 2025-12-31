@@ -1,10 +1,14 @@
-﻿namespace BackupHelper.ConsoleApp.Utilities;
+﻿namespace BackupHelper.Core.Utilities;
 
 public class BackupSavePathHelper
 {
-    public static string GetBackupSaveFileName(string? zipFilenameSuffix = null)
+    public static string GetBackupSaveFilePath(
+        string? outputDirectory,
+        string? zipFilenameSuffix = null
+    )
     {
-        return CreateDateTimeBasedZipFileName(zipFilenameSuffix);
+        outputDirectory ??= Path.Join(Path.GetTempPath(), "BackupHelper");
+        return Path.Join(outputDirectory, CreateDateTimeBasedZipFileName(zipFilenameSuffix));
     }
 
     private static string CreateDateTimeBasedZipFileName(string? zipFilenameSuffix)

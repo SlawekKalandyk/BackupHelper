@@ -23,4 +23,14 @@ public static class ValidatorsHelper
 
         return new ValidationResult("Directory does not exist.");
     }
+
+    public static ValidationResult? DirectoryExistsIfNotEmpty(object? value)
+    {
+        if (value is string strValue && string.IsNullOrWhiteSpace(strValue))
+        {
+            return ValidationResult.Success;
+        }
+
+        return DirectoryExists(value);
+    }
 }

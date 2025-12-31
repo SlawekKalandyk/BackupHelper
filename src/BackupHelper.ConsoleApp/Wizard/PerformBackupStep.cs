@@ -3,6 +3,7 @@ using BackupHelper.ConsoleApp.Utilities;
 using BackupHelper.Core.BackupZipping;
 using BackupHelper.Core.Credentials;
 using BackupHelper.Core.Features;
+using BackupHelper.Sinks.Abstractions;
 using MediatR;
 using Microsoft.Extensions.Logging;
 using Serilog;
@@ -13,23 +14,26 @@ namespace BackupHelper.ConsoleApp.Wizard;
 
 public class PerformBackupStepParameters : IWizardParameters
 {
-    public PerformBackupStepParameters(string backupPlanLocation)
+    public PerformBackupStepParameters(string backupPlanLocation, string? workingDirectory)
     {
         BackupPlanLocation = backupPlanLocation;
+        WorkingDirectory = workingDirectory;
     }
 
     public PerformBackupStepParameters(
         string backupPlanLocation,
+        string? workingDirectory,
         string keePassDbLocation,
         string keePassDbPassword
     )
-        : this(backupPlanLocation)
+        : this(backupPlanLocation, workingDirectory)
     {
         KeePassDbLocation = keePassDbLocation;
         KeePassDbPassword = keePassDbPassword;
     }
 
     public string BackupPlanLocation { get; }
+    public string? WorkingDirectory { get; }
     public string? KeePassDbLocation { get; }
     public string? KeePassDbPassword { get; }
 }
@@ -70,23 +74,33 @@ public class PerformBackupStep : IWizardStep<PerformBackupStepParameters>
         if (!string.IsNullOrEmpty(backupPlan.LogDirectory))
             AddBackupLogSink(backupPlan.LogDirectory);
 
-        var backupSavePath = BackupSavePathHelper.GetBackupSaveFileName(
-            backupPlan.ZipFileNameSuffix
-        );
-        await _mediator
-            .Send(
-                new CreateBackupCommand(backupPlan, backupSavePath, backupPassword),
-                cancellationToken
-            )
-            .ContinueWith(
-                _ =>
-                {
-                    Console.WriteLine(
-                        $"Backup completed successfully. Output file: {backupSavePath}"
-                    );
-                },
+        CreateBackupCommandResult? result = null;
+        try
+        {
+            result = await _mediator.Send(
+                new CreateBackupCommand(backupPlan, parameters.WorkingDirectory, backupPassword),
                 cancellationToken
             );
+
+            var backupSinks = GetBackupSinks(backupPlan);
+
+            foreach (var sink in backupSinks)
+            {
+                await UploadToSink(sink, result.OutputFilePath);
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine("Backup failed:");
+            Console.WriteLine(ex.GetBaseException().Message);
+        }
+        finally
+        {
+            if (result != null && File.Exists(result.OutputFilePath))
+            {
+                File.Delete(result.OutputFilePath);
+            }
+        }
 
         return new MainMenuStepParameters();
     }
@@ -148,5 +162,32 @@ public class PerformBackupStep : IWizardStep<PerformBackupStepParameters>
         }
 
         return backupPassword;
+    }
+
+    private IReadOnlyCollection<ISink> GetBackupSinks(BackupPlan backupPlan)
+    {
+        return backupPlan.Sinks.Select(sinkDestination => sinkDestination.CreateSink()).ToList();
+    }
+
+    private async Task UploadToSink(ISink sink, string outputFilePath)
+    {
+        if (await sink.IsAvailableAsync())
+        {
+            try
+            {
+                await sink.UploadAsync(outputFilePath);
+                Console.WriteLine($"Uploaded backup to sink: {sink.Description}");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(
+                    $"Failed to upload backup to sink '{sink.Description}': {ex.GetBaseException().Message}"
+                );
+            }
+        }
+        else
+        {
+            Console.WriteLine($"Sink '{sink.Description}' is not available. Skipping upload.");
+        }
     }
 }

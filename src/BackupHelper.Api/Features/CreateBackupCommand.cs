@@ -1,4 +1,5 @@
 ﻿using BackupHelper.Core.BackupZipping;
+using BackupHelper.Core.Utilities;
 using MediatR;
 using Microsoft.Extensions.Logging;
 
@@ -6,11 +7,11 @@ namespace BackupHelper.Core.Features;
 
 public record CreateBackupCommand(
     BackupPlan BackupPlan,
-    string BackupFileName,
+    string? OutputDirectory,
     string? Password = null
 ) : IRequest<CreateBackupCommandResult>;
 
-public record CreateBackupCommandResult;
+public record CreateBackupCommandResult(string OutputFilePath);
 
 public class CreateBackupCommandHandler
     : IRequestHandler<CreateBackupCommand, CreateBackupCommandResult>
@@ -32,24 +33,22 @@ public class CreateBackupCommandHandler
         CancellationToken cancellationToken
     )
     {
+        var outputFilePath = BackupSavePathHelper.GetBackupSaveFilePath(
+            request.OutputDirectory,
+            request.BackupPlan.ZipFileNameSuffix
+        );
+
         try
         {
-            _backupPlanZipper.CreateZipFile(
-                request.BackupPlan,
-                request.BackupFileName,
-                request.Password
-            );
-            _logger.LogInformation("Backup created at {BackupFilePath}", request.BackupFileName);
+            _backupPlanZipper.CreateZipFile(request.BackupPlan, outputFilePath, request.Password);
+            _logger.LogInformation("Backup created at {BackupFilePath}", outputFilePath);
         }
         catch (Exception ex)
         {
-            _logger.LogError(
-                ex,
-                "Failed to create backup at {BackupFilePath}",
-                Path.Join(request.BackupPlan.OutputDirectory, request.BackupFileName)
-            );
+            _logger.LogError(ex, "Failed to create backup at {BackupFilePath}", outputFilePath);
+            throw;
         }
 
-        return Task.FromResult(new CreateBackupCommandResult());
+        return Task.FromResult(new CreateBackupCommandResult(outputFilePath));
     }
 }

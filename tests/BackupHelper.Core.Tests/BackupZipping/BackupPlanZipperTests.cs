@@ -119,7 +119,6 @@ public class BackupPlanZipperTests : ZipTestsBase
                         $@"smb://{_smbTestConfigurationProvider.TestsDirectoryPath}\smb_dir1",
                 },
             },
-            OutputDirectory = ZipFileDirectory,
         };
     }
 
@@ -131,7 +130,7 @@ public class BackupPlanZipperTests : ZipTestsBase
         var backupPlan = CreateSampleBackupPlan();
 
         // Act
-        _backupPlanZipper.CreateZipFile(backupPlan, ZipFileName);
+        _backupPlanZipper.CreateZipFile(backupPlan, ZipFilePath);
         _unzipper.UnzipFile();
 
         // Assert
@@ -146,7 +145,7 @@ public class BackupPlanZipperTests : ZipTestsBase
         var backupPlan = CreateSampleBackupPlan();
 
         // Act
-        _backupPlanZipper.CreateZipFile(backupPlan, ZipFileName);
+        _backupPlanZipper.CreateZipFile(backupPlan, ZipFilePath);
         _unzipper.UnzipFile();
 
         // Assert
@@ -163,7 +162,7 @@ public class BackupPlanZipperTests : ZipTestsBase
         var backupPlan = CreateSampleBackupPlan();
 
         // Act
-        _backupPlanZipper.CreateZipFile(backupPlan, ZipFileName);
+        _backupPlanZipper.CreateZipFile(backupPlan, ZipFilePath);
         _unzipper.UnzipFile();
 
         // Assert
@@ -182,7 +181,7 @@ public class BackupPlanZipperTests : ZipTestsBase
         var backupPlan = CreateSampleBackupPlan();
 
         // Act
-        _backupPlanZipper.CreateZipFile(backupPlan, ZipFileName);
+        _backupPlanZipper.CreateZipFile(backupPlan, ZipFilePath);
         _unzipper.UnzipFile();
 
         // Assert

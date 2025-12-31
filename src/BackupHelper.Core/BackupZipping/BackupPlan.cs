@@ -1,74 +1,12 @@
-﻿using Newtonsoft.Json;
+﻿using BackupHelper.Sinks.Abstractions;
+using BackupHelper.Sinks.FileSystem;
+using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
 namespace BackupHelper.Core.BackupZipping;
 
 [JsonConverter(typeof(BackupEntryConverter))]
 public abstract class BackupEntry { }
-
-public class BackupEntryConverter : JsonConverter<BackupEntry>
-{
-    public override BackupEntry? ReadJson(
-        JsonReader reader,
-        Type objectType,
-        BackupEntry? existingValue,
-        bool hasExistingValue,
-        JsonSerializer serializer
-    )
-    {
-        if (reader.TokenType == JsonToken.StartObject)
-        {
-            var obj = JObject.Load(reader);
-
-            // File entry as object (has "path" property)
-            if (obj.ContainsKey("path"))
-            {
-                var filePath = obj["path"]?.ToString();
-                var cronExpression = obj["cronExpression"]?.ToString();
-                var compressionLevel = obj["compressionLevel"]?.ToObject<int?>();
-                var timeZone = obj["timeZone"]?.ToString();
-
-                return new BackupFileEntry
-                {
-                    FilePath = filePath,
-                    CronExpression = cronExpression,
-                    CompressionLevel = compressionLevel,
-                    TimeZone = timeZone ?? string.Empty,
-                };
-            }
-
-            // Directory entry (has "name" and "items")
-            if (obj.ContainsKey("name") && obj.ContainsKey("items"))
-            {
-                var name = obj["name"]?.ToString();
-                var items = obj["items"]?.ToObject<List<BackupEntry>>(serializer);
-
-                return new BackupDirectoryEntry
-                {
-                    DirectoryName = name,
-                    Items = items ?? new List<BackupEntry>(),
-                };
-            }
-        }
-
-        return null;
-    }
-
-    public override void WriteJson(JsonWriter writer, BackupEntry? value, JsonSerializer serializer)
-    {
-        if (value == null)
-            return;
-
-        if (value is BackupFileEntry fileEntry)
-        {
-            serializer.Serialize(writer, fileEntry);
-        }
-        else if (value is BackupDirectoryEntry dirEntry)
-        {
-            serializer.Serialize(writer, dirEntry);
-        }
-    }
-}
 
 public class BackupFileEntry : BackupEntry
 {
@@ -142,6 +80,9 @@ public class BackupPlan
     [JsonProperty("items")]
     public List<BackupEntry> Items { get; set; } = new();
 
+    [JsonProperty("sinks")]
+    public List<ISinkDestination> Sinks { get; set; } = new();
+
     [JsonProperty("logDirectory")]
     public string? LogDirectory { get; set; }
 
@@ -160,19 +101,125 @@ public class BackupPlan
     [JsonProperty("zipFileNameSuffix")]
     public string? ZipFileNameSuffix { get; set; }
 
-    [JsonProperty("outputDirectory"), JsonRequired]
-    public required string OutputDirectory { get; set; }
-
     public static BackupPlan FromJsonFile(string inputPath)
     {
         var json = File.ReadAllText(inputPath);
 
-        return JsonConvert.DeserializeObject<BackupPlan>(json)!;
+        var settings = new JsonSerializerSettings();
+        settings.Converters.Add(new SinkDestinationConverter());
+
+        return JsonConvert.DeserializeObject<BackupPlan>(json, settings)!;
     }
 
     public void ToJsonFile(string outputPath)
     {
-        var json = JsonConvert.SerializeObject(this, Formatting.Indented);
+        var settings = new JsonSerializerSettings
+        {
+            Formatting = Formatting.Indented,
+            Converters = { new SinkDestinationConverter() },
+        };
+
+        var json = JsonConvert.SerializeObject(this, settings);
         File.WriteAllText(outputPath, json);
+    }
+}
+
+public class BackupEntryConverter : JsonConverter<BackupEntry>
+{
+    public override BackupEntry? ReadJson(
+        JsonReader reader,
+        Type objectType,
+        BackupEntry? existingValue,
+        bool hasExistingValue,
+        JsonSerializer serializer
+    )
+    {
+        if (reader.TokenType == JsonToken.StartObject)
+        {
+            var obj = JObject.Load(reader);
+
+            // File entry as object (has "path" property)
+            if (obj.ContainsKey("path"))
+            {
+                var filePath = obj["path"]?.ToString();
+                var cronExpression = obj["cronExpression"]?.ToString();
+                var compressionLevel = obj["compressionLevel"]?.ToObject<int?>();
+                var timeZone = obj["timeZone"]?.ToString();
+
+                return new BackupFileEntry
+                {
+                    FilePath = filePath,
+                    CronExpression = cronExpression,
+                    CompressionLevel = compressionLevel,
+                    TimeZone = timeZone ?? string.Empty,
+                };
+            }
+
+            // Directory entry (has "name" and "items")
+            if (obj.ContainsKey("name") && obj.ContainsKey("items"))
+            {
+                var name = obj["name"]?.ToString();
+                var items = obj["items"]?.ToObject<List<BackupEntry>>(serializer);
+
+                return new BackupDirectoryEntry
+                {
+                    DirectoryName = name,
+                    Items = items ?? new List<BackupEntry>(),
+                };
+            }
+        }
+
+        return null;
+    }
+
+    public override void WriteJson(JsonWriter writer, BackupEntry? value, JsonSerializer serializer)
+    {
+        if (value == null)
+            return;
+
+        if (value is BackupFileEntry fileEntry)
+        {
+            serializer.Serialize(writer, fileEntry);
+        }
+        else if (value is BackupDirectoryEntry dirEntry)
+        {
+            serializer.Serialize(writer, dirEntry);
+        }
+    }
+}
+
+public class SinkDestinationConverter : JsonConverter<ISinkDestination>
+{
+    public override ISinkDestination? ReadJson(
+        JsonReader reader,
+        Type objectType,
+        ISinkDestination? existingValue,
+        bool hasExistingValue,
+        JsonSerializer serializer
+    )
+    {
+        if (reader.TokenType == JsonToken.Null)
+            return null;
+
+        var obj = JObject.Load(reader);
+        var name = obj["name"]?.ToString();
+
+        return name switch
+        {
+            FileSystemSinkDestination.SinkName => obj.ToObject<FileSystemSinkDestination>(),
+            _ => throw new JsonSerializationException($"Unknown sink type: {name}"),
+        };
+    }
+
+    public override void WriteJson(
+        JsonWriter writer,
+        ISinkDestination? value,
+        JsonSerializer serializer
+    )
+    {
+        if (value == null)
+            return;
+
+        serializer.Serialize(writer, value);
     }
 }

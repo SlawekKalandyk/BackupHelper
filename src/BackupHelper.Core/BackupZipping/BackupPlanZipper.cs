@@ -25,15 +25,16 @@ public class BackupPlanZipper : IBackupPlanZipper
         _dateTimeProvider = dateTimeProvider;
     }
 
-    public void CreateZipFile(BackupPlan plan, string outputFileName, string? password = null)
+    public void CreateZipFile(BackupPlan plan, string outputFilePath, string? password = null)
     {
-        var outputPath = Path.Join(plan.OutputDirectory, outputFileName);
-        _logger.LogInformation("Creating backup file at {OutputPath}", outputPath);
+        _logger.LogInformation("Creating backup file at {OutputPath}", outputFilePath);
 
         using var scope = _serviceScopeFactory.CreateScope();
         var fileZipperFactory = scope.ServiceProvider.GetRequiredService<IFileZipperFactory>();
 
-        using (var fileZipper = fileZipperFactory.Create(outputPath, overwriteFileIfExists: true))
+        using (
+            var fileZipper = fileZipperFactory.Create(outputFilePath, overwriteFileIfExists: true)
+        )
         {
             if (plan.ThreadLimit.HasValue)
                 fileZipper.ThreadLimit = plan.ThreadLimit.Value;
@@ -50,7 +51,7 @@ public class BackupPlanZipper : IBackupPlanZipper
 
             if (fileZipper.HasToBeSaved)
             {
-                _logger.LogInformation("Saving zip to {OutputPath}", outputPath);
+                _logger.LogInformation("Saving zip to {OutputPath}", outputFilePath);
                 fileZipper.Save();
             }
 
@@ -59,7 +60,7 @@ public class BackupPlanZipper : IBackupPlanZipper
 
         if (!string.IsNullOrWhiteSpace(password))
         {
-            EncryptZipFile(outputPath, password);
+            EncryptZipFile(outputFilePath, password);
         }
     }
 

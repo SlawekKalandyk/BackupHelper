@@ -25,16 +25,6 @@ public abstract class ZipTestsBase : TestsBase
     protected string ZipFilePath =>
         Path.Combine(TestsDirectoryRootPath, "file-zipper-tests-zipped-file.zip");
 
-    /// <summary>
-    /// Directory of the zip file used in tests.
-    /// </summary>
-    protected string ZipFileDirectory => Path.GetDirectoryName(ZipFilePath)!;
-
-    /// <summary>
-    /// File name for the zip file used in tests.
-    /// </summary>
-    protected string ZipFileName => Path.GetFileName(ZipFilePath);
-
     [SetUp]
     protected override void Setup()
     {

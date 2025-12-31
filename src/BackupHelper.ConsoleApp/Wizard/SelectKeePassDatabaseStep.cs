@@ -6,7 +6,7 @@ namespace BackupHelper.ConsoleApp.Wizard;
 
 public record SelectKeePassDatabaseStepParameters(
     string BackupPlanLocation,
-    string OutputZipPath,
+    string OutputDirectory,
     string? KeePassDbLocation = null
 ) : IWizardParameters;
 
@@ -33,7 +33,10 @@ public class SelectKeePassDatabaseStep : IWizardStep<SelectKeePassDatabaseStepPa
             if (!selectKeePassDb)
             {
                 return Task.FromResult<IWizardParameters?>(
-                    new PerformBackupStepParameters(parameters.BackupPlanLocation)
+                    new PerformBackupStepParameters(
+                        parameters.BackupPlanLocation,
+                        parameters.OutputDirectory
+                    )
                 );
             }
 
@@ -55,6 +58,7 @@ public class SelectKeePassDatabaseStep : IWizardStep<SelectKeePassDatabaseStepPa
             return Task.FromResult<IWizardParameters?>(
                 new PerformBackupStepParameters(
                     parameters.BackupPlanLocation,
+                    parameters.OutputDirectory,
                     keePassDbLocation,
                     keePassDbPassword
                 )

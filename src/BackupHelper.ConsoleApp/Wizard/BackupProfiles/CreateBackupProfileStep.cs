@@ -44,6 +44,11 @@ public class CreateBackupProfileStep : IWizardStep<CreateBackupProfileStepParame
             "Select backup plan location",
             validators: [Validators.Required(), ValidatorsHelper.FileExists]
         );
+        var workingDirectory = Prompt.Input<string>(
+            "Enter working directory for temporary files (leave blank to use temp directory)",
+            defaultValue: string.Empty,
+            validators: [ValidatorsHelper.DirectoryExistsIfNotEmpty]
+        );
         var credentialProfileNames = await _mediator.Send(
             new GetCredentialProfileNamesQuery(),
             cancellationToken
@@ -55,7 +60,12 @@ public class CreateBackupProfileStep : IWizardStep<CreateBackupProfileStepParame
         );
 
         await _mediator.Send(
-            new CreateBackupProfileCommand(name, backupPlanLocation, credentialProfileName),
+            new CreateBackupProfileCommand(
+                name,
+                backupPlanLocation,
+                credentialProfileName,
+                workingDirectory
+            ),
             cancellationToken
         );
 

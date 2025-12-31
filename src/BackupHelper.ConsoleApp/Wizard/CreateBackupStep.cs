@@ -90,6 +90,7 @@ public class CreateBackupStep : IWizardStep<CreateBackupStepParameters>
             return canBackup
                 ? new PerformBackupStepParameters(
                     backupProfile.BackupPlanLocation,
+                    backupProfile.WorkingDirectory,
                     keePassDbLocation,
                     credentialProfilePassword
                 )
@@ -100,12 +101,12 @@ public class CreateBackupStep : IWizardStep<CreateBackupStepParameters>
             "Select backup plan location",
             validators: [Validators.Required()]
         );
-        var outputZipPath = Prompt.Input<string>(
-            "Select output zip path",
+        var outputDirectory = Prompt.Input<string>(
+            "Select output directory",
             validators: [Validators.Required()]
         );
 
-        return new SelectKeePassDatabaseStepParameters(backupPlanLocation, outputZipPath);
+        return new SelectKeePassDatabaseStepParameters(backupPlanLocation, outputDirectory);
     }
 
     private string GetCredentialProfilePassword(string keePassDbLocation)
