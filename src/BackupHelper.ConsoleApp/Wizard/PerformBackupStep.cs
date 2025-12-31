@@ -88,6 +88,8 @@ public class PerformBackupStep : IWizardStep<PerformBackupStepParameters>
             {
                 await UploadToSink(sink, result.OutputFilePath);
             }
+
+            Console.WriteLine("Backup completed successfully.");
         }
         catch (Exception ex)
         {
