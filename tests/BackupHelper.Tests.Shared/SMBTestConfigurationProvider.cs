@@ -1,6 +1,6 @@
 ﻿using System.Runtime.CompilerServices;
 using System.Text;
-using BackupHelper.Sources.SMB;
+using BackupHelper.Connectors.SMB;
 using Microsoft.Extensions.Configuration;
 
 namespace BackupHelper.Tests.Shared;

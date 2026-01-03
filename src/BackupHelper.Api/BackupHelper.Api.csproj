@@ -16,4 +16,7 @@
   <ItemGroup>
     <ProjectReference Include="..\BackupHelper.Core\BackupHelper.Core.csproj" />
   </ItemGroup>
+  <ItemGroup>
+    <Folder Include="Features\Credentials\Azure\" />
+  </ItemGroup>
 </Project>

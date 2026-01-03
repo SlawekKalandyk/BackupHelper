@@ -1,9 +1,9 @@
 ﻿using BackupHelper.Abstractions;
+using BackupHelper.Abstractions.Credentials;
 using BackupHelper.Api.Features.Credentials;
 using BackupHelper.Api.Features.Credentials.CredentialProfiles;
-using BackupHelper.Api.Features.Credentials.SMB;
+using BackupHelper.Connectors.SMB;
 using BackupHelper.Core.Credentials;
-using BackupHelper.Sources.SMB;
 using MediatR;
 using Sharprompt;
 
@@ -11,7 +11,7 @@ namespace BackupHelper.ConsoleApp.Wizard.Credentials;
 
 public record EditSMBCredentialStepParameters(
     CredentialProfile CredentialProfile,
-    CredentialEntry? CredentialToEdit = null
+    CredentialEntry? CredentialEntryToEdit = null
 ) : IWizardParameters;
 
 public class EditSMBCredentialStep : IWizardStep<EditSMBCredentialStepParameters>
@@ -43,9 +43,9 @@ public class EditSMBCredentialStep : IWizardStep<EditSMBCredentialStepParameters
             return new EditCredentialProfileStepParameters(request.CredentialProfile);
         }
 
-        var credentialToEdit = request.CredentialToEdit;
+        var credentialEntryToEdit = request.CredentialEntryToEdit;
 
-        if (credentialToEdit == null)
+        if (credentialEntryToEdit == null)
         {
             var credentialDictionary = request.CredentialProfile.Credentials.ToDictionary(
                 credential => credential.Title,
@@ -56,7 +56,7 @@ public class EditSMBCredentialStep : IWizardStep<EditSMBCredentialStepParameters
                 credentialDictionary.Keys,
                 5
             );
-            credentialToEdit = credentialDictionary[credentialTitle];
+            credentialEntryToEdit = credentialDictionary[credentialTitle];
         }
 
         var choice = Prompt.Select(
@@ -79,15 +79,14 @@ public class EditSMBCredentialStep : IWizardStep<EditSMBCredentialStepParameters
         using var credentialsProvider = _credentialsProviderFactory.Create(
             credentialsProviderConfiguration
         );
-        var existingCredentials = credentialsProvider.GetCredential(credentialToEdit.Title);
-        var (server, shareName) = SMBCredentialHelper.DeconstructSMBCredentialTitle(
-            credentialToEdit.Title
-        );
+        var localTitle = credentialEntryToEdit.GetLocalTitle();
+        var existingCredentials = credentialsProvider.GetCredential<SMBCredential>(localTitle);
+        var (server, shareName) = SMBCredentialHelper.DeconstructSMBCredentialTitle(localTitle);
 
         if (existingCredentials == null)
         {
             Console.WriteLine(
-                $"No existing SMB credentials found for {credentialToEdit.Title}. Please create them first."
+                $"No existing SMB credentials found for {credentialEntryToEdit.Title}. Please create them first."
             );
 
             return new EditCredentialProfileStepParameters(request.CredentialProfile);
@@ -109,10 +108,10 @@ public class EditSMBCredentialStep : IWizardStep<EditSMBCredentialStepParameters
             );
             var newSMBCredentials = existingSMBCredentials with { Username = newUsername };
             await _mediator.Send(
-                new UpdateSMBCredentialCommand(
+                new UpdateCredentialCommand(
                     credentialsProviderConfiguration,
-                    existingSMBCredentials,
-                    newSMBCredentials
+                    existingSMBCredentials.ToCredentialEntry(),
+                    newSMBCredentials.ToCredentialEntry()
                 ),
                 cancellationToken
             );
@@ -135,16 +134,16 @@ public class EditSMBCredentialStep : IWizardStep<EditSMBCredentialStepParameters
 
                 return new EditSMBCredentialStepParameters(
                     request.CredentialProfile,
-                    credentialToEdit
+                    credentialEntryToEdit
                 );
             }
 
             var newSMBCredentials = existingSMBCredentials with { Password = newPassword };
             await _mediator.Send(
-                new UpdateSMBCredentialCommand(
+                new UpdateCredentialCommand(
                     credentialsProviderConfiguration,
-                    existingSMBCredentials,
-                    newSMBCredentials
+                    existingSMBCredentials.ToCredentialEntry(),
+                    newSMBCredentials.ToCredentialEntry()
                 ),
                 cancellationToken
             );

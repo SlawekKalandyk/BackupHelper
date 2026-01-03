@@ -1,4 +1,4 @@
-﻿using BackupHelper.Abstractions;
+﻿using BackupHelper.Abstractions.Credentials;
 using KeePassLib;
 using KeePassLib.Interfaces;
 using KeePassLib.Keys;
@@ -12,11 +12,16 @@ public record KeePassCredentialsProviderConfiguration(string DatabasePath, strin
 
 public class KeePassCredentialsProvider : ICredentialsProvider
 {
+    private readonly CredentialHandlerRegistry _credentialHandlerRegistry;
     private static readonly IStatusLogger _statusLogger = new NullStatusLogger();
     private PwDatabase _database;
 
-    public KeePassCredentialsProvider(KeePassCredentialsProviderConfiguration configuration)
+    public KeePassCredentialsProvider(
+        KeePassCredentialsProviderConfiguration configuration,
+        CredentialHandlerRegistry credentialHandlerRegistry
+    )
     {
+        _credentialHandlerRegistry = credentialHandlerRegistry;
         _database = !File.Exists(configuration.DatabasePath)
             ? CreateDatabase(configuration.DatabasePath, configuration.MasterPassword)
             : OpenDatabase(configuration.DatabasePath, configuration.MasterPassword);
@@ -51,19 +56,26 @@ public class KeePassCredentialsProvider : ICredentialsProvider
         }
     }
 
-    public CredentialEntry? GetCredential(string credentialName)
+    public T? GetCredential<T>(string credentialLocalTitle)
+        where T : ICredential
     {
+        var title = CredentialHelper.ConstructCredentialTitle(
+            _credentialHandlerRegistry.GetKindFor<T>(),
+            credentialLocalTitle
+        );
+
         var foundEntry = _database.RootGroup.Entries.SingleOrDefault(entry =>
-            entry.Strings.ReadSafe(PwDefs.TitleField) == credentialName
+            entry.Strings.ReadSafe(PwDefs.TitleField) == title
         );
 
         if (foundEntry == null)
-            return null;
+            return default;
 
         var user = foundEntry.Strings.ReadSafe(PwDefs.UserNameField);
         var pass = foundEntry.Strings.ReadSafe(PwDefs.PasswordField);
+        var entry = new CredentialEntry(title, user, pass);
 
-        return new CredentialEntry(credentialName, user, pass);
+        return _credentialHandlerRegistry.FromCredentialEntry<T>(entry);
     }
 
     public void SetCredential(CredentialEntry credentialEntry)
@@ -115,14 +127,16 @@ public class KeePassCredentialsProvider : ICredentialsProvider
         _database.Save(_statusLogger);
     }
 
-    public void DeleteCredential(string credentialName)
+    public void DeleteCredential(CredentialEntry credentialEntry)
     {
+        var title = credentialEntry.Title;
+
         var existingEntry = _database.RootGroup.Entries.SingleOrDefault(entry =>
-            entry.Strings.ReadSafe(PwDefs.TitleField) == credentialName
+            entry.Strings.ReadSafe(PwDefs.TitleField) == title
         );
 
         if (existingEntry == null)
-            throw new CredentialNotFound(credentialName);
+            throw new CredentialNotFound(title);
 
         _database.RootGroup.Entries.Remove(existingEntry);
         _database.Save(_statusLogger);

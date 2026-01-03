@@ -2,9 +2,9 @@
 
 namespace BackupHelper.Sinks.Azure;
 
-internal class AzureSink : SinkBase<AzureSinkDestination>
+internal class AzureBlobStorageSink : SinkBase<AzureBlobStorageSinkDestination>
 {
-    public AzureSink(AzureSinkDestination destination)
+    public AzureBlobStorageSink(AzureBlobStorageSinkDestination destination)
         : base(destination) { }
 
     public override string Description { get; }

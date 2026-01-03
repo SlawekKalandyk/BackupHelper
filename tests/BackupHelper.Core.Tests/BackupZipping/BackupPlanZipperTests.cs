@@ -1,4 +1,6 @@
 ﻿using BackupHelper.Abstractions;
+using BackupHelper.Abstractions.Credentials;
+using BackupHelper.Connectors.SMB;
 using BackupHelper.Core.BackupZipping;
 using BackupHelper.Tests.Shared;
 using Microsoft.Extensions.Configuration;
@@ -31,11 +33,12 @@ public class BackupPlanZipperTests : ZipTestsBase
         base.AddCredentials(credentialsProvider, configuration);
         _smbTestConfigurationProvider = new SMBTestConfigurationProvider(configuration);
 
-        var credential = new CredentialEntry(
-            _smbTestConfigurationProvider.SharePath,
+        var credential = new SMBCredential(
+            _smbTestConfigurationProvider.ServerAddress,
+            _smbTestConfigurationProvider.ShareName,
             _smbTestConfigurationProvider.Username,
             _smbTestConfigurationProvider.Password
-        );
+        ).ToCredentialEntry();
         credentialsProvider.SetCredential(credential);
     }
 

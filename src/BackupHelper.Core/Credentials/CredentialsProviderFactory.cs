@@ -1,17 +1,25 @@
 ﻿using BackupHelper.Abstractions;
+using BackupHelper.Abstractions.Credentials;
 
 namespace BackupHelper.Core.Credentials;
 
 public class CredentialsProviderFactory : ICredentialsProviderFactory
 {
+    private readonly CredentialHandlerRegistry _credentialHandlerRegistry;
     private ICredentialsProviderConfiguration? _defaultConfiguration;
+
+    public CredentialsProviderFactory(CredentialHandlerRegistry credentialHandlerRegistry)
+    {
+        _credentialHandlerRegistry = credentialHandlerRegistry;
+    }
 
     public ICredentialsProvider Create(ICredentialsProviderConfiguration configuration)
     {
         return configuration switch
         {
             KeePassCredentialsProviderConfiguration keepass => new KeePassCredentialsProvider(
-                keepass
+                keepass,
+                _credentialHandlerRegistry
             ),
             NullCredentialsProviderConfiguration => new NullCredentialsProvider(),
             _ => throw new NotSupportedException(

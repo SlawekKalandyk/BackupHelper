@@ -1,7 +1,7 @@
 ﻿using SMBLibrary;
 using SMBLibrary.Client;
 
-namespace BackupHelper.Sources.SMB.IO;
+namespace BackupHelper.Connectors.SMB.IO;
 
 public class SMBWriteOnlyFileStream : Stream
 {

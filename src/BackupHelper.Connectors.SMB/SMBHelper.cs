@@ -1,12 +1,12 @@
 ﻿using SMBLibrary;
 
-namespace BackupHelper.Sources.SMB;
+namespace BackupHelper.Connectors.SMB;
 
-internal static class SMBHelper
+public static class SMBHelper
 {
     public static string StripShareInfo(string path)
     {
-        var shareInfo = SMBShareInfo.FromFilePath(path);
+        var shareInfo = SMBShareInfo.FromSMBPath(path);
         return path.Substring(shareInfo.ToString().Length)
             .TrimStart(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
     }

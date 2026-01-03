@@ -1,4 +1,4 @@
-﻿namespace BackupHelper.Sources.SMB.IO;
+﻿namespace BackupHelper.Connectors.SMB.IO;
 
 [Flags]
 public enum FilePurpose

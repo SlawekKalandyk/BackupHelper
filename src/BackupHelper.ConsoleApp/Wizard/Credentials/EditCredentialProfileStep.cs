@@ -95,7 +95,7 @@ public class EditCredentialProfileStep : IWizardStep<EditCredentialProfileStepPa
 
         if (choice == "Delete Credential")
         {
-            return new DeleteSMBCredentialStepParameters(credentialProfile);
+            return new DeleteCredentialStepParameters(credentialProfile);
         }
 
         Console.WriteLine("Unknown choice. Please try again.");

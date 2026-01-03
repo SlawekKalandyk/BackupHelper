@@ -1,10 +1,10 @@
-﻿using BackupHelper.Abstractions;
+﻿using BackupHelper.Abstractions.Credentials;
 using BackupHelper.Abstractions.ResourcePooling;
 using Microsoft.Extensions.Logging;
 
-namespace BackupHelper.Sources.SMB;
+namespace BackupHelper.Connectors.SMB.IO;
 
-internal class SMBConnectionPool : ResourcePoolBase<SMBConnection, SMBShareInfo>
+public class SMBConnectionPool : ResourcePoolBase<SMBConnection, SMBShareInfo>
 {
     private readonly ICredentialsProvider _credentialsProvider;
 
@@ -53,7 +53,7 @@ internal class SMBConnectionPool : ResourcePoolBase<SMBConnection, SMBShareInfo>
             shareInfo.ServerIPAddress.ToString(),
             shareInfo.ShareName
         );
-        var credential = _credentialsProvider.GetCredential(credentialName);
+        var credential = _credentialsProvider.GetCredential<SMBCredential>(credentialName);
 
         if (credential == null)
             throw new InvalidOperationException(

@@ -1,4 +1,6 @@
-﻿namespace BackupHelper.Sources.SMB;
+﻿using BackupHelper.Abstractions.Credentials;
+
+namespace BackupHelper.Connectors.SMB;
 
 public static class SMBCredentialHelper
 {

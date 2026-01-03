@@ -1,9 +1,9 @@
 ﻿using System.Net;
-using BackupHelper.Sources.SMB.IO;
+using BackupHelper.Connectors.SMB.IO;
 using SMBLibrary;
 using SMBLibrary.Client;
 
-namespace BackupHelper.Sources.SMB;
+namespace BackupHelper.Connectors.SMB;
 
 public class SMBConnection : IDisposable
 {

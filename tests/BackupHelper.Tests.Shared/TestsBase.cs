@@ -1,4 +1,5 @@
 ﻿using BackupHelper.Abstractions;
+using BackupHelper.Abstractions.Credentials;
 using BackupHelper.Api;
 using BackupHelper.Core;
 using Microsoft.Extensions.Configuration;
@@ -77,16 +78,25 @@ public abstract class TestsBase
 
     private ServiceProvider CreateServiceProvider(IConfiguration configuration)
     {
-        var credentialsProviderFactory = new TestCredentialsProviderFactory();
         var serviceCollection = new ServiceCollection()
             .AddCoreServices(configuration)
             .AddApiServices(configuration)
-            .AddSingleton<ICredentialsProviderFactory>(credentialsProviderFactory)
-            .AddLogging(builder => builder.AddProvider(NullLoggerProvider.Instance));
+            .AddSingleton<ICredentialsProviderFactory, TestCredentialsProviderFactory>()
+            .AddLogging(builder => builder.AddProvider(NullLoggerProvider.Instance))
+            .AddSingleton<ICredentialHandler<TestCredential>, TestCredentialHandler>()
+            .AddSingleton<ICredentialHandler, TestCredentialHandler>(serviceProvider =>
+                (TestCredentialHandler)
+                    serviceProvider.GetRequiredService<ICredentialHandler<TestCredential>>()
+            );
 
         OverrideServices(serviceCollection, configuration);
-        AddCredentials(credentialsProviderFactory.TestCredentialsProvider, configuration);
 
-        return serviceCollection.BuildServiceProvider();
+        var serviceProvider = serviceCollection.BuildServiceProvider();
+        var credentialsProviderFactory =
+            serviceProvider.GetRequiredService<ICredentialsProviderFactory>()
+            as TestCredentialsProviderFactory;
+        AddCredentials(credentialsProviderFactory!.TestCredentialsProvider, configuration);
+
+        return serviceProvider;
     }
 }

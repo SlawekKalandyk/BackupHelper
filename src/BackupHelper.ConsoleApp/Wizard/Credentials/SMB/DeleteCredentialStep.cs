@@ -1,35 +1,31 @@
 ﻿using BackupHelper.Abstractions;
+using BackupHelper.Abstractions.Credentials;
 using BackupHelper.Api.Features.Credentials;
 using BackupHelper.Api.Features.Credentials.CredentialProfiles;
-using BackupHelper.Api.Features.Credentials.SMB;
 using BackupHelper.Core.Credentials;
-using BackupHelper.Sources.SMB;
 using MediatR;
 using Sharprompt;
 
 namespace BackupHelper.ConsoleApp.Wizard.Credentials;
 
-public record DeleteSMBCredentialStepParameters(
+public record DeleteCredentialStepParameters(
     CredentialProfile CredentialProfile,
     CredentialEntry? CredentialToDelete = null
 ) : IWizardParameters;
 
-public class DeleteSMBCredentialStep : IWizardStep<DeleteSMBCredentialStepParameters>
+public class DeleteCredentialStep : IWizardStep<DeleteCredentialStepParameters>
 {
     private readonly IMediator _mediator;
     private readonly IApplicationDataHandler _applicationDataHandler;
 
-    public DeleteSMBCredentialStep(
-        IMediator mediator,
-        IApplicationDataHandler applicationDataHandler
-    )
+    public DeleteCredentialStep(IMediator mediator, IApplicationDataHandler applicationDataHandler)
     {
         _mediator = mediator;
         _applicationDataHandler = applicationDataHandler;
     }
 
     public async Task<IWizardParameters?> Handle(
-        DeleteSMBCredentialStepParameters request,
+        DeleteCredentialStepParameters request,
         CancellationToken cancellationToken
     )
     {
@@ -67,9 +63,6 @@ public class DeleteSMBCredentialStep : IWizardStep<DeleteSMBCredentialStepParame
             credentialToDelete = credentialDictionary[credentialTitle];
         }
 
-        var (server, shareName) = SMBCredentialHelper.DeconstructSMBCredentialTitle(
-            credentialToDelete.Title
-        );
         var credentialsProviderConfiguration = new KeePassCredentialsProviderConfiguration(
             Path.Combine(
                 _applicationDataHandler.GetCredentialProfilesPath(),
@@ -79,11 +72,19 @@ public class DeleteSMBCredentialStep : IWizardStep<DeleteSMBCredentialStepParame
         );
 
         await _mediator.Send(
-            new DeleteSMBCredentialCommand(credentialsProviderConfiguration, server, shareName),
+            new DeleteCredentialCommand(credentialsProviderConfiguration, credentialToDelete),
             cancellationToken
         );
         Console.WriteLine("SMB credential deleted successfully!");
 
-        return new EditCredentialProfileStepParameters(request.CredentialProfile);
+        var credentialProfile = await _mediator.Send(
+            new GetCredentialProfileQuery(
+                request.CredentialProfile.Name,
+                request.CredentialProfile.Password
+            ),
+            cancellationToken
+        );
+
+        return new EditCredentialProfileStepParameters(credentialProfile);
     }
 }

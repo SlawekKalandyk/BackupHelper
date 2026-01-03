@@ -1,29 +1,35 @@
-﻿using BackupHelper.Abstractions;
+﻿using BackupHelper.Abstractions.Credentials;
 using BackupHelper.Api.Features.Credentials.CredentialProfiles;
+using BackupHelper.Core.Credentials;
 using MediatR;
 
-namespace BackupHelper.Api.Features.Credentials.SMB;
+namespace BackupHelper.Api.Features.Credentials;
 
-public record CheckSMBCredentialsConnectivityQuery(
+public record CheckCredentialsConnectivityQuery(
     string CredentialProfileName,
     string CredentialProfilePassword
 ) : IRequest<IReadOnlyCollection<IDisplayableCredentialEntry>>;
 
-public class CheckSMBCredentialsConnectivityQueryHandler
+public class CheckCredentialsConnectivityQueryHandler
     : IRequestHandler<
-        CheckSMBCredentialsConnectivityQuery,
+        CheckCredentialsConnectivityQuery,
         IReadOnlyCollection<IDisplayableCredentialEntry>
     >
 {
     private readonly IMediator _mediator;
+    private readonly CredentialHandlerRegistry _credentialHandlerRegistry;
 
-    public CheckSMBCredentialsConnectivityQueryHandler(IMediator mediator)
+    public CheckCredentialsConnectivityQueryHandler(
+        IMediator mediator,
+        CredentialHandlerRegistry credentialHandlerRegistry
+    )
     {
         _mediator = mediator;
+        _credentialHandlerRegistry = credentialHandlerRegistry;
     }
 
     public async Task<IReadOnlyCollection<IDisplayableCredentialEntry>> Handle(
-        CheckSMBCredentialsConnectivityQuery request,
+        CheckCredentialsConnectivityQuery request,
         CancellationToken cancellationToken
     )
     {
@@ -46,19 +52,15 @@ public class CheckSMBCredentialsConnectivityQueryHandler
 
         foreach (var credentialEntry in credentialProfile.Credentials)
         {
-            if (IsSMBCredential(credentialEntry))
-            {
-                var isConnected = await _mediator.Send(
-                    new CheckSMBCredentialConnectivityQuery(credentialEntry),
-                    cancellationToken
-                );
-                if (!isConnected)
-                    nonConnectedEntries.Add(credentialEntry);
-            }
+            var isConnected = await _credentialHandlerRegistry.TestConnectionAsync(
+                credentialEntry,
+                cancellationToken
+            );
+
+            if (!isConnected)
+                nonConnectedEntries.Add(credentialEntry);
         }
 
         return nonConnectedEntries;
     }
-
-    private bool IsSMBCredential(CredentialEntry credentialEntry) => true;
 }

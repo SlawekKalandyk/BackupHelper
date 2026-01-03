@@ -1,4 +1,6 @@
 ﻿using BackupHelper.Abstractions;
+using BackupHelper.Abstractions.Credentials;
+using BackupHelper.Connectors.SMB;
 using BackupHelper.Core.BackupZipping;
 using BackupHelper.Core.Credentials;
 using BackupHelper.Core.FileZipping;
@@ -21,6 +23,7 @@ public static class ConfigureServices
     )
     {
         services.AddSources();
+        services.AddCredentialFactories();
         services.AddSingleton<IDateTimeProvider, DateTimeProvider>();
         services.AddSingleton<IBackupPlanZipper, BackupPlanZipper>();
         services.AddSingleton<ICredentialsProviderFactory, CredentialsProviderFactory>();
@@ -43,6 +46,18 @@ public static class ConfigureServices
         services.AddTransient<IFileInUseSourceManager, FileInUseSourceManager>();
         services.AddTransient<VssFileInUseSourceFactory>();
 
+        return services;
+    }
+
+    private static IServiceCollection AddCredentialFactories(this IServiceCollection services)
+    {
+        services.AddSingleton<ICredentialHandler, SmbCredentialHandler>(serviceProvider =>
+            (SmbCredentialHandler)
+                serviceProvider.GetRequiredService<ICredentialHandler<SMBCredential>>()
+        );
+        services.AddSingleton<ICredentialHandler<SMBCredential>, SmbCredentialHandler>();
+
+        services.AddSingleton<CredentialHandlerRegistry>();
         return services;
     }
 }

@@ -1,4 +1,5 @@
 ﻿using BackupHelper.Abstractions;
+using BackupHelper.Abstractions.Credentials;
 
 namespace BackupHelper.Api.Features.Credentials.CredentialProfiles;
 

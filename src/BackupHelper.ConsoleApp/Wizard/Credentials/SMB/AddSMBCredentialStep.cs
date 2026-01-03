@@ -2,8 +2,9 @@
 using BackupHelper.Api.Features.Credentials;
 using BackupHelper.Api.Features.Credentials.CredentialProfiles;
 using BackupHelper.Api.Features.Credentials.SMB;
+using BackupHelper.Connectors.SMB;
+using BackupHelper.ConsoleApp.Utilities;
 using BackupHelper.Core.Credentials;
-using BackupHelper.Sources.SMB;
 using MediatR;
 using Sharprompt;
 
@@ -39,11 +40,11 @@ public class AddSMBCredentialStep : IWizardStep<AddSMBCredentialStepParameters>
 
         var server = Prompt.Input<string>(
             "Enter SMB server address",
-            validators: [Validators.Required()]
+            validators: [Validators.Required(), ValidatorsHelper.IPAddressOrHostname]
         );
         var share = Prompt.Input<string>(
             "Enter SMB share name",
-            validators: [Validators.Required()]
+            validators: [Validators.Required(), ValidatorsHelper.HasNoInvalidChars]
         );
         var credential = await _mediator.Send(
             new GetSMBCredentialQuery(credentialsProviderConfiguration, server, share),
@@ -75,7 +76,10 @@ public class AddSMBCredentialStep : IWizardStep<AddSMBCredentialStepParameters>
 
         var smbCredential = new SMBCredential(server, share, username, password);
         await _mediator.Send(
-            new AddSMBCredentialCommand(credentialsProviderConfiguration, smbCredential),
+            new AddCredentialCommand(
+                credentialsProviderConfiguration,
+                smbCredential.ToCredentialEntry()
+            ),
             cancellationToken
         );
 

@@ -33,4 +33,34 @@ public static class ValidatorsHelper
 
         return DirectoryExists(value);
     }
+
+    public static ValidationResult? HasNoInvalidChars(object? value)
+    {
+        if (value is string strValue)
+        {
+            var invalidChars = Path.GetInvalidPathChars();
+            if (strValue.IndexOfAny(invalidChars) > -1)
+            {
+                return new ValidationResult("Path contains invalid characters.");
+            }
+        }
+
+        return ValidationResult.Success;
+    }
+
+    public static ValidationResult? IPAddressOrHostname(object? value)
+    {
+        if (value is string strValue)
+        {
+            if (
+                System.Net.IPAddress.TryParse(strValue, out _)
+                || Uri.CheckHostName(strValue) != UriHostNameType.Unknown
+            )
+            {
+                return ValidationResult.Success;
+            }
+        }
+
+        return new ValidationResult("Value is not a valid IP address or hostname.");
+    }
 }

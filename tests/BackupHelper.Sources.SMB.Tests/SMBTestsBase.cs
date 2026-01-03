@@ -1,4 +1,6 @@
 ﻿using BackupHelper.Abstractions;
+using BackupHelper.Abstractions.Credentials;
+using BackupHelper.Connectors.SMB;
 using BackupHelper.Tests.Shared;
 using Microsoft.Extensions.Configuration;
 
@@ -17,12 +19,13 @@ public abstract class SMBTestsBase : TestsBase
         base.AddCredentials(credentialsProvider, configuration);
 
         SMBTestConfigurationProvider = new SMBTestConfigurationProvider(configuration);
-        var credential = new CredentialEntry(
-            SMBTestConfigurationProvider.SharePath,
+        var credentialEntry = new SMBCredential(
+            SMBTestConfigurationProvider.ServerAddress,
+            SMBTestConfigurationProvider.ShareName,
             SMBTestConfigurationProvider.Username,
             SMBTestConfigurationProvider.Password
-        );
-        credentialsProvider.SetCredential(credential);
+        ).ToCredentialEntry();
+        credentialsProvider.SetCredential(credentialEntry);
     }
 
     [SetUp]

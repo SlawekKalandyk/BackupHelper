@@ -1,7 +1,6 @@
-﻿using SMBLibrary;
-using SMBLibrary.Client;
+﻿using SMBLibrary.Client;
 
-namespace BackupHelper.Sources.SMB.IO;
+namespace BackupHelper.Connectors.SMB.IO;
 
 public abstract class SMBIOComponentBase : IDisposable
 {

@@ -1,9 +1,8 @@
-﻿using System.Diagnostics;
-using SMBLibrary;
+﻿using SMBLibrary;
 using SMBLibrary.Client;
 using FileAttributes = SMBLibrary.FileAttributes;
 
-namespace BackupHelper.Sources.SMB.IO;
+namespace BackupHelper.Connectors.SMB.IO;
 
 public class SMBDirectory : SMBIOComponentBase
 {

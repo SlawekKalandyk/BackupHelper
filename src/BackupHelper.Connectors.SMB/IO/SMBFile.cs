@@ -2,7 +2,7 @@
 using SMBLibrary.Client;
 using FileAttributes = SMBLibrary.FileAttributes;
 
-namespace BackupHelper.Sources.SMB.IO;
+namespace BackupHelper.Connectors.SMB.IO;
 
 public class SMBFile : SMBIOComponentBase
 {

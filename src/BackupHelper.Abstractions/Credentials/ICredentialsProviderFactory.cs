@@ -1,4 +1,4 @@
-﻿namespace BackupHelper.Abstractions;
+﻿namespace BackupHelper.Abstractions.Credentials;
 
 public interface ICredentialsProviderFactory
 {
