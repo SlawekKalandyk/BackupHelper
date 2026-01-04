@@ -1,11 +1,16 @@
 ﻿using BackupHelper.Abstractions;
 using BackupHelper.Abstractions.Credentials;
+using BackupHelper.Connectors.Azure;
 using BackupHelper.Connectors.SMB;
 using BackupHelper.Core.BackupZipping;
 using BackupHelper.Core.Credentials;
 using BackupHelper.Core.FileZipping;
+using BackupHelper.Core.Sinks;
 using BackupHelper.Core.Sources;
 using BackupHelper.Core.Utilities;
+using BackupHelper.Sinks.Abstractions;
+using BackupHelper.Sinks.Azure;
+using BackupHelper.Sinks.FileSystem;
 using BackupHelper.Sources.Abstractions;
 using BackupHelper.Sources.FileSystem;
 using BackupHelper.Sources.FileSystem.FileInUseSource;
@@ -23,6 +28,7 @@ public static class ConfigureServices
     )
     {
         services.AddSources();
+        services.AddSinks();
         services.AddCredentialFactories();
         services.AddSingleton<IDateTimeProvider, DateTimeProvider>();
         services.AddSingleton<IBackupPlanZipper, BackupPlanZipper>();
@@ -51,13 +57,31 @@ public static class ConfigureServices
 
     private static IServiceCollection AddCredentialFactories(this IServiceCollection services)
     {
-        services.AddSingleton<ICredentialHandler, SmbCredentialHandler>(serviceProvider =>
-            (SmbCredentialHandler)
+        services.AddSingleton<ICredentialHandler, SMBCredentialHandler>(serviceProvider =>
+            (SMBCredentialHandler)
                 serviceProvider.GetRequiredService<ICredentialHandler<SMBCredential>>()
         );
-        services.AddSingleton<ICredentialHandler<SMBCredential>, SmbCredentialHandler>();
+        services.AddSingleton<ICredentialHandler<SMBCredential>, SMBCredentialHandler>();
+
+        services.AddSingleton<ICredentialHandler, AzureBlobCredentialHandler>(serviceProvider =>
+            (AzureBlobCredentialHandler)
+                serviceProvider.GetRequiredService<ICredentialHandler<AzureBlobCredential>>()
+        );
+        services.AddSingleton<
+            ICredentialHandler<AzureBlobCredential>,
+            AzureBlobCredentialHandler
+        >();
 
         services.AddSingleton<CredentialHandlerRegistry>();
+        return services;
+    }
+
+    private static IServiceCollection AddSinks(this IServiceCollection services)
+    {
+        services.AddSingleton<ISinkManager, SinkManager>();
+        services.AddSingleton<ISinkFactory, AzureBlobStorageSinkFactory>();
+        services.AddSingleton<ISinkFactory, FileSystemSinkFactory>();
+
         return services;
     }
 }

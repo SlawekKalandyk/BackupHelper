@@ -1,6 +1,6 @@
 ﻿using Sharprompt;
 
-namespace BackupHelper.ConsoleApp.Wizard.Credentials;
+namespace BackupHelper.ConsoleApp.Wizard.Credentials.CredentialProfiles;
 
 public record ManageCredentialProfilesStepParameters : IWizardParameters;
 

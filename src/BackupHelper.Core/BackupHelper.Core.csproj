@@ -18,6 +18,7 @@
   <ItemGroup>
     <ProjectReference Include="..\BackupHelper.Abstractions\BackupHelper.Abstractions.csproj" />
     <ProjectReference Include="..\BackupHelper.Sinks.Abstractions\BackupHelper.Sinks.Abstractions.csproj" />
+    <ProjectReference Include="..\BackupHelper.Sinks.Azure\BackupHelper.Sinks.Azure.csproj" />
     <ProjectReference Include="..\BackupHelper.Sinks.FileSystem\BackupHelper.Sinks.FileSystem.csproj" />
     <ProjectReference Include="..\BackupHelper.Sources.Abstractions\BackupHelper.Sources.Abstractions.csproj" />
     <ProjectReference Include="..\BackupHelper.Sources.FileSystem\BackupHelper.Sources.FileSystem.csproj" />

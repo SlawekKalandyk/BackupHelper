@@ -2,6 +2,5 @@
 
 public interface ISinkDestination
 {
-    string Name { get; }
-    ISink CreateSink();
+    string Kind { get; }
 }

@@ -2,6 +2,7 @@
 using BackupHelper.Abstractions.Credentials;
 using BackupHelper.Api.Features.Credentials;
 using BackupHelper.Api.Features.Credentials.CredentialProfiles;
+using BackupHelper.ConsoleApp.Wizard.Credentials.CredentialProfiles;
 using BackupHelper.Core.Credentials;
 using MediatR;
 using Sharprompt;
@@ -75,7 +76,7 @@ public class DeleteCredentialStep : IWizardStep<DeleteCredentialStepParameters>
             new DeleteCredentialCommand(credentialsProviderConfiguration, credentialToDelete),
             cancellationToken
         );
-        Console.WriteLine("SMB credential deleted successfully!");
+        Console.WriteLine("Credential deleted successfully!");
 
         var credentialProfile = await _mediator.Send(
             new GetCredentialProfileQuery(

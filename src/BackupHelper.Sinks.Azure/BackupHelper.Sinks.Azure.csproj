@@ -5,6 +5,7 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
   <ItemGroup>
+    <ProjectReference Include="..\BackupHelper.Connectors.Azure\BackupHelper.Connectors.Azure.csproj" />
     <ProjectReference Include="..\BackupHelper.Sinks.Abstractions\BackupHelper.Sinks.Abstractions.csproj" />
   </ItemGroup>
 </Project>

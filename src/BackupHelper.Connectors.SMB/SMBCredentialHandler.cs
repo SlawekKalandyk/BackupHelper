@@ -3,16 +3,16 @@ using Microsoft.Extensions.Logging;
 
 namespace BackupHelper.Connectors.SMB;
 
-public class SmbCredentialHandler : CredentialHandlerBase<SMBCredential>
+public class SMBCredentialHandler : CredentialHandlerBase<SMBCredential>
 {
-    private readonly ILogger<SmbCredentialHandler> _logger;
+    private readonly ILogger<SMBCredentialHandler> _logger;
 
-    public SmbCredentialHandler(ILogger<SmbCredentialHandler> logger)
+    public SMBCredentialHandler(ILogger<SMBCredentialHandler> logger)
     {
         _logger = logger;
     }
 
-    public override string Kind => SMBCredential.CredentialType;
+    public override string Kind => SMBCredential.CredentialKind;
 
     protected override SMBCredential FromCredentialEntryCore(
         CredentialEntry entry,

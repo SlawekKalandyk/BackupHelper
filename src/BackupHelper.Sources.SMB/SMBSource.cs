@@ -1,5 +1,4 @@
-﻿using BackupHelper.Abstractions;
-using BackupHelper.Abstractions.Credentials;
+﻿using BackupHelper.Abstractions.Credentials;
 using BackupHelper.Abstractions.ResourcePooling;
 using BackupHelper.Connectors.SMB;
 using BackupHelper.Connectors.SMB.IO;

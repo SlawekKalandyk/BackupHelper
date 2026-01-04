@@ -2,7 +2,7 @@
 
 namespace BackupHelper.Sinks.FileSystem;
 
-internal class FileSystemSink : SinkBase<FileSystemSinkDestination>
+public class FileSystemSink : SinkBase<FileSystemSinkDestination>
 {
     public FileSystemSink(FileSystemSinkDestination destination)
         : base(destination) { }

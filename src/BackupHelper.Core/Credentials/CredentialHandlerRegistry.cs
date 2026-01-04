@@ -58,6 +58,24 @@ public class CredentialHandlerRegistry
         return false;
     }
 
+    public IReadOnlyCollection<CredentialEntry> GetAllCredentialEntriesOfType<T>(
+        IReadOnlyCollection<CredentialEntry> entries
+    )
+        where T : ICredential
+    {
+        var entriesOfType = new List<CredentialEntry>();
+
+        foreach (var entry in entries)
+        {
+            if (TryGetCredentialFromEntry<T>(entry, out var credential) && credential != null)
+            {
+                entriesOfType.Add(entry);
+            }
+        }
+
+        return entriesOfType;
+    }
+
     public string GetKindFor<T>()
         where T : ICredential
     {

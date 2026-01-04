@@ -1,32 +1,34 @@
 ﻿using BackupHelper.Abstractions;
 using BackupHelper.Api.Features.Credentials;
+using BackupHelper.Api.Features.Credentials.Azure;
 using BackupHelper.Api.Features.Credentials.CredentialProfiles;
-using BackupHelper.Api.Features.Credentials.SMB;
-using BackupHelper.Connectors.SMB;
-using BackupHelper.ConsoleApp.Utilities;
+using BackupHelper.Connectors.Azure;
 using BackupHelper.ConsoleApp.Wizard.Credentials.CredentialProfiles;
 using BackupHelper.Core.Credentials;
 using MediatR;
 using Sharprompt;
 
-namespace BackupHelper.ConsoleApp.Wizard.Credentials.SMB;
+namespace BackupHelper.ConsoleApp.Wizard.Credentials.Azure;
 
-public record AddSMBCredentialStepParameters(CredentialProfile CredentialProfile)
+public record AddAzureBlobCredentialStepParameters(CredentialProfile CredentialProfile)
     : IWizardParameters;
 
-public class AddSMBCredentialStep : IWizardStep<AddSMBCredentialStepParameters>
+public class AddAzureBlobCredentialStep : IWizardStep<AddAzureBlobCredentialStepParameters>
 {
     private readonly IMediator _mediator;
     private readonly IApplicationDataHandler _applicationDataHandler;
 
-    public AddSMBCredentialStep(IMediator mediator, IApplicationDataHandler applicationDataHandler)
+    public AddAzureBlobCredentialStep(
+        IMediator mediator,
+        IApplicationDataHandler applicationDataHandler
+    )
     {
         _mediator = mediator;
         _applicationDataHandler = applicationDataHandler;
     }
 
     public async Task<IWizardParameters?> Handle(
-        AddSMBCredentialStepParameters request,
+        AddAzureBlobCredentialStepParameters request,
         CancellationToken cancellationToken
     )
     {
@@ -34,34 +36,31 @@ public class AddSMBCredentialStep : IWizardStep<AddSMBCredentialStepParameters>
             _applicationDataHandler.GetCredentialProfilesPath(),
             request.CredentialProfile.Name
         );
+
         var credentialsProviderConfiguration = new KeePassCredentialsProviderConfiguration(
             keePassDbLocation,
             request.CredentialProfile.Password
         );
 
-        var server = Prompt.Input<string>(
-            "Enter SMB server address",
-            validators: [Validators.Required(), ValidatorsHelper.IPAddressOrHostname]
+        var accountName = Prompt.Input<string>(
+            "Enter Azure Storage Account Name",
+            validators: [Validators.Required()]
         );
-        var share = Prompt.Input<string>(
-            "Enter SMB share name",
-            validators: [Validators.Required(), ValidatorsHelper.HasNoInvalidChars]
-        );
+
         var credentialEntry = await _mediator.Send(
-            new GetSMBCredentialQuery(credentialsProviderConfiguration, server, share),
+            new GetAzureBlobCredentialQuery(credentialsProviderConfiguration, accountName),
             cancellationToken
         );
 
         if (credentialEntry != null)
         {
-            var title = SMBCredentialHelper.GetSMBCredentialTitle(server, share);
             var editCredential = Prompt.Confirm(
-                $"SMB credential for {title} exists. Do you want to edit it?"
+                $"Azure Blob credential for account '{accountName}' exists. Do you want to edit it?"
             );
 
             if (editCredential)
             {
-                return new EditSMBCredentialStepParameters(
+                return new EditAzureBlobCredentialStepParameters(
                     request.CredentialProfile,
                     credentialEntry
                 );
@@ -72,13 +71,13 @@ public class AddSMBCredentialStep : IWizardStep<AddSMBCredentialStepParameters>
             }
         }
 
-        var username = Prompt.Input<string>(
-            "Enter SMB username",
+        var sharedAccessSignature = Prompt.Input<string>(
+            "Enter Azure Storage Account Shared Access Signature (SAS)",
             validators: [Validators.Required()]
         );
-        var password = Prompt.Password("Enter SMB password", validators: [Validators.Required()]);
 
-        var credential = new SMBCredential(server, share, username, password);
+        var credential = new AzureBlobCredential(accountName, sharedAccessSignature);
+
         await _mediator.Send(
             new AddCredentialCommand(
                 credentialsProviderConfiguration,
@@ -87,11 +86,11 @@ public class AddSMBCredentialStep : IWizardStep<AddSMBCredentialStepParameters>
             cancellationToken
         );
 
-        Console.WriteLine("SMB credential added successfully.");
-        var addAnother = Prompt.Confirm("Do you want to add another SMB credential?");
+        Console.WriteLine("Azure Blob credential added successfully!");
+        var addAnother = Prompt.Confirm("Do you want to add another Azure Blob credential?");
 
         return addAnother
-            ? new AddSMBCredentialStepParameters(request.CredentialProfile)
+            ? new AddAzureBlobCredentialStepParameters(request.CredentialProfile)
             : new EditCredentialProfileStepParameters(request.CredentialProfile);
     }
 }

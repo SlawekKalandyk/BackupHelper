@@ -1,10 +1,11 @@
 ﻿using BackupHelper.Abstractions;
-using BackupHelper.Api.Features.Credentials;
 using BackupHelper.Api.Features.Credentials.CredentialProfiles;
+using BackupHelper.ConsoleApp.Wizard.Credentials.Azure;
+using BackupHelper.ConsoleApp.Wizard.Credentials.SMB;
 using MediatR;
 using Sharprompt;
 
-namespace BackupHelper.ConsoleApp.Wizard.Credentials;
+namespace BackupHelper.ConsoleApp.Wizard.Credentials.CredentialProfiles;
 
 public record EditCredentialProfileStepParameters(CredentialProfile? CredentialProfile = null)
     : IWizardParameters;
@@ -70,7 +71,15 @@ public class EditCredentialProfileStep : IWizardStep<EditCredentialProfileStepPa
 
         var choice = Prompt.Select(
             "Select property to edit",
-            ["Name", "Add Credential", "Edit Credential", "Delete Credential", "Cancel"]
+            [
+                "Name",
+                "Add Azure Blob Credential",
+                "Edit Azure Blob Credential",
+                "Add SMB Credential",
+                "Edit SMB Credential",
+                "Delete Credential",
+                "Cancel",
+            ]
         );
 
         if (choice == "Cancel")
@@ -83,12 +92,22 @@ public class EditCredentialProfileStep : IWizardStep<EditCredentialProfileStepPa
             return new UpdateCredentialProfileNameStepParameters(credentialProfile);
         }
 
-        if (choice == "Add Credential")
+        if (choice == "Add Azure Blob Credential")
+        {
+            return new AddAzureBlobCredentialStepParameters(credentialProfile);
+        }
+
+        if (choice == "Edit Azure Blob Credential")
+        {
+            return new EditAzureBlobCredentialStepParameters(credentialProfile);
+        }
+
+        if (choice == "Add SMB Credential")
         {
             return new AddSMBCredentialStepParameters(credentialProfile);
         }
 
-        if (choice == "Edit Credential")
+        if (choice == "Edit SMB Credential")
         {
             return new EditSMBCredentialStepParameters(credentialProfile);
         }

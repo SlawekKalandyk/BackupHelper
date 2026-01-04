@@ -1,19 +1,51 @@
-﻿using BackupHelper.Sinks.Abstractions;
+﻿using BackupHelper.Connectors.Azure;
+using BackupHelper.Sinks.Abstractions;
 
 namespace BackupHelper.Sinks.Azure;
 
-internal class AzureBlobStorageSink : SinkBase<AzureBlobStorageSinkDestination>
+public class AzureBlobStorageSink : SinkBase<AzureBlobStorageSinkDestination>
 {
-    public AzureBlobStorageSink(AzureBlobStorageSinkDestination destination)
-        : base(destination) { }
+    private readonly AzureBlobStorage _storage;
 
-    public override string Description { get; }
+    public AzureBlobStorageSink(
+        AzureBlobStorageSinkDestination destination,
+        AzureBlobCredential credential
+    )
+        : base(destination)
+    {
+        _storage = new AzureBlobStorage(credential);
+    }
 
-    public override Task UploadAsync(
+    public override string Description =>
+        "Azure Blob Storage Sink to "
+        + $"{TypedDestination.AccountName}, Container: {TypedDestination.Container}";
+
+    public override async Task UploadAsync(
         string sourceFilePath,
         CancellationToken cancellationToken = default
-    ) => throw new NotImplementedException();
+    )
+    {
+        await using var fileStream = File.OpenRead(sourceFilePath);
+        await _storage.UploadBlobAsync(
+            TypedDestination.Container,
+            Path.GetFileName(sourceFilePath),
+            fileStream,
+            cancellationToken
+        );
+    }
 
-    public override Task<bool> IsAvailableAsync(CancellationToken cancellationToken = default) =>
-        throw new NotImplementedException();
+    public override async Task<bool> IsAvailableAsync(CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            return await _storage.IsContainerAvailableAsync(
+                TypedDestination.Container,
+                cancellationToken
+            );
+        }
+        catch
+        {
+            return false;
+        }
+    }
 }

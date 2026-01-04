@@ -2,16 +2,16 @@
 
 namespace BackupHelper.Tests.Shared;
 
-public record TestCredential(string Title, string Username, string Password) : ICredential
+public record TestCredential(string Title, string Username, string Password) : CredentialBase
 {
     public const string CredentialType = "test";
-    public string Kind => CredentialType;
+    public override string Kind => CredentialType;
 
-    public CredentialEntry ToCredentialEntry()
-    {
-        var title = CredentialHelper.ConstructCredentialTitle(CredentialType, Title);
-        return new CredentialEntry(title, Username, Password);
-    }
+    protected override string GetLocalTitle() => Title;
+
+    protected override string GetUsername() => Username;
+
+    protected override string GetPassword() => Password;
 
     public static CredentialEntry CreateCredentialEntry(
         string title,

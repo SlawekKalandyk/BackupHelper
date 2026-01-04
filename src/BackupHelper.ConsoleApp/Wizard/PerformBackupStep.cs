@@ -1,5 +1,6 @@
 ﻿using BackupHelper.Core.BackupZipping;
 using BackupHelper.Core.Features;
+using BackupHelper.Core.Sinks;
 using BackupHelper.Sinks.Abstractions;
 using MediatR;
 using Microsoft.Extensions.Logging;
@@ -39,11 +40,17 @@ public class PerformBackupStep : IWizardStep<PerformBackupStepParameters>
 {
     private readonly IMediator _mediator;
     private readonly ILoggerFactory _loggerFactory;
+    private readonly ISinkManager _sinkManager;
 
-    public PerformBackupStep(IMediator mediator, ILoggerFactory loggerFactory)
+    public PerformBackupStep(
+        IMediator mediator,
+        ILoggerFactory loggerFactory,
+        ISinkManager sinkManager
+    )
     {
         _mediator = mediator;
         _loggerFactory = loggerFactory;
+        _sinkManager = sinkManager;
     }
 
     public async Task<IWizardParameters?> Handle(
@@ -147,7 +154,9 @@ public class PerformBackupStep : IWizardStep<PerformBackupStepParameters>
 
     private IReadOnlyCollection<ISink> GetBackupSinks(BackupPlan backupPlan)
     {
-        return backupPlan.Sinks.Select(sinkDestination => sinkDestination.CreateSink()).ToList();
+        return backupPlan
+            .Sinks.Select(sinkDestination => _sinkManager.GetSink(sinkDestination))
+            .ToList();
     }
 
     private async Task UploadToSink(ISink sink, string outputFilePath)

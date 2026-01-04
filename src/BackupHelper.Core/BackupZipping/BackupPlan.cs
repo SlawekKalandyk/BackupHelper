@@ -1,4 +1,5 @@
 ﻿using BackupHelper.Sinks.Abstractions;
+using BackupHelper.Sinks.Azure;
 using BackupHelper.Sinks.FileSystem;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
@@ -202,11 +203,13 @@ public class SinkDestinationConverter : JsonConverter<ISinkDestination>
             return null;
 
         var obj = JObject.Load(reader);
-        var name = obj["name"]?.ToString();
+        var name = obj["kind"]?.ToString();
 
         return name switch
         {
-            FileSystemSinkDestination.SinkName => obj.ToObject<FileSystemSinkDestination>(),
+            FileSystemSinkDestination.SinkKind => obj.ToObject<FileSystemSinkDestination>(),
+            AzureBlobStorageSinkDestination.SinkKind =>
+                obj.ToObject<AzureBlobStorageSinkDestination>(),
             _ => throw new JsonSerializationException($"Unknown sink type: {name}"),
         };
     }

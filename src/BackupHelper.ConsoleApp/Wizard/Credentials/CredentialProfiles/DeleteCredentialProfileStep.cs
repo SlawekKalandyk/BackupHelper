@@ -1,9 +1,8 @@
-﻿using BackupHelper.Api.Features.Credentials;
-using BackupHelper.Api.Features.Credentials.CredentialProfiles;
+﻿using BackupHelper.Api.Features.Credentials.CredentialProfiles;
 using MediatR;
 using Sharprompt;
 
-namespace BackupHelper.ConsoleApp.Wizard.Credentials;
+namespace BackupHelper.ConsoleApp.Wizard.Credentials.CredentialProfiles;
 
 public record DeleteCredentialProfileStepParameters : IWizardParameters;
 
