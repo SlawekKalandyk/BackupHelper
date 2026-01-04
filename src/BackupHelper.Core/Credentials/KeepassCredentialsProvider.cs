@@ -60,7 +60,8 @@ public class KeePassCredentialsProvider : ICredentialsProvider
         where T : ICredential
     {
         var foundEntry = _database.RootGroup.Entries.SingleOrDefault(entry =>
-            entry.Strings.ReadSafe(PwDefs.TitleField) == credentialEntryTitle.ToString()
+            CredentialEntryTitle.Parse(entry.Strings.ReadSafe(PwDefs.TitleField))
+            == credentialEntryTitle
         );
 
         if (foundEntry == null)
@@ -76,8 +77,10 @@ public class KeePassCredentialsProvider : ICredentialsProvider
     public void SetCredential(CredentialEntry credentialEntry)
     {
         var title = credentialEntry.EntryTitle.ToString();
+
         var existingEntry = _database.RootGroup.Entries.SingleOrDefault(entry =>
-            entry.Strings.ReadSafe(PwDefs.TitleField) == title
+            CredentialEntryTitle.Parse(entry.Strings.ReadSafe(PwDefs.TitleField))
+            == credentialEntry.EntryTitle
         );
 
         if (existingEntry != null)
@@ -102,13 +105,14 @@ public class KeePassCredentialsProvider : ICredentialsProvider
 
     public void UpdateCredential(CredentialEntry credentialEntry)
     {
-        var title = credentialEntry.EntryTitle.ToString();
+        var title = credentialEntry.EntryTitle;
+
         var existingEntry = _database.RootGroup.Entries.SingleOrDefault(entry =>
-            entry.Strings.ReadSafe(PwDefs.TitleField) == title
+            CredentialEntryTitle.Parse(entry.Strings.ReadSafe(PwDefs.TitleField)) == title
         );
 
         if (existingEntry == null)
-            throw new CredentialNotFound(title);
+            throw new CredentialNotFound(title.ToString());
 
         existingEntry.Strings.Set(
             PwDefs.UserNameField,
@@ -126,14 +130,14 @@ public class KeePassCredentialsProvider : ICredentialsProvider
 
     public void DeleteCredential(CredentialEntry credentialEntry)
     {
-        var title = credentialEntry.EntryTitle.ToString();
+        var title = credentialEntry.EntryTitle;
 
         var existingEntry = _database.RootGroup.Entries.SingleOrDefault(entry =>
-            entry.Strings.ReadSafe(PwDefs.TitleField) == title
+            CredentialEntryTitle.Parse(entry.Strings.ReadSafe(PwDefs.TitleField)) == title
         );
 
         if (existingEntry == null)
-            throw new CredentialNotFound(title);
+            throw new CredentialNotFound(title.ToString());
 
         _database.RootGroup.Entries.Remove(existingEntry);
         _database.Save(_statusLogger);

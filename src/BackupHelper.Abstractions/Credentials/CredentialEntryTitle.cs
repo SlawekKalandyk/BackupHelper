@@ -6,6 +6,7 @@ namespace BackupHelper.Abstractions.Credentials;
 public sealed class CredentialEntryTitle : IEquatable<CredentialEntryTitle>
 {
     private static readonly StringComparer _keyComparer = StringComparer.OrdinalIgnoreCase;
+    private static readonly StringComparison _keyComparison = StringComparison.OrdinalIgnoreCase;
     private readonly int _hashCode;
 
     public static CredentialTitleBuilder Builder => new();
@@ -133,7 +134,7 @@ public sealed class CredentialEntryTitle : IEquatable<CredentialEntryTitle>
 
     public class CredentialTitleBuilder
     {
-        private readonly Dictionary<string, string> _pairs = new(StringComparer.OrdinalIgnoreCase);
+        private readonly Dictionary<string, string> _pairs = new(_keyComparer);
 
         public CredentialTitleBuilder Add(string key, string value)
         {
