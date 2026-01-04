@@ -49,15 +49,12 @@ public class SMBConnectionPool : ResourcePoolBase<SMBConnection, SMBShareInfo>
 
     private SMBCredential GetCredential(SMBShareInfo shareInfo)
     {
-        var credentialName = SMBCredentialHelper.GetSMBCredentialTitle(
-            shareInfo.ServerIPAddress.ToString(),
-            shareInfo.ShareName
-        );
-        var credential = _credentialsProvider.GetCredential<SMBCredential>(credentialName);
+        var credentialTitle = new SMBCredentialTitle(shareInfo);
+        var credential = _credentialsProvider.GetCredential<SMBCredential>(credentialTitle);
 
         if (credential == null)
             throw new InvalidOperationException(
-                $"No credentials found for SMB share '{credentialName}'."
+                $"No credentials found for SMB share '{credentialTitle}'."
             );
 
         return new SMBCredential(

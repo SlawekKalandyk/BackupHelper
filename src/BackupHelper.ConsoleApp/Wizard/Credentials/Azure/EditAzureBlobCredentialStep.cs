@@ -58,7 +58,7 @@ public class EditAzureBlobCredentialStep : IWizardStep<EditAzureBlobCredentialSt
         if (credentialEntryToEdit == null)
         {
             var credentialDictionary = credentialEntries.ToDictionary(
-                entry => entry.GetLocalTitle(),
+                entry => entry.EntryTitle,
                 entry => entry
             );
 
@@ -92,13 +92,14 @@ public class EditAzureBlobCredentialStep : IWizardStep<EditAzureBlobCredentialSt
             credentialsProviderConfiguration
         );
 
-        var localTitle = credentialEntryToEdit.GetLocalTitle();
-        var existingCredential = credentialsProvider.GetCredential<AzureBlobCredential>(localTitle);
+        var existingCredential = credentialsProvider.GetCredential<AzureBlobCredential>(
+            credentialEntryToEdit
+        );
 
         if (existingCredential == null)
         {
             Console.WriteLine(
-                $"No existing Azure Blob credentials found for {credentialEntryToEdit.Title}. Please create them first."
+                $"No existing Azure Blob credentials found for {credentialEntryToEdit.EntryTitle}. Please create them first."
             );
             return new EditCredentialProfileStepParameters(request.CredentialProfile);
         }

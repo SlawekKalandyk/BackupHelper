@@ -20,11 +20,11 @@ public class UpdateCredentialCommandHandler : IRequestHandler<UpdateCredentialCo
 
     public Task Handle(UpdateCredentialCommand request, CancellationToken cancellationToken)
     {
-        if (request.ExistingCredentialEntry.Title != request.NewCredentialEntry.Title)
+        if (request.ExistingCredentialEntry.EntryTitle != request.NewCredentialEntry.EntryTitle)
         {
             throw new InvalidOperationException(
                 $"Cannot update credential: provided titles are different. "
-                    + $"Existing: '{request.ExistingCredentialEntry.Title}', New: '{request.NewCredentialEntry.Title}'."
+                    + $"Existing: '{request.ExistingCredentialEntry.EntryTitle}', New: '{request.NewCredentialEntry.EntryTitle}'."
             );
         }
 
@@ -33,13 +33,13 @@ public class UpdateCredentialCommandHandler : IRequestHandler<UpdateCredentialCo
         );
         var credentials = credentialsProvider.GetCredentials();
         var credential = credentials.FirstOrDefault(c =>
-            c.Title == request.NewCredentialEntry.Title
+            c.EntryTitle == request.NewCredentialEntry.EntryTitle
         );
 
         if (credential == null)
         {
             throw new InvalidOperationException(
-                $"Credential with title '{request.NewCredentialEntry.Title}' does not exist and cannot be updated."
+                $"Credential with title '{request.NewCredentialEntry.EntryTitle}' does not exist and cannot be updated."
             );
         }
 

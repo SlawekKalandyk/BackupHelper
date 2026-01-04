@@ -1,21 +1,15 @@
 ﻿namespace BackupHelper.Abstractions.Credentials;
 
-public record CredentialEntry(string Title, string Username, string Password)
-    : IDisplayableCredentialEntry
+public sealed record CredentialEntry(
+    CredentialEntryTitle EntryTitle,
+    string Username,
+    string Password
+) : IDisplayableCredentialEntry
 {
-    public string ToDisplayString() => $"- {Title}; {Username}";
-
-    public string GetLocalTitle()
-    {
-        var (_, localTitle) = CredentialHelper.DeconstructCredentialTitle(Title);
-        return localTitle;
-    }
+    public string ToDisplayString() => $"- {EntryTitle}; {Username}";
 }
 
 public interface IDisplayableCredentialEntry
 {
-    string Title { get; }
-    string Username { get; }
-
     string ToDisplayString();
 }

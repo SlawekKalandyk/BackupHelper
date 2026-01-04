@@ -14,13 +14,10 @@ public class SMBCredentialHandler : CredentialHandlerBase<SMBCredential>
 
     public override string Kind => SMBCredential.CredentialKind;
 
-    protected override SMBCredential FromCredentialEntryCore(
-        CredentialEntry entry,
-        string localTitle
-    )
+    public override SMBCredential FromCredentialEntry(CredentialEntry entry)
     {
-        var (server, shareName) = SMBCredentialHelper.DeconstructSMBCredentialTitle(localTitle);
-
+        var server = entry.EntryTitle.Pairs[nameof(SMBCredential.Server)];
+        var shareName = entry.EntryTitle.Pairs[nameof(SMBCredential.ShareName)];
         return new SMBCredential(
             Server: server,
             ShareName: shareName,

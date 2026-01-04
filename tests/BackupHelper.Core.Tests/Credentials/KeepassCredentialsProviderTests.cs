@@ -45,7 +45,7 @@ public class KeePassCredentialsProviderTests : TestsBase
         provider.SetCredential(expectedCredential);
 
         var actualCredential = provider
-            .GetCredential<TestCredential>(expectedCredential.GetLocalTitle())
+            .GetCredential<TestCredential>(expectedCredential.EntryTitle)
             ?.ToCredentialEntry();
 
         Assert.That(actualCredential, Is.EqualTo(expectedCredential));
@@ -101,7 +101,7 @@ public class KeePassCredentialsProviderTests : TestsBase
         )
         {
             var actualCredential = provider
-                .GetCredential<TestCredential>(expectedCredential.GetLocalTitle())
+                .GetCredential<TestCredential>(expectedCredential.EntryTitle)
                 ?.ToCredentialEntry();
 
             Assert.That(actualCredential, Is.EqualTo(expectedCredential));

@@ -30,7 +30,7 @@ public class GetAzureBlobCredentialQueryHandler
             request.CredentialsProviderConfiguration
         );
         var credential = credentialsProvider.GetCredential<AzureBlobCredential>(
-            request.AccountName
+            new AzureBlobCredentialTitle(request.AccountName)
         );
         return Task.FromResult(credential?.ToCredentialEntry());
     }

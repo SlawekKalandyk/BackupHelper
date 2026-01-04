@@ -6,7 +6,7 @@ public record NullCredentialsProviderConfiguration : ICredentialsProviderConfigu
 
 public class NullCredentialsProvider : ICredentialsProvider
 {
-    public T? GetCredential<T>(string credentialLocalTitle)
+    public T? GetCredential<T>(CredentialEntryTitle credentialEntryTitle)
         where T : ICredential => default;
 
     public void SetCredential(CredentialEntry credentialEntry)

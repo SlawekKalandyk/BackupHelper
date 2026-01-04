@@ -27,11 +27,8 @@ public class GetSMBCredentialQueryHandler : IRequestHandler<GetSMBCredentialQuer
         using var credentialsProvider = _credentialsProviderFactory.Create(
             request.CredentialsProviderConfiguration
         );
-        var credentialName = SMBCredentialHelper.GetSMBCredentialTitle(
-            request.Server,
-            request.ShareName
-        );
-        var credential = credentialsProvider.GetCredential<SMBCredential>(credentialName);
+        var credentialTitle = new SMBCredentialTitle(request.Server, request.ShareName);
+        var credential = credentialsProvider.GetCredential<SMBCredential>(credentialTitle);
         return Task.FromResult(credential?.ToCredentialEntry());
     }
 }

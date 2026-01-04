@@ -2,8 +2,7 @@
 
 public interface ICredential
 {
-    /// <summary>Credential kind identifier (e.g. "smb", "azure").</summary>
-    string Kind { get; }
+    ICredentialTitle CredentialTitle { get; }
 
     /// <summary>
     /// Converts the credential to a CredentialEntry for storage or transmission.
@@ -11,11 +10,16 @@ public interface ICredential
     CredentialEntry ToCredentialEntry();
 }
 
-public abstract record CredentialBase : ICredential
+public interface ICredential<TTitle> : ICredential
+    where TTitle : ICredentialTitle
 {
-    public abstract string Kind { get; }
+    new TTitle CredentialTitle { get; }
+}
 
-    protected abstract string GetLocalTitle();
+public abstract record CredentialBase<TTitle>(TTitle CredentialTitle) : ICredential<TTitle>
+    where TTitle : ICredentialTitle
+{
+    ICredentialTitle ICredential.CredentialTitle => CredentialTitle;
 
     protected abstract string GetUsername();
 
@@ -23,10 +27,10 @@ public abstract record CredentialBase : ICredential
 
     public CredentialEntry ToCredentialEntry()
     {
-        return new CredentialEntry(FullTitle, GetUsername(), GetPassword());
+        return new CredentialEntry(
+            CredentialTitle.ToCredentialEntryTitle(),
+            GetUsername(),
+            GetPassword()
+        );
     }
-
-    private string FullTitle => ComposeTitle(Kind, GetLocalTitle());
-
-    private string ComposeTitle(string name, string localTitle) => $"{name}|{localTitle}";
 }

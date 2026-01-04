@@ -71,7 +71,7 @@ public class AddAzureBlobCredentialStep : IWizardStep<AddAzureBlobCredentialStep
             }
         }
 
-        var sharedAccessSignature = Prompt.Input<string>(
+        var sharedAccessSignature = Prompt.Password(
             "Enter Azure Storage Account Shared Access Signature (SAS)",
             validators: [Validators.Required()]
         );

@@ -19,7 +19,7 @@ public class AzureBlobStorageSinkFactory
     public override AzureBlobStorageSink CreateSink(AzureBlobStorageSinkDestination destination)
     {
         var credential = _credentialsProvider.GetCredential<AzureBlobCredential>(
-            destination.AccountName
+            new AzureBlobCredentialTitle(destination.AccountName)
         );
 
         if (credential == null)

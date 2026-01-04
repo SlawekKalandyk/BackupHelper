@@ -58,7 +58,7 @@ public class EditSMBCredentialStep : IWizardStep<EditSMBCredentialStepParameters
         if (credentialEntryToEdit == null)
         {
             var credentialDictionary = credentialEntries.ToDictionary(
-                entry => entry.GetLocalTitle(),
+                entry => entry.EntryTitle,
                 entry => entry
             );
             var credentialTitle = Prompt.Select(
@@ -89,13 +89,15 @@ public class EditSMBCredentialStep : IWizardStep<EditSMBCredentialStepParameters
         using var credentialsProvider = _credentialsProviderFactory.Create(
             credentialsProviderConfiguration
         );
-        var localTitle = credentialEntryToEdit.GetLocalTitle();
-        var existingCredential = credentialsProvider.GetCredential<SMBCredential>(localTitle);
+
+        var existingCredential = credentialsProvider.GetCredential<SMBCredential>(
+            credentialEntryToEdit
+        );
 
         if (existingCredential == null)
         {
             Console.WriteLine(
-                $"No existing SMB credentials found for {credentialEntryToEdit.Title}. Please create them first."
+                $"No existing SMB credentials found for {credentialEntryToEdit.EntryTitle}. Please create them first."
             );
             return new EditCredentialProfileStepParameters(request.CredentialProfile);
         }

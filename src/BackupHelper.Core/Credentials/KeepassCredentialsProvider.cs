@@ -56,16 +56,11 @@ public class KeePassCredentialsProvider : ICredentialsProvider
         }
     }
 
-    public T? GetCredential<T>(string credentialLocalTitle)
+    public T? GetCredential<T>(CredentialEntryTitle credentialEntryTitle)
         where T : ICredential
     {
-        var title = CredentialHelper.ConstructCredentialTitle(
-            _credentialHandlerRegistry.GetKindFor<T>(),
-            credentialLocalTitle
-        );
-
         var foundEntry = _database.RootGroup.Entries.SingleOrDefault(entry =>
-            entry.Strings.ReadSafe(PwDefs.TitleField) == title
+            entry.Strings.ReadSafe(PwDefs.TitleField) == credentialEntryTitle.ToString()
         );
 
         if (foundEntry == null)
@@ -73,22 +68,23 @@ public class KeePassCredentialsProvider : ICredentialsProvider
 
         var user = foundEntry.Strings.ReadSafe(PwDefs.UserNameField);
         var pass = foundEntry.Strings.ReadSafe(PwDefs.PasswordField);
-        var entry = new CredentialEntry(title, user, pass);
+        var entry = new CredentialEntry(credentialEntryTitle, user, pass);
 
         return _credentialHandlerRegistry.FromCredentialEntry<T>(entry);
     }
 
     public void SetCredential(CredentialEntry credentialEntry)
     {
+        var title = credentialEntry.EntryTitle.ToString();
         var existingEntry = _database.RootGroup.Entries.SingleOrDefault(entry =>
-            entry.Strings.ReadSafe(PwDefs.TitleField) == credentialEntry.Title
+            entry.Strings.ReadSafe(PwDefs.TitleField) == title
         );
 
         if (existingEntry != null)
-            throw new CredentialAlreadyExists(credentialEntry.Title);
+            throw new CredentialAlreadyExists(title);
 
         var entry = new PwEntry(true, true);
-        entry.Strings.Set(PwDefs.TitleField, new ProtectedString(false, credentialEntry.Title));
+        entry.Strings.Set(PwDefs.TitleField, new ProtectedString(false, title));
         entry.Strings.Set(
             PwDefs.UserNameField,
             new ProtectedString(false, credentialEntry.Username)
@@ -106,12 +102,13 @@ public class KeePassCredentialsProvider : ICredentialsProvider
 
     public void UpdateCredential(CredentialEntry credentialEntry)
     {
+        var title = credentialEntry.EntryTitle.ToString();
         var existingEntry = _database.RootGroup.Entries.SingleOrDefault(entry =>
-            entry.Strings.ReadSafe(PwDefs.TitleField) == credentialEntry.Title
+            entry.Strings.ReadSafe(PwDefs.TitleField) == title
         );
 
         if (existingEntry == null)
-            throw new CredentialNotFound(credentialEntry.Title);
+            throw new CredentialNotFound(title);
 
         existingEntry.Strings.Set(
             PwDefs.UserNameField,
@@ -129,7 +126,7 @@ public class KeePassCredentialsProvider : ICredentialsProvider
 
     public void DeleteCredential(CredentialEntry credentialEntry)
     {
-        var title = credentialEntry.Title;
+        var title = credentialEntry.EntryTitle.ToString();
 
         var existingEntry = _database.RootGroup.Entries.SingleOrDefault(entry =>
             entry.Strings.ReadSafe(PwDefs.TitleField) == title
@@ -148,7 +145,7 @@ public class KeePassCredentialsProvider : ICredentialsProvider
 
         return entries
             .Select(entry => new CredentialEntry(
-                entry.Strings.ReadSafe(PwDefs.TitleField),
+                CredentialEntryTitle.Parse(entry.Strings.ReadSafe(PwDefs.TitleField)),
                 entry.Strings.ReadSafe(PwDefs.UserNameField),
                 entry.Strings.ReadSafe(PwDefs.PasswordField)
             ))

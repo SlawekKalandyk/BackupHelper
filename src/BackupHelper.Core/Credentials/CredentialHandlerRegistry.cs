@@ -31,10 +31,8 @@ public class CredentialHandlerRegistry
         if (credential is T typed)
             return typed;
 
-        var (kind, _) = CredentialHelper.DeconstructCredentialTitle(entry.Title);
-
         throw new NotSupportedException(
-            $"Credential kind `{kind}` does not produce `{typeof(T).Name}`."
+            $"Credential kind `{entry.EntryTitle.Kind}` does not produce `{typeof(T).Name}`."
         );
     }
 
@@ -42,9 +40,8 @@ public class CredentialHandlerRegistry
         where T : ICredential
     {
         credential = default;
-        var (kind, _) = CredentialHelper.DeconstructCredentialTitle(entry.Title);
 
-        if (!_handlers.TryGetValue(kind, out var handler))
+        if (!_handlers.TryGetValue(entry.EntryTitle.Kind, out var handler))
             return false;
 
         var createdCredential = handler.FromCredentialEntry(entry);
@@ -106,7 +103,7 @@ public class CredentialHandlerRegistry
 
     private ICredentialHandler GetHandlerForEntry(CredentialEntry entry)
     {
-        var (kind, _) = CredentialHelper.DeconstructCredentialTitle(entry.Title);
+        var kind = entry.EntryTitle.Kind;
 
         return !_handlers.TryGetValue(kind, out var handler)
             ? throw new NotSupportedException(

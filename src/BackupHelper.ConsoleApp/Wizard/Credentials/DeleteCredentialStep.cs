@@ -42,7 +42,7 @@ public class DeleteCredentialStep : IWizardStep<DeleteCredentialStepParameters>
         if (credentialToDelete == null)
         {
             var credentialDictionary = request.CredentialProfile.Credentials.ToDictionary(
-                credential => credential.Title,
+                credential => credential.EntryTitle,
                 credential => credential
             );
             var credentialTitle = Prompt.Select(

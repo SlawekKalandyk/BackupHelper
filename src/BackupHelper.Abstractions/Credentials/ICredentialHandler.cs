@@ -30,13 +30,8 @@ public abstract class CredentialHandlerBase<T> : ICredentialHandler<T>
         CancellationToken cancellationToken = default
     ) => await TestConnectionAsyncCore(FromCredentialEntry(credentialEntry), cancellationToken);
 
-    public T FromCredentialEntry(CredentialEntry entry)
-    {
-        var (_, localTitle) = CredentialHelper.DeconstructCredentialTitle(entry.Title);
-        return FromCredentialEntryCore(entry, localTitle);
-    }
+    public abstract T FromCredentialEntry(CredentialEntry entry);
 
-    protected abstract T FromCredentialEntryCore(CredentialEntry entry, string localTitle);
     protected abstract Task<bool> TestConnectionAsyncCore(
         T credential,
         CancellationToken cancellationToken
