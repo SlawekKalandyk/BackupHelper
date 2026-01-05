@@ -1,10 +1,16 @@
-﻿using BackupHelper.Abstractions;
+﻿using BackupHelper.Abstractions.Credentials;
+using BackupHelper.Core.Credentials;
 
 namespace BackupHelper.Tests.Shared;
 
 public class TestCredentialsProviderFactory : ICredentialsProviderFactory
 {
-    public TestCredentialsProvider TestCredentialsProvider { get; } = new TestCredentialsProvider();
+    public TestCredentialsProvider TestCredentialsProvider { get; }
+
+    public TestCredentialsProviderFactory(CredentialHandlerRegistry credentialHandlerRegistry)
+    {
+        TestCredentialsProvider = new TestCredentialsProvider(credentialHandlerRegistry);
+    }
 
     public ICredentialsProvider Create(ICredentialsProviderConfiguration configuration) =>
         TestCredentialsProvider;
@@ -23,28 +29,42 @@ public record TestCredentialsProviderConfiguration : ICredentialsProviderConfigu
 
 public class TestCredentialsProvider : ICredentialsProvider
 {
-    private readonly Dictionary<string, CredentialEntry> _credentials = new();
+    private readonly CredentialHandlerRegistry _credentialHandlerRegistry;
+    private readonly Dictionary<CredentialEntryTitle, CredentialEntry> _credentials = new();
 
-    public CredentialEntry? GetCredential(string credentialName) =>
-        _credentials.GetValueOrDefault(credentialName);
+    public TestCredentialsProvider(CredentialHandlerRegistry credentialHandlerRegistry)
+    {
+        _credentialHandlerRegistry = credentialHandlerRegistry;
+    }
+
+    public T? GetCredential<T>(CredentialEntryTitle credentialEntryTitle)
+        where T : ICredential
+    {
+        return _credentialHandlerRegistry.TryGetCredentialFromEntry(
+            _credentials[credentialEntryTitle],
+            out T? credential
+        )
+            ? credential
+            : default;
+    }
 
     public void SetCredential(CredentialEntry credentialEntry)
     {
-        _credentials[credentialEntry.Title] = credentialEntry;
+        _credentials[credentialEntry.EntryTitle] = credentialEntry;
     }
 
     public void UpdateCredential(CredentialEntry credentialEntry)
     {
-        _credentials[credentialEntry.Title] = credentialEntry;
+        _credentials[credentialEntry.EntryTitle] = credentialEntry;
     }
 
-    public void DeleteCredential(string credentialName)
+    public void DeleteCredential(CredentialEntry credentialEntry)
     {
-        _credentials.Remove(credentialName);
+        _credentials.Remove(credentialEntry.EntryTitle);
     }
 
     public IReadOnlyCollection<CredentialEntry> GetCredentials() =>
-        _credentials.Select(kvp => kvp.Value with { Title = kvp.Key }).ToList().AsReadOnly();
+        _credentials.Select(kvp => kvp.Value with { EntryTitle = kvp.Key }).ToList().AsReadOnly();
 
     public void Dispose() { }
 }

@@ -3,6 +3,6 @@
 public record BackupProfile(
     string Name,
     string BackupPlanLocation,
-    string BackupDirectory,
-    string CredentialProfileName
+    string CredentialProfileName,
+    string? WorkingDirectory
 );

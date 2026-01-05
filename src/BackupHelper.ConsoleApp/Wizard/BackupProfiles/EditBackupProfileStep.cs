@@ -1,5 +1,6 @@
 ﻿using BackupHelper.Api.Features.BackupProfiles;
 using BackupHelper.Api.Features.Credentials;
+using BackupHelper.Api.Features.Credentials.CredentialProfiles;
 using BackupHelper.ConsoleApp.Utilities;
 using MediatR;
 using Sharprompt;
@@ -63,8 +64,8 @@ public class EditBackupProfileStep : IWizardStep<EditBackupProfileStepParameters
                 "Show Backup Profile Info",
                 "Name",
                 "Backup Plan Location",
-                "Backup Directory",
                 "Change Credential Profile",
+                "Change Working Directory",
                 "Cancel",
             ]
         );
@@ -107,19 +108,6 @@ public class EditBackupProfileStep : IWizardStep<EditBackupProfileStepParameters
             );
             Console.WriteLine("Backup plan location updated successfully!");
         }
-        else if (choice == "Backup Directory")
-        {
-            var newDirectory = Prompt.Input<string>(
-                "Enter new backup directory",
-                validators: [Validators.Required(), ValidatorsHelper.DirectoryExists]
-            );
-            var updatedBackupProfile = backupProfile with { BackupDirectory = newDirectory };
-            await _mediator.Send(
-                new UpdateBackupProfileCommand(backupProfile, updatedBackupProfile),
-                cancellationToken
-            );
-            Console.WriteLine("Backup directory updated successfully!");
-        }
         else if (choice == "Change Credential Profile")
         {
             var credentialProfileNames = await _mediator.Send(
@@ -140,6 +128,23 @@ public class EditBackupProfileStep : IWizardStep<EditBackupProfileStepParameters
                 cancellationToken
             );
             Console.WriteLine("Credential profile updated successfully!");
+        }
+        else if (choice == "Change Working Directory")
+        {
+            var newWorkingDirectory = Prompt.Input<string>(
+                "Enter new working directory for temporary files (leave blank to use temp directory)",
+                defaultValue: string.Empty,
+                validators: [ValidatorsHelper.DirectoryExistsIfNotEmpty]
+            );
+            var updatedBackupProfile = backupProfile with
+            {
+                WorkingDirectory = newWorkingDirectory,
+            };
+            await _mediator.Send(
+                new UpdateBackupProfileCommand(backupProfile, updatedBackupProfile),
+                cancellationToken
+            );
+            Console.WriteLine("Working directory updated successfully!");
         }
 
         return new ManageBackupProfilesStepParameters();

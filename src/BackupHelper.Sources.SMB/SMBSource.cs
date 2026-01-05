@@ -1,5 +1,7 @@
-﻿using BackupHelper.Abstractions;
+﻿using BackupHelper.Abstractions.Credentials;
 using BackupHelper.Abstractions.ResourcePooling;
+using BackupHelper.Connectors.SMB;
+using BackupHelper.Connectors.SMB.IO;
 using BackupHelper.Sources.Abstractions;
 using Microsoft.Extensions.Logging;
 
@@ -23,7 +25,7 @@ public class SMBSource : ISource
 
     public Stream GetStream(string path)
     {
-        var shareInfo = SMBShareInfo.FromFilePath(path);
+        var shareInfo = SMBShareInfo.FromSMBPath(path);
         var smbPath = SMBHelper.StripShareInfo(path);
         var connection = _connectionPool.GetResource(shareInfo);
 
@@ -113,7 +115,7 @@ public class SMBSource : ISource
         Func<SMBConnection, string, SMBShareInfo, T> operation
     )
     {
-        var shareInfo = SMBShareInfo.FromFilePath(path);
+        var shareInfo = SMBShareInfo.FromSMBPath(path);
         var smbPath = SMBHelper.StripShareInfo(path);
         var connection = _connectionPool.GetResource(shareInfo);
 

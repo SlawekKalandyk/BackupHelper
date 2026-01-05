@@ -1,6 +1,9 @@
 ﻿using BackupHelper.Abstractions;
+using BackupHelper.Abstractions.Credentials;
 using BackupHelper.Api.Features.BackupProfiles;
 using BackupHelper.Api.Features.Credentials;
+using BackupHelper.Api.Features.Credentials.CredentialProfiles;
+using BackupHelper.Api.Features.Credentials.SMB;
 using BackupHelper.Core.Credentials;
 using BackupHelper.Core.Features;
 using MediatR;
@@ -90,7 +93,7 @@ public class CreateBackupStep : IWizardStep<CreateBackupStepParameters>
             return canBackup
                 ? new PerformBackupStepParameters(
                     backupProfile.BackupPlanLocation,
-                    backupProfile.BackupDirectory,
+                    backupProfile.WorkingDirectory,
                     keePassDbLocation,
                     credentialProfilePassword
                 )
@@ -101,12 +104,12 @@ public class CreateBackupStep : IWizardStep<CreateBackupStepParameters>
             "Select backup plan location",
             validators: [Validators.Required()]
         );
-        var outputZipPath = Prompt.Input<string>(
-            "Select output zip path",
+        var outputDirectory = Prompt.Input<string>(
+            "Select output directory",
             validators: [Validators.Required()]
         );
 
-        return new SelectKeePassDatabaseStepParameters(backupPlanLocation, outputZipPath);
+        return new SelectKeePassDatabaseStepParameters(backupPlanLocation, outputDirectory);
     }
 
     private string GetCredentialProfilePassword(string keePassDbLocation)

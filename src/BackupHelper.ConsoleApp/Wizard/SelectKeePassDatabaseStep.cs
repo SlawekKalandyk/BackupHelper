@@ -1,4 +1,5 @@
 ﻿using BackupHelper.Abstractions;
+using BackupHelper.Abstractions.Credentials;
 using BackupHelper.Core.Credentials;
 using Sharprompt;
 
@@ -6,7 +7,7 @@ namespace BackupHelper.ConsoleApp.Wizard;
 
 public record SelectKeePassDatabaseStepParameters(
     string BackupPlanLocation,
-    string OutputZipPath,
+    string OutputDirectory,
     string? KeePassDbLocation = null
 ) : IWizardParameters;
 
@@ -35,7 +36,7 @@ public class SelectKeePassDatabaseStep : IWizardStep<SelectKeePassDatabaseStepPa
                 return Task.FromResult<IWizardParameters?>(
                     new PerformBackupStepParameters(
                         parameters.BackupPlanLocation,
-                        parameters.OutputZipPath
+                        parameters.OutputDirectory
                     )
                 );
             }
@@ -58,7 +59,7 @@ public class SelectKeePassDatabaseStep : IWizardStep<SelectKeePassDatabaseStepPa
             return Task.FromResult<IWizardParameters?>(
                 new PerformBackupStepParameters(
                     parameters.BackupPlanLocation,
-                    parameters.OutputZipPath,
+                    parameters.OutputDirectory,
                     keePassDbLocation,
                     keePassDbPassword
                 )

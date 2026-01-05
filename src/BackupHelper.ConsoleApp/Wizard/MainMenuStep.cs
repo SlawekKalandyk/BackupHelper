@@ -1,5 +1,6 @@
 ﻿using BackupHelper.ConsoleApp.Wizard.BackupProfiles;
 using BackupHelper.ConsoleApp.Wizard.Credentials;
+using BackupHelper.ConsoleApp.Wizard.Credentials.CredentialProfiles;
 using Sharprompt;
 
 namespace BackupHelper.ConsoleApp.Wizard;

@@ -7,8 +7,8 @@ namespace BackupHelper.Api.Features.BackupProfiles;
 public record CreateBackupProfileCommand(
     string Name,
     string BackupPlanLocation,
-    string BackupDirectory,
-    string CredentialProfileName
+    string CredentialProfileName,
+    string? WorkingDirectory
 ) : IRequest;
 
 public class CreateBackupProfileCommandHandler : IRequestHandler<CreateBackupProfileCommand>
@@ -37,8 +37,8 @@ public class CreateBackupProfileCommandHandler : IRequestHandler<CreateBackupPro
         var backupProfile = new BackupProfile(
             request.Name,
             request.BackupPlanLocation,
-            request.BackupDirectory,
-            request.CredentialProfileName
+            request.CredentialProfileName,
+            request.WorkingDirectory
         );
 
         File.WriteAllText(

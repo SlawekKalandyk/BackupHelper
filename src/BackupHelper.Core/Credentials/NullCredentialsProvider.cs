@@ -1,4 +1,4 @@
-﻿using BackupHelper.Abstractions;
+﻿using BackupHelper.Abstractions.Credentials;
 
 namespace BackupHelper.Core.Credentials;
 
@@ -6,7 +6,8 @@ public record NullCredentialsProviderConfiguration : ICredentialsProviderConfigu
 
 public class NullCredentialsProvider : ICredentialsProvider
 {
-    public CredentialEntry? GetCredential(string credentialName) => null;
+    public T? GetCredential<T>(CredentialEntryTitle credentialEntryTitle)
+        where T : ICredential => default;
 
     public void SetCredential(CredentialEntry credentialEntry)
     {
@@ -18,7 +19,7 @@ public class NullCredentialsProvider : ICredentialsProvider
         // No operation for null provider
     }
 
-    public void DeleteCredential(string credentialName)
+    public void DeleteCredential(CredentialEntry credentialEntry)
     {
         // No operation for null provider
     }

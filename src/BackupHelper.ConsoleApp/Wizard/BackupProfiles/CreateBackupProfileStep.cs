@@ -1,5 +1,6 @@
 ﻿using BackupHelper.Api.Features.BackupProfiles;
 using BackupHelper.Api.Features.Credentials;
+using BackupHelper.Api.Features.Credentials.CredentialProfiles;
 using BackupHelper.ConsoleApp.Utilities;
 using MediatR;
 using Sharprompt;
@@ -44,9 +45,10 @@ public class CreateBackupProfileStep : IWizardStep<CreateBackupProfileStepParame
             "Select backup plan location",
             validators: [Validators.Required(), ValidatorsHelper.FileExists]
         );
-        var backupDirectory = Prompt.Input<string>(
-            "Select backup directory",
-            validators: [Validators.Required(), ValidatorsHelper.DirectoryExists]
+        var workingDirectory = Prompt.Input<string>(
+            "Enter working directory for temporary files (leave blank to use temp directory)",
+            defaultValue: string.Empty,
+            validators: [ValidatorsHelper.DirectoryExistsIfNotEmpty]
         );
         var credentialProfileNames = await _mediator.Send(
             new GetCredentialProfileNamesQuery(),
@@ -62,8 +64,8 @@ public class CreateBackupProfileStep : IWizardStep<CreateBackupProfileStepParame
             new CreateBackupProfileCommand(
                 name,
                 backupPlanLocation,
-                backupDirectory,
-                credentialProfileName
+                credentialProfileName,
+                workingDirectory
             ),
             cancellationToken
         );

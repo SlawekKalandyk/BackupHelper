@@ -1,5 +1,5 @@
-﻿using BackupHelper.Abstractions;
-using BackupHelper.Sources.SMB;
+﻿using BackupHelper.Abstractions.Credentials;
+using BackupHelper.Connectors.SMB;
 using MediatR;
 
 namespace BackupHelper.Api.Features.Credentials.SMB;
@@ -27,11 +27,8 @@ public class GetSMBCredentialQueryHandler : IRequestHandler<GetSMBCredentialQuer
         using var credentialsProvider = _credentialsProviderFactory.Create(
             request.CredentialsProviderConfiguration
         );
-        var credentialName = SMBCredentialHelper.GetSMBCredentialTitle(
-            request.Server,
-            request.ShareName
-        );
-        var credential = credentialsProvider.GetCredential(credentialName);
-        return Task.FromResult(credential);
+        var credentialTitle = new SMBCredentialTitle(request.Server, request.ShareName);
+        var credential = credentialsProvider.GetCredential<SMBCredential>(credentialTitle);
+        return Task.FromResult(credential?.ToCredentialEntry());
     }
 }

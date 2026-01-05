@@ -57,8 +57,12 @@ public class ShowBackupProfileInfoStep : IWizardStep<ShowBackupProfileInfoStepPa
 
         Console.WriteLine($"Backup Profile Name: {backupProfile.Name}");
         Console.WriteLine($"Backup Plan Location: {backupProfile.BackupPlanLocation}");
-        Console.WriteLine($"Backup Directory: {backupProfile.BackupDirectory}");
         Console.WriteLine($"Credential Profile: {backupProfile.CredentialProfileName}");
+
+        var workingDirectory = string.IsNullOrWhiteSpace(backupProfile.WorkingDirectory)
+            ? "Using system temp directory"
+            : backupProfile.WorkingDirectory;
+        Console.WriteLine($"Working Directory: {workingDirectory}");
 
         return new ManageBackupProfilesStepParameters();
     }

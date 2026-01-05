@@ -1,12 +1,15 @@
 ﻿using BackupHelper.Abstractions;
 using BackupHelper.Api.Features.Credentials;
+using BackupHelper.Api.Features.Credentials.CredentialProfiles;
 using BackupHelper.Api.Features.Credentials.SMB;
+using BackupHelper.Connectors.SMB;
+using BackupHelper.ConsoleApp.Utilities;
+using BackupHelper.ConsoleApp.Wizard.Credentials.CredentialProfiles;
 using BackupHelper.Core.Credentials;
-using BackupHelper.Sources.SMB;
 using MediatR;
 using Sharprompt;
 
-namespace BackupHelper.ConsoleApp.Wizard.Credentials;
+namespace BackupHelper.ConsoleApp.Wizard.Credentials.SMB;
 
 public record AddSMBCredentialStepParameters(CredentialProfile CredentialProfile)
     : IWizardParameters;
@@ -38,18 +41,18 @@ public class AddSMBCredentialStep : IWizardStep<AddSMBCredentialStepParameters>
 
         var server = Prompt.Input<string>(
             "Enter SMB server address",
-            validators: [Validators.Required()]
+            validators: [Validators.Required(), ValidatorsHelper.IPAddressOrHostname]
         );
         var share = Prompt.Input<string>(
             "Enter SMB share name",
-            validators: [Validators.Required()]
+            validators: [Validators.Required(), ValidatorsHelper.HasNoInvalidChars]
         );
-        var credential = await _mediator.Send(
+        var credentialEntry = await _mediator.Send(
             new GetSMBCredentialQuery(credentialsProviderConfiguration, server, share),
             cancellationToken
         );
 
-        if (credential != null)
+        if (credentialEntry != null)
         {
             var title = SMBCredentialHelper.GetSMBCredentialTitle(server, share);
             var editCredential = Prompt.Confirm(
@@ -58,7 +61,10 @@ public class AddSMBCredentialStep : IWizardStep<AddSMBCredentialStepParameters>
 
             if (editCredential)
             {
-                return new EditSMBCredentialStepParameters(request.CredentialProfile, credential);
+                return new EditSMBCredentialStepParameters(
+                    request.CredentialProfile,
+                    credentialEntry
+                );
             }
             else
             {
@@ -72,9 +78,12 @@ public class AddSMBCredentialStep : IWizardStep<AddSMBCredentialStepParameters>
         );
         var password = Prompt.Password("Enter SMB password", validators: [Validators.Required()]);
 
-        var smbCredential = new SMBCredential(server, share, username, password);
+        var credential = new SMBCredential(server, share, username, password);
         await _mediator.Send(
-            new AddSMBCredentialCommand(credentialsProviderConfiguration, smbCredential),
+            new AddCredentialCommand(
+                credentialsProviderConfiguration,
+                credential.ToCredentialEntry()
+            ),
             cancellationToken
         );
 

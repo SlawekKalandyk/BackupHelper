@@ -1,8 +1,7 @@
-﻿using BackupHelper.Abstractions;
-using BackupHelper.ConsoleApp.Utilities;
-using BackupHelper.Core.BackupZipping;
-using BackupHelper.Core.Credentials;
+﻿using BackupHelper.Core.BackupZipping;
 using BackupHelper.Core.Features;
+using BackupHelper.Core.Sinks;
+using BackupHelper.Sinks.Abstractions;
 using MediatR;
 using Microsoft.Extensions.Logging;
 using Serilog;
@@ -13,26 +12,26 @@ namespace BackupHelper.ConsoleApp.Wizard;
 
 public class PerformBackupStepParameters : IWizardParameters
 {
-    public PerformBackupStepParameters(string backupPlanLocation, string outputZipPath)
+    public PerformBackupStepParameters(string backupPlanLocation, string? workingDirectory)
     {
         BackupPlanLocation = backupPlanLocation;
-        OutputZipPath = outputZipPath;
+        WorkingDirectory = workingDirectory;
     }
 
     public PerformBackupStepParameters(
         string backupPlanLocation,
-        string outputZipPath,
+        string? workingDirectory,
         string keePassDbLocation,
         string keePassDbPassword
     )
-        : this(backupPlanLocation, outputZipPath)
+        : this(backupPlanLocation, workingDirectory)
     {
         KeePassDbLocation = keePassDbLocation;
         KeePassDbPassword = keePassDbPassword;
     }
 
-    public string OutputZipPath { get; }
     public string BackupPlanLocation { get; }
+    public string? WorkingDirectory { get; }
     public string? KeePassDbLocation { get; }
     public string? KeePassDbPassword { get; }
 }
@@ -40,18 +39,18 @@ public class PerformBackupStepParameters : IWizardParameters
 public class PerformBackupStep : IWizardStep<PerformBackupStepParameters>
 {
     private readonly IMediator _mediator;
-    private readonly ICredentialsProviderFactory _credentialsProviderFactory;
     private readonly ILoggerFactory _loggerFactory;
+    private readonly ISinkManager _sinkManager;
 
     public PerformBackupStep(
         IMediator mediator,
-        ICredentialsProviderFactory credentialsProviderFactory,
-        ILoggerFactory loggerFactory
+        ILoggerFactory loggerFactory,
+        ISinkManager sinkManager
     )
     {
         _mediator = mediator;
-        _credentialsProviderFactory = credentialsProviderFactory;
         _loggerFactory = loggerFactory;
+        _sinkManager = sinkManager;
     }
 
     public async Task<IWizardParameters?> Handle(
@@ -68,29 +67,43 @@ public class PerformBackupStep : IWizardStep<PerformBackupStepParameters>
         }
 
         var backupPlan = BackupPlan.FromJsonFile(parameters.BackupPlanLocation);
-        using var credentialsProvider = GetCredentialsProvider(parameters);
 
         if (!string.IsNullOrEmpty(backupPlan.LogDirectory))
             AddBackupLogSink(backupPlan.LogDirectory);
 
-        var backupSavePath = BackupSavePathHelper.GetBackupSavePath(
-            parameters.OutputZipPath,
-            backupPlan.ZipFileNameSuffix
-        );
-        await _mediator
-            .Send(
-                new CreateBackupCommand(backupPlan, backupSavePath, backupPassword),
-                cancellationToken
-            )
-            .ContinueWith(
-                _ =>
-                {
-                    Console.WriteLine(
-                        $"Backup completed successfully. Output file: {backupSavePath}"
-                    );
-                },
+        CreateBackupFileCommandResult? result = null;
+        try
+        {
+            result = await _mediator.Send(
+                new CreateBackupFileCommand(
+                    backupPlan,
+                    parameters.WorkingDirectory,
+                    backupPassword
+                ),
                 cancellationToken
             );
+
+            var backupSinks = GetBackupSinks(backupPlan);
+
+            foreach (var sink in backupSinks)
+            {
+                await UploadToSink(sink, result.OutputFilePath);
+            }
+
+            Console.WriteLine("Backup completed successfully.");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine("Backup failed:");
+            Console.WriteLine(ex.GetBaseException().Message);
+        }
+        finally
+        {
+            if (result != null && File.Exists(result.OutputFilePath))
+            {
+                File.Delete(result.OutputFilePath);
+            }
+        }
 
         return new MainMenuStepParameters();
     }
@@ -120,21 +133,6 @@ public class PerformBackupStep : IWizardStep<PerformBackupStepParameters>
         }
     }
 
-    private ICredentialsProvider GetCredentialsProvider(PerformBackupStepParameters parameters)
-    {
-        if (parameters.KeePassDbLocation == null || parameters.KeePassDbPassword == null)
-        {
-            return _credentialsProviderFactory.Create(new NullCredentialsProviderConfiguration());
-        }
-
-        var keePassCredentialsConfiguration = new KeePassCredentialsProviderConfiguration(
-            parameters.KeePassDbLocation,
-            parameters.KeePassDbPassword
-        );
-
-        return _credentialsProviderFactory.Create(keePassCredentialsConfiguration);
-    }
-
     private string GetBackupPassword()
     {
         string? backupPassword = null;
@@ -152,5 +150,34 @@ public class PerformBackupStep : IWizardStep<PerformBackupStepParameters>
         }
 
         return backupPassword;
+    }
+
+    private IReadOnlyCollection<ISink> GetBackupSinks(BackupPlan backupPlan)
+    {
+        return backupPlan
+            .Sinks.Select(sinkDestination => _sinkManager.GetSink(sinkDestination))
+            .ToList();
+    }
+
+    private async Task UploadToSink(ISink sink, string outputFilePath)
+    {
+        if (await sink.IsAvailableAsync())
+        {
+            try
+            {
+                await sink.UploadAsync(outputFilePath);
+                Console.WriteLine($"Uploaded backup to sink: {sink.Description}");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(
+                    $"Failed to upload backup to sink '{sink.Description}': {ex.GetBaseException().Message}"
+                );
+            }
+        }
+        else
+        {
+            Console.WriteLine($"Sink '{sink.Description}' is not available. Skipping upload.");
+        }
     }
 }

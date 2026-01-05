@@ -22,5 +22,6 @@
   <ItemGroup>
     <ProjectReference Include="..\BackupHelper.Api\BackupHelper.Api.csproj" />
     <ProjectReference Include="..\BackupHelper.Core\BackupHelper.Core.csproj" />
+    <ProjectReference Include="..\BackupHelper.Sinks.Abstractions\BackupHelper.Sinks.Abstractions.csproj" />
   </ItemGroup>
 </Project>
