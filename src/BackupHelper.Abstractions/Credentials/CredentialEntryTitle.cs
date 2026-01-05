@@ -1,12 +1,11 @@
 ﻿using System.Data.Common;
-using System.Runtime.CompilerServices;
 
 namespace BackupHelper.Abstractions.Credentials;
 
 public sealed class CredentialEntryTitle : IEquatable<CredentialEntryTitle>
 {
     private static readonly StringComparer _keyComparer = StringComparer.OrdinalIgnoreCase;
-    private static readonly StringComparison _keyComparison = StringComparison.OrdinalIgnoreCase;
+
     private readonly int _hashCode;
 
     public static CredentialTitleBuilder Builder => new();
