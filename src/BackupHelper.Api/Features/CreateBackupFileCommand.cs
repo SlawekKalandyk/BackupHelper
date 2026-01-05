@@ -38,6 +38,8 @@ public class CreateBackupFileCommandHandler
             request.BackupPlan.ZipFileNameSuffix
         );
 
+        Directory.CreateDirectory(Path.GetDirectoryName(outputFilePath)!);
+
         try
         {
             _backupPlanZipper.CreateZipFile(request.BackupPlan, outputFilePath, request.Password);

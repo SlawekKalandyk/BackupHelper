@@ -106,7 +106,7 @@ public class EditAzureBlobCredentialStep : IWizardStep<EditAzureBlobCredentialSt
 
         if (choice == "Change Shared Access Storage token")
         {
-            var newSasToken = Prompt.Input<string>(
+            var newSasToken = Prompt.Password(
                 "Enter new Shared Access Storage token",
                 validators: [Validators.Required()]
             );

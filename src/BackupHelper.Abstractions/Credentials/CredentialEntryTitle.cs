@@ -27,7 +27,7 @@ public sealed class CredentialEntryTitle : IEquatable<CredentialEntryTitle>
         ArgumentNullException.ThrowIfNull(pairs);
 
         // Normalize: trim keys, reject null/empty keys, store values as non-null strings.
-        var dict = new Dictionary<string, string>(_keyComparer);
+        var dictionary = new Dictionary<string, string>(_keyComparer);
 
         foreach (var keyValuePair in pairs)
         {
@@ -35,13 +35,13 @@ public sealed class CredentialEntryTitle : IEquatable<CredentialEntryTitle>
             if (string.IsNullOrWhiteSpace(key))
                 throw new ArgumentException("Key cannot be null/empty/whitespace.", nameof(pairs));
 
-            dict[key] = keyValuePair.Value;
+            dictionary[key] = keyValuePair.Value;
         }
 
-        Pairs = dict;
+        Pairs = dictionary;
 
         // Precompute stable hash based on canonical ordering.
-        _hashCode = ComputeHashCode(dict);
+        _hashCode = ComputeHashCode(dictionary);
     }
 
     public static CredentialEntryTitle Parse(string title)
