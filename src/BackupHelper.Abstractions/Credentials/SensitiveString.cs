@@ -35,13 +35,12 @@ public sealed class SensitiveString : IDisposable, IEquatable<SensitiveString>
     }
 
     /// <summary>
-    /// Creates a new <see cref="SensitiveString"/> from a UTF-8 byte array. The byte array is copied
+    /// Creates a new <see cref="SensitiveString"/> from a UTF-8 byte span. The byte array is copied
     /// to ensure the original array can be zeroed without affecting the new instance.
     /// </summary>
-    private SensitiveString(byte[] utf8Bytes)
+    public SensitiveString(ReadOnlySpan<byte> utf8Bytes)
     {
-        _utf8Bytes = new byte[utf8Bytes.Length];
-        Array.Copy(utf8Bytes, _utf8Bytes, utf8Bytes.Length);
+        _utf8Bytes = utf8Bytes.ToArray();
     }
 
     /// <summary>

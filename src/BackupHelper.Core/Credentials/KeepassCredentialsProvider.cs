@@ -38,7 +38,7 @@ public class KeePassCredentialsProvider : ICredentialsProvider
         var database = new PwDatabase();
         var compositeKey = new CompositeKey();
         using var sensitivePassword = passwordFactory();
-        compositeKey.AddUserKey(new KcpPassword(sensitivePassword.Expose()));
+        compositeKey.AddUserKey(GetKcpPassword(sensitivePassword));
 
         try
         {
@@ -72,8 +72,10 @@ public class KeePassCredentialsProvider : ICredentialsProvider
             return default;
 
         var user = foundEntry.Strings.ReadSafe(PwDefs.UserNameField);
-        var pass = foundEntry.Strings.ReadSafe(PwDefs.PasswordField);
-        var entry = new CredentialEntry(credentialEntryTitle, user, new SensitiveString(pass));
+        var pass = GetSensitiveStringFromProtectedBinary(
+            foundEntry.Binaries.Get(PwDefs.PasswordField)
+        );
+        var entry = new CredentialEntry(credentialEntryTitle, user, pass);
 
         return _credentialHandlerRegistry.FromCredentialEntry<T>(entry);
     }
@@ -153,7 +155,7 @@ public class KeePassCredentialsProvider : ICredentialsProvider
             .Select(entry => new CredentialEntry(
                 CredentialEntryTitle.Parse(entry.Strings.ReadSafe(PwDefs.TitleField)),
                 entry.Strings.ReadSafe(PwDefs.UserNameField),
-                new SensitiveString(entry.Strings.ReadSafe(PwDefs.PasswordField))
+                GetSensitiveStringFromProtectedBinary(entry.Binaries.Get(PwDefs.PasswordField))
             ))
             .ToList();
     }
@@ -163,7 +165,7 @@ public class KeePassCredentialsProvider : ICredentialsProvider
         var database = new PwDatabase();
         var compositeKey = new CompositeKey();
         using var sensitivePassword = passwordFactory();
-        compositeKey.AddUserKey(new KcpPassword(sensitivePassword.Expose()));
+        compositeKey.AddUserKey(GetKcpPassword(sensitivePassword));
         database.New(new IOConnectionInfo() { Path = databasePath }, compositeKey);
         database.Save(_statusLogger);
 
@@ -178,7 +180,7 @@ public class KeePassCredentialsProvider : ICredentialsProvider
         var database = new PwDatabase();
         var compositeKey = new CompositeKey();
         using var sensitivePassword = passwordFactory();
-        compositeKey.AddUserKey(new KcpPassword(sensitivePassword.Expose()));
+        compositeKey.AddUserKey(GetKcpPassword(sensitivePassword));
         database.Open(new IOConnectionInfo() { Path = databasePath }, compositeKey, _statusLogger);
 
         return database;
@@ -194,6 +196,32 @@ public class KeePassCredentialsProvider : ICredentialsProvider
         finally
         {
             CryptographicOperations.ZeroMemory(passwordBytes);
+        }
+    }
+
+    private static KcpPassword GetKcpPassword(SensitiveString password)
+    {
+        var passwordBytes = password.ExposeUtf8Bytes().ToArray();
+        try
+        {
+            return new KcpPassword(passwordBytes);
+        }
+        finally
+        {
+            CryptographicOperations.ZeroMemory(passwordBytes);
+        }
+    }
+
+    private SensitiveString GetSensitiveStringFromProtectedBinary(ProtectedBinary protectedBinary)
+    {
+        var binaryData = protectedBinary.ReadData();
+        try
+        {
+            return new SensitiveString(binaryData);
+        }
+        finally
+        {
+            CryptographicOperations.ZeroMemory(binaryData);
         }
     }
 
