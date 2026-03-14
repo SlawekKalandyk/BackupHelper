@@ -1,7 +1,7 @@
 ﻿using BackupHelper.Abstractions.Credentials;
 using BackupHelper.Api.Features.Credentials.CredentialProfiles;
 using MediatR;
-using Sharprompt;
+using Spectre.Console;
 
 namespace BackupHelper.ConsoleApp.Wizard.Credentials.CredentialProfiles;
 
@@ -38,18 +38,17 @@ public class ShowCredentialProfileInfoStep : IWizardStep<ShowCredentialProfileIn
                 return new ManageCredentialProfilesStepParameters();
             }
 
-            var credentialProfileName = Prompt.Select(
-                "Select a credential profile to view",
-                credentialProfileNames,
-                5
+            var credentialProfileName = AnsiConsole.Prompt(
+                new SelectionPrompt<string>()
+                    .Title("Select a credential profile to view")
+                    .PageSize(5)
+                    .AddChoices(credentialProfileNames)
             );
 
-            var password = Prompt
-                .Password(
-                    "Enter the password for the credential profile",
-                    validators: [Validators.Required()]
-                )
-                .ToCharArray();
+            var password = AnsiConsole.Prompt(
+                new TextPrompt<string>("Enter the password for the credential profile")
+                    .Secret()
+            ).ToCharArray();
             var sensitivePassword = new SensitiveString(password); // zeroes password array
             credentialProfile = await _mediator.Send(
                 new GetCredentialProfileQuery(credentialProfileName, sensitivePassword),

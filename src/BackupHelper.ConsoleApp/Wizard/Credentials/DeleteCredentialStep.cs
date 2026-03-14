@@ -5,7 +5,7 @@ using BackupHelper.Api.Features.Credentials.CredentialProfiles;
 using BackupHelper.ConsoleApp.Wizard.Credentials.CredentialProfiles;
 using BackupHelper.Core.Credentials;
 using MediatR;
-using Sharprompt;
+using Spectre.Console;
 
 namespace BackupHelper.ConsoleApp.Wizard.Credentials;
 
@@ -45,12 +45,13 @@ public class DeleteCredentialStep : IWizardStep<DeleteCredentialStepParameters>
                 credential => credential.EntryTitle,
                 credential => credential
             );
-            var credentialTitle = Prompt.Select(
-                "Select a credential to delete",
-                credentialDictionary.Keys,
-                5
+            var credentialTitle = AnsiConsole.Prompt(
+                new SelectionPrompt<CredentialEntryTitle>()
+                    .Title("Select a credential to delete")
+                    .PageSize(5)
+                    .AddChoices(credentialDictionary.Keys)
             );
-            var confirmation = Prompt.Confirm(
+            var confirmation = AnsiConsole.Confirm(
                 $"Are you sure you want to delete the credential '{credentialTitle}'?"
             );
 

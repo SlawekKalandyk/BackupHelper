@@ -1,6 +1,6 @@
 ﻿using BackupHelper.Abstractions.Credentials;
 using BackupHelper.Core.Credentials;
-using Sharprompt;
+using Spectre.Console;
 
 namespace BackupHelper.ConsoleApp.Wizard;
 
@@ -28,7 +28,7 @@ public class SelectKeePassDatabaseStep : IWizardStep<SelectKeePassDatabaseStepPa
 
         if (string.IsNullOrEmpty(parameters.KeePassDbLocation))
         {
-            var selectKeePassDb = Prompt.Confirm("Do you want to select an existing KeePass DB?");
+            var selectKeePassDb = AnsiConsole.Confirm("Do you want to select an existing KeePass DB?");
 
             if (!selectKeePassDb)
             {
@@ -40,10 +40,7 @@ public class SelectKeePassDatabaseStep : IWizardStep<SelectKeePassDatabaseStepPa
                 );
             }
 
-            keePassDbLocation = Prompt.Input<string>(
-                "Enter KeePass DB location",
-                validators: [Validators.Required()]
-            );
+            keePassDbLocation = AnsiConsole.Ask<string>("Enter KeePass DB location");
         }
 
         if (File.Exists(keePassDbLocation))
@@ -80,7 +77,10 @@ public class SelectKeePassDatabaseStep : IWizardStep<SelectKeePassDatabaseStepPa
 
         while (sensitivePassword == null)
         {
-            var keePassDbPassword = Prompt.Password("Enter KeePass DB password").ToCharArray();
+            var keePassDbPassword = AnsiConsole.Prompt(
+                new TextPrompt<string>("Enter KeePass DB password")
+                    .Secret()
+            ).ToCharArray();
             sensitivePassword = new SensitiveString(keePassDbPassword);
             var correctPasswordProvided = KeePassCredentialsProvider.CanLogin(
                 keePassDbLocation,

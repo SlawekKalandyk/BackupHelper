@@ -7,7 +7,7 @@ using BackupHelper.Connectors.Azure;
 using BackupHelper.ConsoleApp.Wizard.Credentials.CredentialProfiles;
 using BackupHelper.Core.Credentials;
 using MediatR;
-using Sharprompt;
+using Spectre.Console;
 
 namespace BackupHelper.ConsoleApp.Wizard.Credentials.Azure;
 
@@ -43,10 +43,7 @@ public class AddAzureBlobCredentialStep : IWizardStep<AddAzureBlobCredentialStep
             () => request.CredentialProfile.Password.Clone()
         );
 
-        var accountName = Prompt.Input<string>(
-            "Enter Azure Storage Account Name",
-            validators: [Validators.Required()]
-        );
+        var accountName = AnsiConsole.Ask<string>("Enter Azure Storage Account Name");
 
         var credentialEntry = await _mediator.Send(
             new GetAzureBlobCredentialQuery(credentialsProviderConfiguration, accountName),
@@ -55,7 +52,7 @@ public class AddAzureBlobCredentialStep : IWizardStep<AddAzureBlobCredentialStep
 
         if (credentialEntry != null)
         {
-            var editCredential = Prompt.Confirm(
+            var editCredential = AnsiConsole.Confirm(
                 $"Azure Blob credential for account '{accountName}' exists. Do you want to edit it?"
             );
 
@@ -73,12 +70,10 @@ public class AddAzureBlobCredentialStep : IWizardStep<AddAzureBlobCredentialStep
             }
         }
 
-        var sharedAccessSignature = Prompt
-            .Password(
-                "Enter Azure Storage Account Shared Access Signature (SAS)",
-                validators: [Validators.Required()]
-            )
-            .ToCharArray();
+        var sharedAccessSignature = AnsiConsole.Prompt(
+            new TextPrompt<string>("Enter Azure Storage Account Shared Access Signature (SAS)")
+                .Secret()
+        ).ToCharArray();
 
         var credential = new AzureBlobCredential(
             accountName,
@@ -95,7 +90,7 @@ public class AddAzureBlobCredentialStep : IWizardStep<AddAzureBlobCredentialStep
         );
 
         Console.WriteLine("Azure Blob credential added successfully!");
-        var addAnother = Prompt.Confirm("Do you want to add another Azure Blob credential?");
+        var addAnother = AnsiConsole.Confirm("Do you want to add another Azure Blob credential?");
 
         return addAnother
             ? new AddAzureBlobCredentialStepParameters(request.CredentialProfile)

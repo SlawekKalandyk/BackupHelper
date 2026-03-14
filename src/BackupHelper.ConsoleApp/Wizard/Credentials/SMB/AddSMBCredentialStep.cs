@@ -8,7 +8,7 @@ using BackupHelper.ConsoleApp.Utilities;
 using BackupHelper.ConsoleApp.Wizard.Credentials.CredentialProfiles;
 using BackupHelper.Core.Credentials;
 using MediatR;
-using Sharprompt;
+using Spectre.Console;
 
 namespace BackupHelper.ConsoleApp.Wizard.Credentials.SMB;
 
@@ -40,13 +40,13 @@ public class AddSMBCredentialStep : IWizardStep<AddSMBCredentialStepParameters>
             () => request.CredentialProfile.Password.Clone()
         );
 
-        var server = Prompt.Input<string>(
-            "Enter SMB server address",
-            validators: [Validators.Required(), ValidatorsHelper.IPAddressOrHostname]
+        var server = AnsiConsole.Prompt(
+            new TextPrompt<string>("Enter SMB server address")
+                .Validate(ValidatorsHelper.IPAddressOrHostname)
         );
-        var share = Prompt.Input<string>(
-            "Enter SMB share name",
-            validators: [Validators.Required(), ValidatorsHelper.HasNoInvalidChars]
+        var share = AnsiConsole.Prompt(
+            new TextPrompt<string>("Enter SMB share name")
+                .Validate(ValidatorsHelper.HasNoInvalidChars)
         );
         var credentialEntry = await _mediator.Send(
             new GetSMBCredentialQuery(credentialsProviderConfiguration, server, share),
@@ -56,7 +56,7 @@ public class AddSMBCredentialStep : IWizardStep<AddSMBCredentialStepParameters>
         if (credentialEntry != null)
         {
             var title = SMBCredentialHelper.GetSMBCredentialTitle(server, share);
-            var editCredential = Prompt.Confirm(
+            var editCredential = AnsiConsole.Confirm(
                 $"SMB credential for {title} exists. Do you want to edit it?"
             );
 
@@ -74,13 +74,11 @@ public class AddSMBCredentialStep : IWizardStep<AddSMBCredentialStepParameters>
             }
         }
 
-        var username = Prompt.Input<string>(
-            "Enter SMB username",
-            validators: [Validators.Required()]
-        );
-        var password = Prompt
-            .Password("Enter SMB password", validators: [Validators.Required()])
-            .ToCharArray();
+        var username = AnsiConsole.Ask<string>("Enter SMB username");
+        var password = AnsiConsole.Prompt(
+            new TextPrompt<string>("Enter SMB password")
+                .Secret()
+        ).ToCharArray();
 
         var credential = new SMBCredential(server, share, username, new SensitiveString(password));
         using var credentialEntryToAdd = credential.ToCredentialEntry();
@@ -93,7 +91,7 @@ public class AddSMBCredentialStep : IWizardStep<AddSMBCredentialStepParameters>
         );
 
         Console.WriteLine("SMB credential added successfully.");
-        var addAnother = Prompt.Confirm("Do you want to add another SMB credential?");
+        var addAnother = AnsiConsole.Confirm("Do you want to add another SMB credential?");
 
         return addAnother
             ? new AddSMBCredentialStepParameters(request.CredentialProfile)

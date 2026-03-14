@@ -5,7 +5,7 @@ using BackupHelper.Api.Features.Credentials;
 using BackupHelper.Api.Features.Credentials.CredentialProfiles;
 using BackupHelper.Core.Credentials;
 using MediatR;
-using Sharprompt;
+using Spectre.Console;
 
 namespace BackupHelper.ConsoleApp.Wizard;
 
@@ -33,7 +33,7 @@ public class CreateBackupStep : IWizardStep<CreateBackupStepParameters>
         CancellationToken cancellationToken
     )
     {
-        var useProfile = Prompt.Confirm("Do you want to use an existing backup profile?");
+        var useProfile = AnsiConsole.Confirm("Do you want to use an existing backup profile?");
 
         if (useProfile)
         {
@@ -41,7 +41,12 @@ public class CreateBackupStep : IWizardStep<CreateBackupStepParameters>
                 new GetBackupProfileNamesQuery(),
                 cancellationToken
             );
-            var backupProfileName = Prompt.Select("Select a backup profile", backupProfiles, 5);
+            var backupProfileName = AnsiConsole.Prompt(
+                new SelectionPrompt<string>()
+                    .Title("Select a backup profile")
+                    .PageSize(5)
+                    .AddChoices(backupProfiles)
+            );
             var backupProfile = await _mediator.Send(
                 new GetBackupProfileQuery(backupProfileName),
                 cancellationToken
@@ -97,14 +102,8 @@ public class CreateBackupStep : IWizardStep<CreateBackupStepParameters>
                 : new MainMenuStepParameters();
         }
 
-        var backupPlanLocation = Prompt.Input<string>(
-            "Select backup plan location",
-            validators: [Validators.Required()]
-        );
-        var outputDirectory = Prompt.Input<string>(
-            "Select output directory",
-            validators: [Validators.Required()]
-        );
+        var backupPlanLocation = AnsiConsole.Ask<string>("Select backup plan location");
+        var outputDirectory = AnsiConsole.Ask<string>("Select output directory");
 
         return new SelectKeePassDatabaseStepParameters(backupPlanLocation, outputDirectory);
     }
@@ -115,7 +114,10 @@ public class CreateBackupStep : IWizardStep<CreateBackupStepParameters>
 
         while (sensitivePassword == null)
         {
-            var keePassDbPassword = Prompt.Password("Enter credential profile password").ToCharArray();
+            var keePassDbPassword = AnsiConsole.Prompt(
+                new TextPrompt<string>("Enter credential profile password")
+                    .Secret()
+            ).ToCharArray();
             sensitivePassword = new SensitiveString(keePassDbPassword);
             var correctPasswordProvided = KeePassCredentialsProvider.CanLogin(
                 keePassDbLocation,
@@ -155,7 +157,7 @@ public class CreateBackupStep : IWizardStep<CreateBackupStepParameters>
                 Console.WriteLine(string.Join(Environment.NewLine, credential.ToDisplayString()));
             }
 
-            var backupAnyway = Prompt.Confirm(
+            var backupAnyway = AnsiConsole.Confirm(
                 "Do you want to proceed with the backup anyway?",
                 false
             );

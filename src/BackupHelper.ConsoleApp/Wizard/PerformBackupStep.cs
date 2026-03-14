@@ -9,7 +9,7 @@ using MediatR;
 using Microsoft.Extensions.Logging;
 using Serilog;
 using Serilog.Events;
-using Sharprompt;
+using Spectre.Console;
 
 namespace BackupHelper.ConsoleApp.Wizard;
 
@@ -58,7 +58,7 @@ public class PerformBackupStep : IWizardStep<PerformBackupStepParameters>
         CancellationToken cancellationToken
     )
     {
-        var useEncryption = Prompt.Confirm("Do you want to encrypt the backup?");
+        var useEncryption = AnsiConsole.Confirm("Do you want to encrypt the backup?");
         SensitiveString? backupPassword = null;
 
         if (useEncryption)
@@ -139,8 +139,14 @@ public class PerformBackupStep : IWizardStep<PerformBackupStepParameters>
 
         while (backupPassword == null)
         {
-            backupPassword = Prompt.Password("Enter backup password").ToCharArray();
-            var confirm = Prompt.Password("Confirm password").ToCharArray();
+            backupPassword = AnsiConsole.Prompt(
+                new TextPrompt<string>("Enter backup password")
+                    .Secret()
+            ).ToCharArray();
+            var confirm = AnsiConsole.Prompt(
+                new TextPrompt<string>("Confirm password")
+                    .Secret()
+            ).ToCharArray();
 
             if (!backupPassword.SequenceEqual(confirm))
             {

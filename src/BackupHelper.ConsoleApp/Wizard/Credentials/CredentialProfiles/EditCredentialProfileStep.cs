@@ -4,7 +4,7 @@ using BackupHelper.Api.Features.Credentials.CredentialProfiles;
 using BackupHelper.ConsoleApp.Wizard.Credentials.Azure;
 using BackupHelper.ConsoleApp.Wizard.Credentials.SMB;
 using MediatR;
-using Sharprompt;
+using Spectre.Console;
 
 namespace BackupHelper.ConsoleApp.Wizard.Credentials.CredentialProfiles;
 
@@ -46,17 +46,16 @@ public class EditCredentialProfileStep : IWizardStep<EditCredentialProfileStepPa
                 return new ManageCredentialProfilesStepParameters();
             }
 
-            var credentialProfileName = Prompt.Select(
-                "Select a credential profile to edit",
-                credentialProfileNames,
-                5
+            var credentialProfileName = AnsiConsole.Prompt(
+                new SelectionPrompt<string>()
+                    .Title("Select a credential profile to edit")
+                    .PageSize(5)
+                    .AddChoices(credentialProfileNames)
             );
-            var password = Prompt
-                .Password(
-                    "Enter the password for the credential profile",
-                    validators: [Validators.Required()]
-                )
-                .ToCharArray();
+            var password = AnsiConsole.Prompt(
+                new TextPrompt<string>("Enter the password for the credential profile")
+                    .Secret()
+            ).ToCharArray();
             var sensitivePassword = new SensitiveString(password); // zeroes password array
             credentialProfile = await _mediator.Send(
                 new GetCredentialProfileQuery(credentialProfileName, sensitivePassword),
@@ -78,17 +77,18 @@ public class EditCredentialProfileStep : IWizardStep<EditCredentialProfileStepPa
             return new ManageCredentialProfilesStepParameters();
         }
 
-        var choice = Prompt.Select(
-            "Select property to edit",
-            [
-                "Name",
-                "Add Azure Blob Credential",
-                "Edit Azure Blob Credential",
-                "Add SMB Credential",
-                "Edit SMB Credential",
-                "Delete Credential",
-                "Cancel",
-            ]
+        var choice = AnsiConsole.Prompt(
+            new SelectionPrompt<string>()
+                .Title("Select property to edit")
+                .AddChoices(
+                    "Name",
+                    "Add Azure Blob Credential",
+                    "Edit Azure Blob Credential",
+                    "Add SMB Credential",
+                    "Edit SMB Credential",
+                    "Delete Credential",
+                    "Cancel"
+                )
         );
 
         if (choice == "Cancel")

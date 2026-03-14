@@ -8,7 +8,7 @@ using BackupHelper.Connectors.SMB;
 using BackupHelper.ConsoleApp.Wizard.Credentials.CredentialProfiles;
 using BackupHelper.Core.Credentials;
 using MediatR;
-using Sharprompt;
+using Spectre.Console;
 
 namespace BackupHelper.ConsoleApp.Wizard.Credentials.SMB;
 
@@ -64,17 +64,19 @@ public class EditSMBCredentialStep : IWizardStep<EditSMBCredentialStepParameters
                 entry => entry.EntryTitle,
                 entry => entry
             );
-            var credentialTitle = Prompt.Select(
-                "Select a credential to edit",
-                credentialDictionary.Keys,
-                5
+            var credentialTitle = AnsiConsole.Prompt(
+                new SelectionPrompt<CredentialEntryTitle>()
+                    .Title("Select a credential to edit")
+                    .PageSize(5)
+                    .AddChoices(credentialDictionary.Keys)
             );
             credentialEntryToEdit = credentialDictionary[credentialTitle];
         }
 
-        var choice = Prompt.Select(
-            "Select an option to edit",
-            ["Change username", "Change password", "Back to Credential Profile Menu"]
+        var choice = AnsiConsole.Prompt(
+            new SelectionPrompt<string>()
+                .Title("Select an option to edit")
+                .AddChoices("Change username", "Change password", "Back to Credential Profile Menu")
         );
 
         if (choice == "Back to Credential Profile Menu")
@@ -110,10 +112,7 @@ public class EditSMBCredentialStep : IWizardStep<EditSMBCredentialStepParameters
         if (choice == "Change username")
         {
             Console.WriteLine($"Current username: {existingCredential.Username}");
-            var newUsername = Prompt.Input<string>(
-                "Enter new username",
-                validators: [Validators.Required()]
-            );
+            var newUsername = AnsiConsole.Ask<string>("Enter new username");
             var newCredential = existingCredential with { Username = newUsername };
             using var existingEntry = existingCredential.ToCredentialEntry();
             using var newEntry = newCredential.ToCredentialEntry();
@@ -129,12 +128,14 @@ public class EditSMBCredentialStep : IWizardStep<EditSMBCredentialStepParameters
         }
         else if (choice == "Change password")
         {
-            var newPassword = Prompt
-                .Password("Enter new password", validators: [Validators.Required()])
-                .ToCharArray();
-            var confirmNewPassword = Prompt
-                .Password("Confirm new password", validators: [Validators.Required()])
-                .ToCharArray();
+            var newPassword = AnsiConsole.Prompt(
+                new TextPrompt<string>("Enter new password")
+                    .Secret()
+            ).ToCharArray();
+            var confirmNewPassword = AnsiConsole.Prompt(
+                new TextPrompt<string>("Confirm new password")
+                    .Secret()
+            ).ToCharArray();
 
             if (!newPassword.SequenceEqual(confirmNewPassword))
             {

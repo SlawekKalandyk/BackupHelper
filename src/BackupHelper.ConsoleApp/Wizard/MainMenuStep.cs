@@ -1,7 +1,7 @@
 ﻿using BackupHelper.ConsoleApp.Wizard.BackupProfiles;
 using BackupHelper.ConsoleApp.Wizard.Credentials;
 using BackupHelper.ConsoleApp.Wizard.Credentials.CredentialProfiles;
-using Sharprompt;
+using Spectre.Console;
 
 namespace BackupHelper.ConsoleApp.Wizard;
 
@@ -14,9 +14,10 @@ public class MainMenuStep : IWizardStep<MainMenuStepParameters>
         CancellationToken cancellationToken
     )
     {
-        var choice = Prompt.Select(
-            "Main Menu",
-            ["Create backup", "Manage backup profiles", "Manage credential profiles", "Exit"]
+        var choice = AnsiConsole.Prompt(
+            new SelectionPrompt<string>()
+                .Title("Main Menu")
+                .AddChoices("Create backup", "Manage backup profiles", "Manage credential profiles", "Exit")
         );
 
         return Task.FromResult<IWizardParameters?>(

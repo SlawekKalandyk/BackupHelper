@@ -3,7 +3,7 @@ using BackupHelper.Api.Features.Credentials;
 using BackupHelper.Api.Features.Credentials.CredentialProfiles;
 using BackupHelper.ConsoleApp.Utilities;
 using MediatR;
-using Sharprompt;
+using Spectre.Console;
 
 namespace BackupHelper.ConsoleApp.Wizard.BackupProfiles;
 
@@ -23,10 +23,7 @@ public class CreateBackupProfileStep : IWizardStep<CreateBackupProfileStepParame
         CancellationToken cancellationToken
     )
     {
-        var name = Prompt.Input<string>(
-            "Enter backup profile name",
-            validators: [Validators.Required()]
-        );
+        var name = AnsiConsole.Ask<string>("Enter backup profile name");
         var profileExists = await _mediator.Send(
             new CheckBackupProfileExistsQuery(name),
             cancellationToken
@@ -41,23 +38,24 @@ public class CreateBackupProfileStep : IWizardStep<CreateBackupProfileStepParame
             return new CreateBackupProfileStepParameters();
         }
 
-        var backupPlanLocation = Prompt.Input<string>(
-            "Select backup plan location",
-            validators: [Validators.Required(), ValidatorsHelper.FileExists]
+        var backupPlanLocation = AnsiConsole.Prompt(
+            new TextPrompt<string>("Select backup plan location")
+                .Validate(ValidatorsHelper.FileExists)
         );
-        var workingDirectory = Prompt.Input<string>(
-            "Enter working directory for temporary files (leave blank to use temp directory)",
-            defaultValue: string.Empty,
-            validators: [ValidatorsHelper.DirectoryExistsIfNotEmpty]
+        var workingDirectory = AnsiConsole.Prompt(
+            new TextPrompt<string>("Enter working directory for temporary files (leave blank to use temp directory)")
+                .AllowEmpty()
+                .Validate(ValidatorsHelper.DirectoryExistsIfNotEmpty)
         );
         var credentialProfileNames = await _mediator.Send(
             new GetCredentialProfileNamesQuery(),
             cancellationToken
         );
-        var credentialProfileName = Prompt.Select(
-            "Select a credential profile to use for this backup profile",
-            credentialProfileNames,
-            pageSize: 5
+        var credentialProfileName = AnsiConsole.Prompt(
+            new SelectionPrompt<string>()
+                .Title("Select a credential profile to use for this backup profile")
+                .PageSize(5)
+                .AddChoices(credentialProfileNames)
         );
 
         await _mediator.Send(

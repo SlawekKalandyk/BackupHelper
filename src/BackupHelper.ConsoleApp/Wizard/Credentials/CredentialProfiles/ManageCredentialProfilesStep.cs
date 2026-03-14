@@ -1,4 +1,4 @@
-﻿using Sharprompt;
+﻿using Spectre.Console;
 
 namespace BackupHelper.ConsoleApp.Wizard.Credentials.CredentialProfiles;
 
@@ -11,15 +11,16 @@ public class ManageCredentialProfilesStep : IWizardStep<ManageCredentialProfiles
         CancellationToken cancellationToken
     )
     {
-        var choice = Prompt.Select(
-            "Manage Credential Profiles",
-            [
-                "Create new credential profile",
-                "Show credential profile info",
-                "Edit existing credential profile",
-                "Delete credential profile",
-                "Back to main menu",
-            ]
+        var choice = AnsiConsole.Prompt(
+            new SelectionPrompt<string>()
+                .Title("Manage Credential Profiles")
+                .AddChoices(
+                    "Create new credential profile",
+                    "Show credential profile info",
+                    "Edit existing credential profile",
+                    "Delete credential profile",
+                    "Back to main menu"
+                )
         );
 
         return Task.FromResult<IWizardParameters?>(
