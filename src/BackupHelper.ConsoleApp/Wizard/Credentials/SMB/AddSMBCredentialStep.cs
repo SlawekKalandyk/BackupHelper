@@ -69,6 +69,7 @@ public class AddSMBCredentialStep : IWizardStep<AddSMBCredentialStepParameters>
             }
             else
             {
+                credentialEntry.Dispose();
                 return new EditCredentialProfileStepParameters(request.CredentialProfile);
             }
         }
@@ -82,10 +83,11 @@ public class AddSMBCredentialStep : IWizardStep<AddSMBCredentialStepParameters>
             .ToCharArray();
 
         var credential = new SMBCredential(server, share, username, new SensitiveString(password));
+        using var credentialEntryToAdd = credential.ToCredentialEntry();
         await _mediator.Send(
             new AddCredentialCommand(
                 credentialsProviderConfiguration,
-                credential.ToCredentialEntry()
+                credentialEntryToAdd
             ),
             cancellationToken
         );

@@ -68,6 +68,7 @@ public class AddAzureBlobCredentialStep : IWizardStep<AddAzureBlobCredentialStep
             }
             else
             {
+                credentialEntry.Dispose();
                 return new EditCredentialProfileStepParameters(request.CredentialProfile);
             }
         }
@@ -84,10 +85,11 @@ public class AddAzureBlobCredentialStep : IWizardStep<AddAzureBlobCredentialStep
             new SensitiveString(sharedAccessSignature)
         );
 
+        using var credentialEntryToAdd = credential.ToCredentialEntry();
         await _mediator.Send(
             new AddCredentialCommand(
                 credentialsProviderConfiguration,
-                credential.ToCredentialEntry()
+                credentialEntryToAdd
             ),
             cancellationToken
         );

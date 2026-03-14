@@ -86,6 +86,8 @@ public class DeleteCredentialStep : IWizardStep<DeleteCredentialStepParameters>
             cancellationToken
         );
 
+        request.CredentialProfile.Dispose();
+
         return new EditCredentialProfileStepParameters(credentialProfile);
     }
 }

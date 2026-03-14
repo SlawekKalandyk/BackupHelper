@@ -50,6 +50,7 @@ public class EditAzureBlobCredentialStep : IWizardStep<EditAzureBlobCredentialSt
             Console.WriteLine(
                 "No Azure Blob Credentials available to edit. Please add a credential first."
             );
+            request.CredentialEntryToEdit?.Dispose();
             return new EditCredentialProfileStepParameters(request.CredentialProfile);
         }
 
@@ -78,6 +79,7 @@ public class EditAzureBlobCredentialStep : IWizardStep<EditAzureBlobCredentialSt
 
         if (choice == "Back to Credential Profile Menu")
         {
+            request.CredentialEntryToEdit?.Dispose();
             return new EditCredentialProfileStepParameters(request.CredentialProfile);
         }
 
@@ -101,6 +103,7 @@ public class EditAzureBlobCredentialStep : IWizardStep<EditAzureBlobCredentialSt
             Console.WriteLine(
                 $"No existing Azure Blob credentials found for {credentialEntryToEdit.EntryTitle}. Please create them first."
             );
+            request.CredentialEntryToEdit?.Dispose();
             return new EditCredentialProfileStepParameters(request.CredentialProfile);
         }
 
@@ -117,17 +120,20 @@ public class EditAzureBlobCredentialStep : IWizardStep<EditAzureBlobCredentialSt
             {
                 SharedAccessSignature = new SensitiveString(newSasToken),
             };
+            using var existingEntry = existingCredential.ToCredentialEntry();
+            using var newEntry = newCredential.ToCredentialEntry();
             await _mediator.Send(
                 new UpdateCredentialCommand(
                     credentialsProviderConfiguration,
-                    existingCredential.ToCredentialEntry(),
-                    newCredential.ToCredentialEntry()
+                    existingEntry,
+                    newEntry
                 ),
                 cancellationToken
             );
             Console.WriteLine("Azure Blob credential updated successfully!");
         }
 
+        request.CredentialEntryToEdit?.Dispose();
         return new EditCredentialProfileStepParameters(request.CredentialProfile);
     }
 }

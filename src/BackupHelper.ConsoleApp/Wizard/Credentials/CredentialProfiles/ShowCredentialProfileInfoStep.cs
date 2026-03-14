@@ -58,6 +58,7 @@ public class ShowCredentialProfileInfoStep : IWizardStep<ShowCredentialProfileIn
 
             if (credentialProfile == null)
             {
+                sensitivePassword.Dispose();
                 Console.WriteLine($"Credential profile '{credentialProfileName}' not found.");
 
                 return new ManageCredentialProfilesStepParameters();
@@ -70,6 +71,8 @@ public class ShowCredentialProfileInfoStep : IWizardStep<ShowCredentialProfileIn
         {
             Console.WriteLine(credential.ToDisplayString());
         }
+
+        credentialProfile.Dispose();
 
         return new ManageCredentialProfilesStepParameters();
     }

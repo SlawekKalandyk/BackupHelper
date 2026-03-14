@@ -62,6 +62,11 @@ public class EditCredentialProfileStep : IWizardStep<EditCredentialProfileStepPa
                 new GetCredentialProfileQuery(credentialProfileName, sensitivePassword),
                 cancellationToken
             );
+
+            if (credentialProfile == null)
+            {
+                sensitivePassword.Dispose();
+            }
         }
 
         if (credentialProfile == null)
@@ -88,6 +93,7 @@ public class EditCredentialProfileStep : IWizardStep<EditCredentialProfileStepPa
 
         if (choice == "Cancel")
         {
+            credentialProfile.Dispose();
             return new ManageCredentialProfilesStepParameters();
         }
 
@@ -121,6 +127,7 @@ public class EditCredentialProfileStep : IWizardStep<EditCredentialProfileStepPa
             return new DeleteCredentialStepParameters(credentialProfile);
         }
 
+        credentialProfile.Dispose();
         Console.WriteLine("Unknown choice. Please try again.");
 
         return new ManageCredentialProfilesStepParameters();
