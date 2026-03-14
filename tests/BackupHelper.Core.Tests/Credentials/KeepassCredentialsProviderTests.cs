@@ -17,12 +17,11 @@ public class KeePassCredentialsProviderTests : TestsBase
 
         var credentialsHandlerRegistry =
             ServiceScope.ServiceProvider.GetRequiredService<CredentialHandlerRegistry>();
-        using (
-            _ = new KeePassCredentialsProvider(
-                new(testDatabasePath, new SensitiveString("testPassword")),
-                credentialsHandlerRegistry
-            )
-        ) { }
+        using var config = new KeePassCredentialsProviderConfiguration(
+            testDatabasePath,
+            new SensitiveString("testPassword")
+        );
+        using (_ = new KeePassCredentialsProvider(config, credentialsHandlerRegistry)) { }
 
         Assert.That(File.Exists(testDatabasePath));
     }
@@ -33,21 +32,23 @@ public class KeePassCredentialsProviderTests : TestsBase
         var testDatabasePath = Path.Combine(TestsDirectoryRootPath, "test.kdbx");
         var credentialsHandlerRegistry =
             ServiceScope.ServiceProvider.GetRequiredService<CredentialHandlerRegistry>();
-        using var provider = new KeePassCredentialsProvider(
-            new(testDatabasePath, new SensitiveString("testPassword")),
-            credentialsHandlerRegistry
+        using var config = new KeePassCredentialsProviderConfiguration(
+            testDatabasePath,
+            new SensitiveString("testPassword")
         );
+        using var provider = new KeePassCredentialsProvider(config, credentialsHandlerRegistry);
 
-        var expectedCredential = TestCredential.CreateCredentialEntry(
+        using var expectedCredential = TestCredential.CreateCredentialEntry(
             "TestCredential",
             "TestUser",
             "TestPass"
         );
         provider.SetCredential(expectedCredential);
 
-        var actualCredential = provider
-            .GetCredential<TestCredential>(expectedCredential.EntryTitle)
-            ?.ToCredentialEntry();
+        using var retrievedCredential = provider.GetCredential<TestCredential>(
+            expectedCredential.EntryTitle
+        );
+        using var actualCredential = retrievedCredential?.ToCredentialEntry();
 
         Assert.That(actualCredential, Is.EqualTo(expectedCredential));
     }
@@ -58,12 +59,13 @@ public class KeePassCredentialsProviderTests : TestsBase
         var testDatabasePath = Path.Combine(TestsDirectoryRootPath, "test.kdbx");
         var credentialsHandlerRegistry =
             ServiceScope.ServiceProvider.GetRequiredService<CredentialHandlerRegistry>();
-        using var provider = new KeePassCredentialsProvider(
-            new(testDatabasePath, new SensitiveString("testPassword")),
-            credentialsHandlerRegistry
+        using var config = new KeePassCredentialsProviderConfiguration(
+            testDatabasePath,
+            new SensitiveString("testPassword")
         );
+        using var provider = new KeePassCredentialsProvider(config, credentialsHandlerRegistry);
 
-        var credential = TestCredential.CreateCredentialEntry(
+        using var credential = TestCredential.CreateCredentialEntry(
             "TestCredential",
             "TestUser",
             "TestPass"
@@ -76,7 +78,7 @@ public class KeePassCredentialsProviderTests : TestsBase
     [Test]
     public void GivenDatabaseWithExistingCredentials_WhenDatabaseIsNewlyOpened_ThenSameCredentialsAreRetrieved()
     {
-        var expectedCredential = TestCredential.CreateCredentialEntry(
+        using var expectedCredential = TestCredential.CreateCredentialEntry(
             "TestCredential",
             "TestUser",
             "TestPass"
@@ -84,26 +86,27 @@ public class KeePassCredentialsProviderTests : TestsBase
         var testDatabasePath = Path.Combine(TestsDirectoryRootPath, "test.kdbx");
         var credentialsHandlerRegistry =
             ServiceScope.ServiceProvider.GetRequiredService<CredentialHandlerRegistry>();
+
+        using var config = new KeePassCredentialsProviderConfiguration(
+            testDatabasePath,
+            new SensitiveString("testPassword")
+        );
+
         using (
-            var provider = new KeePassCredentialsProvider(
-                new(testDatabasePath, new SensitiveString("testPassword")),
-                credentialsHandlerRegistry
-            )
+            var provider = new KeePassCredentialsProvider(config, credentialsHandlerRegistry)
         )
         {
             provider.SetCredential(expectedCredential);
         }
 
         using (
-            var provider = new KeePassCredentialsProvider(
-                new(testDatabasePath, new SensitiveString("testPassword")),
-                credentialsHandlerRegistry
-            )
+            var provider = new KeePassCredentialsProvider(config, credentialsHandlerRegistry)
         )
         {
-            var actualCredential = provider
-                .GetCredential<TestCredential>(expectedCredential.EntryTitle)
-                ?.ToCredentialEntry();
+            using var retrievedCredential = provider.GetCredential<TestCredential>(
+                expectedCredential.EntryTitle
+            );
+            using var actualCredential = retrievedCredential?.ToCredentialEntry();
 
             Assert.That(actualCredential, Is.EqualTo(expectedCredential));
         }

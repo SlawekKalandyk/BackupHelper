@@ -45,10 +45,11 @@ public abstract class FileZipperTestsBase : ZipTestsBase
 
     protected IFileZipper CreateFileZipperWithPassword(string password)
     {
+        using var sensitivePassword = new SensitiveString(password);
         var fileZipperFactory =
             ServiceScope.ServiceProvider.GetRequiredService<IFileZipperFactory>();
 
-        return fileZipperFactory.Create(ZipFilePath, true, new SensitiveString(password));
+        return fileZipperFactory.Create(ZipFilePath, true, sensitivePassword);
     }
 
     protected void PrepareZipFileWithPassword(

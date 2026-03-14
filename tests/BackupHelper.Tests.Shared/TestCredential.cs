@@ -2,14 +2,14 @@
 
 namespace BackupHelper.Tests.Shared;
 
-public record TestCredential(string Title, string Username, string Password)
+public record TestCredential(string Title, string Username, SensitiveString Password)
     : CredentialBase<TestCredentialTitle>(new TestCredentialTitle(Title))
 {
     public const string CredentialType = "test";
 
     protected override string GetUsername() => Username;
 
-    protected override SensitiveString GetPassword() => new SensitiveString(Password);
+    protected override SensitiveString GetPassword() => Password;
 
     public static CredentialEntry CreateCredentialEntry(
         string title,
@@ -17,7 +17,7 @@ public record TestCredential(string Title, string Username, string Password)
         string password
     )
     {
-        var credential = new TestCredential(title, username, password);
+        using var credential = new TestCredential(title, username, new SensitiveString(password));
         return credential.ToCredentialEntry();
     }
 }

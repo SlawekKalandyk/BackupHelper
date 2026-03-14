@@ -9,7 +9,7 @@ public class TestCredentialHandler : CredentialHandlerBase<TestCredential>
     public override TestCredential FromCredentialEntry(CredentialEntry entry)
     {
         var title = entry.EntryTitle.Pairs[nameof(TestCredential.Title)];
-        return new TestCredential(title, entry.Username, entry.Password.Expose());
+        return new TestCredential(title, entry.Username, entry.Password.Clone());
     }
 
     protected override Task<bool> TestConnectionAsyncCore(

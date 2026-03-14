@@ -72,7 +72,8 @@ public class SMBTestConfigurationProvider
 
     public SMBConnection GetSMBConnection()
     {
-        return new SMBConnection(ServerAddress, string.Empty, ShareName, Username, new SensitiveString(Password));
+        using var password = new SensitiveString(Password);
+        return new SMBConnection(ServerAddress, string.Empty, ShareName, Username, password);
     }
 
     public void CreateTestDirectory(string directoryPath)

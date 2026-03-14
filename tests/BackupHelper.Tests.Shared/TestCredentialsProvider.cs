@@ -23,9 +23,20 @@ public class TestCredentialsProviderFactory : ICredentialsProviderFactory
     }
 
     public ICredentialsProvider GetDefaultCredentialsProvider() => TestCredentialsProvider;
+
+    public void Dispose()
+    {
+        TestCredentialsProvider.DisposeCredentials();
+    }
 }
 
-public record TestCredentialsProviderConfiguration : ICredentialsProviderConfiguration;
+public record TestCredentialsProviderConfiguration : ICredentialsProviderConfiguration
+{
+    public void Dispose()
+    {
+        // TODO release managed resources here
+    }
+}
 
 public class TestCredentialsProvider : ICredentialsProvider
 {
@@ -50,21 +61,36 @@ public class TestCredentialsProvider : ICredentialsProvider
 
     public void SetCredential(CredentialEntry credentialEntry)
     {
+        if (_credentials.TryGetValue(credentialEntry.EntryTitle, out var old))
+            old.Dispose();
         _credentials[credentialEntry.EntryTitle] = credentialEntry;
     }
 
     public void UpdateCredential(CredentialEntry credentialEntry)
     {
+        if (_credentials.TryGetValue(credentialEntry.EntryTitle, out var old))
+            old.Dispose();
         _credentials[credentialEntry.EntryTitle] = credentialEntry;
     }
 
     public void DeleteCredential(CredentialEntry credentialEntry)
     {
-        _credentials.Remove(credentialEntry.EntryTitle);
+        if (_credentials.Remove(credentialEntry.EntryTitle, out var old))
+            old.Dispose();
     }
 
     public IReadOnlyCollection<CredentialEntry> GetCredentials() =>
-        _credentials.Select(kvp => kvp.Value with { EntryTitle = kvp.Key }).ToList().AsReadOnly();
+        _credentials
+            .Values.Select(v => new CredentialEntry(v.EntryTitle, v.Username, v.Password.Clone()))
+            .ToList()
+            .AsReadOnly();
+
+    public void DisposeCredentials()
+    {
+        foreach (var entry in _credentials.Values)
+            entry.Dispose();
+        _credentials.Clear();
+    }
 
     public void Dispose() { }
 }
