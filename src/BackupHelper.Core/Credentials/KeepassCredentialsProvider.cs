@@ -72,9 +72,7 @@ public class KeePassCredentialsProvider : ICredentialsProvider
             return default;
 
         var user = foundEntry.Strings.ReadSafe(PwDefs.UserNameField);
-        var pass = GetSensitiveStringFromProtectedBinary(
-            foundEntry.Binaries.Get(PwDefs.PasswordField)
-        );
+        var pass = new SensitiveString(foundEntry.Strings.Get(PwDefs.PasswordField).ReadUtf8());
         var entry = new CredentialEntry(credentialEntryTitle, user, pass);
 
         return _credentialHandlerRegistry.FromCredentialEntry<T>(entry);
@@ -155,7 +153,7 @@ public class KeePassCredentialsProvider : ICredentialsProvider
             .Select(entry => new CredentialEntry(
                 CredentialEntryTitle.Parse(entry.Strings.ReadSafe(PwDefs.TitleField)),
                 entry.Strings.ReadSafe(PwDefs.UserNameField),
-                GetSensitiveStringFromProtectedBinary(entry.Binaries.Get(PwDefs.PasswordField))
+                new SensitiveString(entry.Strings.Get(PwDefs.PasswordField).ReadUtf8())
             ))
             .ToList();
     }
@@ -209,19 +207,6 @@ public class KeePassCredentialsProvider : ICredentialsProvider
         finally
         {
             CryptographicOperations.ZeroMemory(passwordBytes);
-        }
-    }
-
-    private SensitiveString GetSensitiveStringFromProtectedBinary(ProtectedBinary protectedBinary)
-    {
-        var binaryData = protectedBinary.ReadData();
-        try
-        {
-            return new SensitiveString(binaryData);
-        }
-        finally
-        {
-            CryptographicOperations.ZeroMemory(binaryData);
         }
     }
 
