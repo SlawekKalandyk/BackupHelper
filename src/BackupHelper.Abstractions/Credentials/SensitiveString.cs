@@ -99,7 +99,7 @@ public sealed class SensitiveString : IDisposable, IEquatable<SensitiveString>
             return false;
         if (ReferenceEquals(this, other))
             return true;
-        return _utf8Bytes.AsSpan().SequenceEqual(other._utf8Bytes.AsSpan());
+        return CryptographicOperations.FixedTimeEquals(_utf8Bytes, other._utf8Bytes);
     }
 
     /// <inheritdoc/>
