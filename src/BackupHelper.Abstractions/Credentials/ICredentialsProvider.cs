@@ -2,14 +2,23 @@
 
 public interface ICredentialsProvider : IDisposable
 {
-    public void SetCredential(ICredential credential) =>
-        SetCredential(credential.ToCredentialEntry());
+    public void SetCredential(ICredential credential)
+    {
+        using var credentialEntry = credential.ToCredentialEntry();
+        SetCredential(credentialEntry);
+    }
 
-    public void UpdateCredential(ICredential credential) =>
-        UpdateCredential(credential.ToCredentialEntry());
+    public void UpdateCredential(ICredential credential)
+    {
+        using var credentialEntry = credential.ToCredentialEntry();
+        UpdateCredential(credentialEntry);
+    }
 
-    public void DeleteCredential(ICredential credential) =>
-        DeleteCredential(credential.ToCredentialEntry());
+    public void DeleteCredential(ICredential credential)
+    {
+        using var credentialEntry = credential.ToCredentialEntry();
+        DeleteCredential(credentialEntry);
+    }
 
     public T? GetCredential<T>(ICredentialTitle credentialTitle)
         where T : ICredential => GetCredential<T>(credentialTitle.ToCredentialEntryTitle());
