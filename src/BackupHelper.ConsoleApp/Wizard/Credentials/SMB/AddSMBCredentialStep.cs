@@ -35,18 +35,20 @@ public class AddSMBCredentialStep : IWizardStep<AddSMBCredentialStepParameters>
             _applicationDataHandler.GetCredentialProfilesPath(),
             request.CredentialProfile.Name
         );
-        var credentialsProviderConfiguration = new KeePassCredentialsProviderConfiguration(
+        using var credentialsProviderConfiguration = new KeePassCredentialsProviderConfiguration(
             keePassDbLocation,
-            () => request.CredentialProfile.Password.Clone()
+            request.CredentialProfile.Password.Clone()
         );
 
         var server = AnsiConsole.Prompt(
-            new TextPrompt<string>("Enter SMB server address")
-                .Validate(ValidatorsHelper.IPAddressOrHostname)
+            new TextPrompt<string>("Enter SMB server address").Validate(
+                ValidatorsHelper.IPAddressOrHostname
+            )
         );
         var share = AnsiConsole.Prompt(
-            new TextPrompt<string>("Enter SMB share name")
-                .Validate(ValidatorsHelper.HasNoInvalidChars)
+            new TextPrompt<string>("Enter SMB share name").Validate(
+                ValidatorsHelper.HasNoInvalidChars
+            )
         );
         var credentialEntry = await _mediator.Send(
             new GetSMBCredentialQuery(credentialsProviderConfiguration, server, share),
@@ -75,18 +77,12 @@ public class AddSMBCredentialStep : IWizardStep<AddSMBCredentialStepParameters>
         }
 
         var username = AnsiConsole.Ask<string>("Enter SMB username");
-        var password = AnsiConsole.Prompt(
-            new TextPrompt<string>("Enter SMB password")
-                .Secret()
-        ).ToCharArray();
+        var password = SecureConsole.PromptPassword("Enter SMB password");
 
-        var credential = new SMBCredential(server, share, username, new SensitiveString(password));
+        using var credential = new SMBCredential(server, share, username, password);
         using var credentialEntryToAdd = credential.ToCredentialEntry();
         await _mediator.Send(
-            new AddCredentialCommand(
-                credentialsProviderConfiguration,
-                credentialEntryToAdd
-            ),
+            new AddCredentialCommand(credentialsProviderConfiguration, credentialEntryToAdd),
             cancellationToken
         );
 

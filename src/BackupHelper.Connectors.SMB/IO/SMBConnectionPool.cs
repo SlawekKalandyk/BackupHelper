@@ -19,7 +19,7 @@ public class SMBConnectionPool : ResourcePoolBase<SMBConnection, SMBShareInfo>
 
     protected override SMBConnection CreateResource(SMBShareInfo shareInfo)
     {
-        var credential = GetCredential(shareInfo);
+        using var credential = GetCredential(shareInfo);
 
         return new SMBConnection(
             shareInfo.ServerIPAddress,
@@ -50,7 +50,7 @@ public class SMBConnectionPool : ResourcePoolBase<SMBConnection, SMBShareInfo>
     private SMBCredential GetCredential(SMBShareInfo shareInfo)
     {
         var credentialTitle = new SMBCredentialTitle(shareInfo);
-        var credential = _credentialsProvider.GetCredential<SMBCredential>(credentialTitle);
+        using var credential = _credentialsProvider.GetCredential<SMBCredential>(credentialTitle);
 
         if (credential == null)
             throw new InvalidOperationException(
@@ -61,7 +61,7 @@ public class SMBConnectionPool : ResourcePoolBase<SMBConnection, SMBShareInfo>
             shareInfo.ServerIPAddress.ToString(),
             shareInfo.ShareName,
             credential.Username,
-            credential.Password!
+            credential.Password!.Clone()
         );
     }
 }

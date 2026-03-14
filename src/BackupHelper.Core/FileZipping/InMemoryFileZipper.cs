@@ -20,7 +20,11 @@ public class InMemoryFileZipperFactory : IFileZipperFactory
         _sourceManager = sourceManager;
     }
 
-    public IFileZipper Create(string zipFilePath, bool overwriteFileIfExists, SensitiveString? password)
+    public IFileZipper Create(
+        string zipFilePath,
+        bool overwriteFileIfExists,
+        SensitiveString? password
+    )
     {
         return new InMemoryFileZipper(
             _logger,
@@ -153,6 +157,7 @@ public class InMemoryFileZipper : FileZipperBase
 
     public override void Dispose()
     {
+        base.Dispose();
         _zipOutputStream.Dispose();
         _zipMemoryStream.Dispose();
     }

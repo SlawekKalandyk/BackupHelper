@@ -52,20 +52,13 @@ public class EditCredentialProfileStep : IWizardStep<EditCredentialProfileStepPa
                     .PageSize(5)
                     .AddChoices(credentialProfileNames)
             );
-            var password = AnsiConsole.Prompt(
-                new TextPrompt<string>("Enter the password for the credential profile")
-                    .Secret()
-            ).ToCharArray();
-            var sensitivePassword = new SensitiveString(password); // zeroes password array
+            using var sensitivePassword = SecureConsole.PromptPassword(
+                "Enter the password for the credential profile"
+            );
             credentialProfile = await _mediator.Send(
                 new GetCredentialProfileQuery(credentialProfileName, sensitivePassword),
                 cancellationToken
             );
-
-            if (credentialProfile == null)
-            {
-                sensitivePassword.Dispose();
-            }
         }
 
         if (credentialProfile == null)

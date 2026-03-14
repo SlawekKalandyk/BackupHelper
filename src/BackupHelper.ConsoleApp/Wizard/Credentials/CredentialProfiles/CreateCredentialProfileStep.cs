@@ -36,11 +36,7 @@ public class CreateCredentialProfileStep : IWizardStep<CreateCredentialProfileSt
             return new CreateCredentialProfileStepParameters();
         }
 
-        var password = AnsiConsole.Prompt(
-            new TextPrompt<string>("Enter credential profile password")
-                .Secret()
-        ).ToCharArray();
-        var sensitivePassword = new SensitiveString(password); // zeroes password array
+        using var sensitivePassword = SecureConsole.PromptPassword("Enter credential profile password");
 
         await _mediator.Send(
             new CreateCredentialProfileCommand(name, sensitivePassword),

@@ -77,11 +77,11 @@ public class CreateBackupStep : IWizardStep<CreateBackupStepParameters>
                 _applicationDataHandler.GetCredentialProfilesPath(),
                 backupProfile.CredentialProfileName
             );
-            var masterPassword = GetCredentialProfilePassword(keePassDbLocation);
+            using var masterPassword = GetCredentialProfilePassword(keePassDbLocation);
             var defaultCredentialsProviderConfiguration =
                 new KeePassCredentialsProviderConfiguration(
                     keePassDbLocation,
-                    () => masterPassword.Clone()
+                    masterPassword.Clone()
                 );
             _credentialsProviderFactory.SetDefaultCredentialsProviderConfiguration(
                 defaultCredentialsProviderConfiguration
@@ -114,14 +114,10 @@ public class CreateBackupStep : IWizardStep<CreateBackupStepParameters>
 
         while (sensitivePassword == null)
         {
-            var keePassDbPassword = AnsiConsole.Prompt(
-                new TextPrompt<string>("Enter credential profile password")
-                    .Secret()
-            ).ToCharArray();
-            sensitivePassword = new SensitiveString(keePassDbPassword);
+            sensitivePassword = SecureConsole.PromptPassword("Enter credential profile password");
             var correctPasswordProvided = KeePassCredentialsProvider.CanLogin(
                 keePassDbLocation,
-                () => sensitivePassword.Clone()
+                sensitivePassword
             );
 
             if (!correctPasswordProvided)

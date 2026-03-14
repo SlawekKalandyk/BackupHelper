@@ -1,6 +1,4 @@
-﻿using System.Runtime.InteropServices;
-using System.Security.Cryptography;
-using BackupHelper.Abstractions.Credentials;
+﻿using BackupHelper.Abstractions.Credentials;
 using BackupHelper.Core.BackupZipping;
 using BackupHelper.Core.Features;
 using BackupHelper.Core.Sinks;
@@ -59,21 +57,21 @@ public class PerformBackupStep : IWizardStep<PerformBackupStepParameters>
     )
     {
         var useEncryption = AnsiConsole.Confirm("Do you want to encrypt the backup?");
+
         SensitiveString? backupPassword = null;
-
-        if (useEncryption)
-        {
-            backupPassword = GetBackupPassword();
-        }
-
-        var backupPlan = BackupPlan.FromJsonFile(parameters.BackupPlanLocation);
-
-        if (!string.IsNullOrEmpty(backupPlan.LogDirectory))
-            AddBackupLogSink(backupPlan.LogDirectory);
-
         CreateBackupFileCommandResult? result = null;
         try
         {
+            if (useEncryption)
+            {
+                backupPassword = GetBackupPassword();
+            }
+
+            var backupPlan = BackupPlan.FromJsonFile(parameters.BackupPlanLocation);
+
+            if (!string.IsNullOrEmpty(backupPlan.LogDirectory))
+                AddBackupLogSink(backupPlan.LogDirectory);
+
             result = await _mediator.Send(
                 new CreateBackupFileCommand(
                     backupPlan,
@@ -99,6 +97,7 @@ public class PerformBackupStep : IWizardStep<PerformBackupStepParameters>
         }
         finally
         {
+            backupPassword?.Dispose();
             if (result != null && File.Exists(result.OutputFilePath))
             {
                 File.Delete(result.OutputFilePath);
@@ -135,33 +134,22 @@ public class PerformBackupStep : IWizardStep<PerformBackupStepParameters>
 
     private SensitiveString GetBackupPassword()
     {
-        char[]? backupPassword = null;
+        SensitiveString? backupPassword = null;
 
         while (backupPassword == null)
         {
-            backupPassword = AnsiConsole.Prompt(
-                new TextPrompt<string>("Enter backup password")
-                    .Secret()
-            ).ToCharArray();
-            var confirm = AnsiConsole.Prompt(
-                new TextPrompt<string>("Confirm password")
-                    .Secret()
-            ).ToCharArray();
+            backupPassword = SecureConsole.PromptPassword("Enter backup password");
+            using var confirm = SecureConsole.PromptPassword("Confirm password");
 
-            if (!backupPassword.SequenceEqual(confirm))
+            if (!backupPassword.Equals(confirm))
             {
                 Console.WriteLine("Passwords do not match. Please try again.");
-                CryptographicOperations.ZeroMemory(MemoryMarshal.AsBytes(backupPassword.AsSpan()));
-                CryptographicOperations.ZeroMemory(MemoryMarshal.AsBytes(confirm.AsSpan()));
+                backupPassword.Dispose();
                 backupPassword = null;
-            }
-            else
-            {
-                CryptographicOperations.ZeroMemory(MemoryMarshal.AsBytes(confirm.AsSpan()));
             }
         }
 
-        return new SensitiveString(backupPassword);
+        return backupPassword;
     }
 
     private IReadOnlyCollection<ISink> GetBackupSinks(BackupPlan backupPlan)

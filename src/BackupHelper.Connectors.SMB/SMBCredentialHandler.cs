@@ -22,7 +22,7 @@ public class SMBCredentialHandler : CredentialHandlerBase<SMBCredential>
             Server: server,
             ShareName: shareName,
             Username: entry.Username,
-            Password: entry.Password
+            Password: entry.Password.Clone()
         );
     }
 

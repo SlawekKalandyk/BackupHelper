@@ -1,4 +1,4 @@
-using System.Runtime.InteropServices;
+using System.Diagnostics;
 using System.Security.Cryptography;
 using System.Text;
 
@@ -15,7 +15,7 @@ public sealed class SensitiveString : IDisposable, IEquatable<SensitiveString>
 
     /// <remarks>
     /// WARNING: The source <paramref name="value"/> string cannot be zeroed from managed code.
-    /// Prefer the <see cref="SensitiveString(char[])"/> overload when the caller holds a mutable
+    /// Prefer the <see cref="SensitiveString(Span&lt;char&gt;)"/> overload when the caller holds a mutable
     /// char array, so the source is zeroed immediately after encoding.
     /// </remarks>
     public SensitiveString(string value)
@@ -24,21 +24,21 @@ public sealed class SensitiveString : IDisposable, IEquatable<SensitiveString>
     }
 
     /// <summary>
-    /// Accepts a mutable char array, encodes it to UTF-8 bytes, then immediately zeroes the
-    /// source array so the plaintext does not linger in memory. Prefer this overload when
-    /// the caller can provide a <c>char[]</c> (e.g. via <c>string.ToCharArray()</c>).
+    /// Accepts a mutable char array, encodes it to UTF-8 bytes. Prefer this overload when
+    /// the caller can provide a <c>Span&lt;char&gt;</c>
     /// </summary>
-    public SensitiveString(char[] chars)
+    public SensitiveString(Span<char> chars)
     {
-        _utf8Bytes = Encoding.UTF8.GetBytes(chars);
-        CryptographicOperations.ZeroMemory(MemoryMarshal.AsBytes(chars.AsSpan()));
+        var byteCount = Encoding.UTF8.GetByteCount(chars);
+        _utf8Bytes = new byte[byteCount];
+        Encoding.UTF8.GetBytes(chars, _utf8Bytes);
     }
 
     /// <summary>
     /// Creates a new <see cref="SensitiveString"/> from a UTF-8 byte span. The byte array is copied
     /// to ensure the original array can be zeroed without affecting the new instance.
     /// </summary>
-    public SensitiveString(ReadOnlySpan<byte> utf8Bytes)
+    public SensitiveString(Span<byte> utf8Bytes)
     {
         _utf8Bytes = utf8Bytes.ToArray();
     }
@@ -75,6 +75,13 @@ public sealed class SensitiveString : IDisposable, IEquatable<SensitiveString>
         return _utf8Bytes;
     }
 
+    ~SensitiveString()
+    {
+        // In release builds, silently zero. In debug builds, flag the miss.
+        Debug.Assert(_disposed, "SensitiveString was finalized without Dispose().");
+        Dispose();
+    }
+
     public void Dispose()
     {
         if (!_disposed)
@@ -82,6 +89,7 @@ public sealed class SensitiveString : IDisposable, IEquatable<SensitiveString>
             CryptographicOperations.ZeroMemory(_utf8Bytes);
             _disposed = true;
         }
+        GC.SuppressFinalize(this);
     }
 
     /// <inheritdoc/>

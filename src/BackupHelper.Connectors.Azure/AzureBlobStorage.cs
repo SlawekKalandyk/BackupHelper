@@ -5,12 +5,12 @@ namespace BackupHelper.Connectors.Azure;
 
 public class AzureBlobStorage
 {
-    private readonly AzureBlobCredential _credential;
+    private readonly string _accountName;
     private readonly BlobServiceClient _blobServiceClient;
 
     public AzureBlobStorage(AzureBlobCredential credential)
     {
-        _credential = credential;
+        _accountName = credential.AccountName;
         _blobServiceClient = CreateBlobServiceClient(credential);
     }
 
@@ -31,7 +31,7 @@ public class AzureBlobStorage
         if (!isContainerAvailable)
         {
             throw new InvalidOperationException(
-                $"The specified container '{containerName}' does not exist at the Azure Blob Storage account '{_credential.AccountName}'."
+                $"The specified container '{containerName}' does not exist at the Azure Blob Storage account '{_accountName}'."
             );
         }
 

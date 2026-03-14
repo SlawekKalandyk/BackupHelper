@@ -1,6 +1,6 @@
 ﻿namespace BackupHelper.Abstractions.Credentials;
 
-public interface ICredential
+public interface ICredential : IAsyncDisposable, IDisposable
 {
     ICredentialTitle CredentialTitle { get; }
 
@@ -32,5 +32,17 @@ public abstract record CredentialBase<TTitle>(TTitle CredentialTitle) : ICredent
             GetUsername(),
             GetPassword().Clone()
         );
+    }
+
+    public virtual void Dispose()
+    {
+        GetPassword().Dispose();
+        GC.SuppressFinalize(this);
+    }
+
+    public virtual ValueTask DisposeAsync()
+    {
+        Dispose();
+        return ValueTask.CompletedTask;
     }
 }

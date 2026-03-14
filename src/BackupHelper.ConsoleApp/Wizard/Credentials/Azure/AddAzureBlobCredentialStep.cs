@@ -38,9 +38,9 @@ public class AddAzureBlobCredentialStep : IWizardStep<AddAzureBlobCredentialStep
             request.CredentialProfile.Name
         );
 
-        var credentialsProviderConfiguration = new KeePassCredentialsProviderConfiguration(
+        using var credentialsProviderConfiguration = new KeePassCredentialsProviderConfiguration(
             keePassDbLocation,
-            () => request.CredentialProfile.Password.Clone()
+            request.CredentialProfile.Password.Clone()
         );
 
         var accountName = AnsiConsole.Ask<string>("Enter Azure Storage Account Name");
@@ -70,22 +70,15 @@ public class AddAzureBlobCredentialStep : IWizardStep<AddAzureBlobCredentialStep
             }
         }
 
-        var sharedAccessSignature = AnsiConsole.Prompt(
-            new TextPrompt<string>("Enter Azure Storage Account Shared Access Signature (SAS)")
-                .Secret()
-        ).ToCharArray();
-
-        var credential = new AzureBlobCredential(
-            accountName,
-            new SensitiveString(sharedAccessSignature)
+        var sharedAccessSignature = SecureConsole.PromptPassword(
+            "Enter Azure Storage Account Shared Access Signature (SAS)"
         );
+
+        using var credential = new AzureBlobCredential(accountName, sharedAccessSignature);
 
         using var credentialEntryToAdd = credential.ToCredentialEntry();
         await _mediator.Send(
-            new AddCredentialCommand(
-                credentialsProviderConfiguration,
-                credentialEntryToAdd
-            ),
+            new AddCredentialCommand(credentialsProviderConfiguration, credentialEntryToAdd),
             cancellationToken
         );
 

@@ -20,7 +20,11 @@ public class OnDiskFileZipperFactory : IFileZipperFactory
         _sourceManager = sourceManager;
     }
 
-    public IFileZipper Create(string zipFilePath, bool overwriteFileIfExists, SensitiveString? password)
+    public IFileZipper Create(
+        string zipFilePath,
+        bool overwriteFileIfExists,
+        SensitiveString? password
+    )
     {
         return new OnDiskFileZipper(
             _loggerFactory,

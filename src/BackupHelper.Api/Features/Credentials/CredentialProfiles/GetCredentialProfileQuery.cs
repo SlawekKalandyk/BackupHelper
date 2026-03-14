@@ -36,15 +36,20 @@ public class GetCredentialProfileQueryHandler
             return Task.FromResult<CredentialProfile?>(null);
         }
 
-        var keePassCredentialsProviderConfiguration = new KeePassCredentialsProviderConfiguration(
-            credentialProfileFilePath,
-            () => request.Password.Clone()
-        );
+        using var keePassCredentialsProviderConfiguration =
+            new KeePassCredentialsProviderConfiguration(
+                credentialProfileFilePath,
+                request.Password.Clone()
+            );
         using var credentialsProvider = _credentialsProviderFactory.Create(
             keePassCredentialsProviderConfiguration
         );
         var credentials = credentialsProvider.GetCredentials();
-        var credentialProfile = new CredentialProfile(request.Name, request.Password, credentials);
+        var credentialProfile = new CredentialProfile(
+            request.Name,
+            request.Password.Clone(),
+            credentials
+        );
 
         return Task.FromResult<CredentialProfile?>(credentialProfile);
     }

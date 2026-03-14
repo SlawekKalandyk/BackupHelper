@@ -1,6 +1,4 @@
-﻿using System.Runtime.InteropServices;
-using System.Security.Cryptography;
-using BackupHelper.Abstractions;
+﻿using BackupHelper.Abstractions;
 using BackupHelper.Abstractions.Credentials;
 using BackupHelper.Api.Features.Credentials;
 using BackupHelper.Api.Features.Credentials.CredentialProfiles;
@@ -85,18 +83,18 @@ public class EditSMBCredentialStep : IWizardStep<EditSMBCredentialStepParameters
             return new EditCredentialProfileStepParameters(request.CredentialProfile);
         }
 
-        var credentialsProviderConfiguration = new KeePassCredentialsProviderConfiguration(
+        using var credentialsProviderConfiguration = new KeePassCredentialsProviderConfiguration(
             Path.Combine(
                 _applicationDataHandler.GetCredentialProfilesPath(),
                 request.CredentialProfile.Name
             ),
-            () => request.CredentialProfile.Password.Clone()
+            request.CredentialProfile.Password.Clone()
         );
         using var credentialsProvider = _credentialsProviderFactory.Create(
             credentialsProviderConfiguration
         );
 
-        var existingCredential = credentialsProvider.GetCredential<SMBCredential>(
+        using var existingCredential = credentialsProvider.GetCredential<SMBCredential>(
             credentialEntryToEdit
         );
 
@@ -113,7 +111,11 @@ public class EditSMBCredentialStep : IWizardStep<EditSMBCredentialStepParameters
         {
             Console.WriteLine($"Current username: {existingCredential.Username}");
             var newUsername = AnsiConsole.Ask<string>("Enter new username");
-            var newCredential = existingCredential with { Username = newUsername };
+            using var newCredential = existingCredential with
+            {
+                Username = newUsername,
+                Password = existingCredential.Password.Clone()
+            };
             using var existingEntry = existingCredential.ToCredentialEntry();
             using var newEntry = newCredential.ToCredentialEntry();
             await _mediator.Send(
@@ -128,33 +130,17 @@ public class EditSMBCredentialStep : IWizardStep<EditSMBCredentialStepParameters
         }
         else if (choice == "Change password")
         {
-            var newPassword = AnsiConsole.Prompt(
-                new TextPrompt<string>("Enter new password")
-                    .Secret()
-            ).ToCharArray();
-            var confirmNewPassword = AnsiConsole.Prompt(
-                new TextPrompt<string>("Confirm new password")
-                    .Secret()
-            ).ToCharArray();
+            var newPassword = SecureConsole.PromptPassword("Enter new password");
+            using var confirmNewPassword = SecureConsole.PromptPassword("Confirm new password");
 
-            if (!newPassword.SequenceEqual(confirmNewPassword))
+            if (!newPassword.Equals(confirmNewPassword))
             {
                 Console.WriteLine("Passwords do not match. Please try again.");
-                CryptographicOperations.ZeroMemory(MemoryMarshal.AsBytes(newPassword.AsSpan()));
-                CryptographicOperations.ZeroMemory(
-                    MemoryMarshal.AsBytes(confirmNewPassword.AsSpan())
-                );
-                return new EditSMBCredentialStepParameters(
-                    request.CredentialProfile,
-                    credentialEntryToEdit
-                );
+                newPassword.Dispose();
+                return request with { CredentialEntryToEdit = credentialEntryToEdit };
             }
 
-            CryptographicOperations.ZeroMemory(MemoryMarshal.AsBytes(confirmNewPassword.AsSpan()));
-            var newSMBCredentials = existingCredential with
-            {
-                Password = new SensitiveString(newPassword),
-            };
+            using var newSMBCredentials = existingCredential with { Password = newPassword };
             using var existingPassEntry = existingCredential.ToCredentialEntry();
             using var newPassEntry = newSMBCredentials.ToCredentialEntry();
             await _mediator.Send(

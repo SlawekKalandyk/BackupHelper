@@ -28,7 +28,11 @@ public abstract class CredentialHandlerBase<T> : ICredentialHandler<T>
     public async Task<bool> TestConnectionAsync(
         CredentialEntry credentialEntry,
         CancellationToken cancellationToken = default
-    ) => await TestConnectionAsyncCore(FromCredentialEntry(credentialEntry), cancellationToken);
+    )
+    {
+        await using var credential = FromCredentialEntry(credentialEntry);
+        return await TestConnectionAsyncCore(credential, cancellationToken);
+    }
 
     public abstract T FromCredentialEntry(CredentialEntry entry);
 

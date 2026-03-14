@@ -45,11 +45,9 @@ public class ShowCredentialProfileInfoStep : IWizardStep<ShowCredentialProfileIn
                     .AddChoices(credentialProfileNames)
             );
 
-            var password = AnsiConsole.Prompt(
-                new TextPrompt<string>("Enter the password for the credential profile")
-                    .Secret()
-            ).ToCharArray();
-            var sensitivePassword = new SensitiveString(password); // zeroes password array
+            using var sensitivePassword = SecureConsole.PromptPassword(
+                "Enter the password for the credential profile"
+            );
             credentialProfile = await _mediator.Send(
                 new GetCredentialProfileQuery(credentialProfileName, sensitivePassword),
                 cancellationToken
@@ -57,9 +55,7 @@ public class ShowCredentialProfileInfoStep : IWizardStep<ShowCredentialProfileIn
 
             if (credentialProfile == null)
             {
-                sensitivePassword.Dispose();
                 Console.WriteLine($"Credential profile '{credentialProfileName}' not found.");
-
                 return new ManageCredentialProfilesStepParameters();
             }
         }

@@ -28,7 +28,9 @@ public class SelectKeePassDatabaseStep : IWizardStep<SelectKeePassDatabaseStepPa
 
         if (string.IsNullOrEmpty(parameters.KeePassDbLocation))
         {
-            var selectKeePassDb = AnsiConsole.Confirm("Do you want to select an existing KeePass DB?");
+            var selectKeePassDb = AnsiConsole.Confirm(
+                "Do you want to select an existing KeePass DB?"
+            );
 
             if (!selectKeePassDb)
             {
@@ -45,11 +47,11 @@ public class SelectKeePassDatabaseStep : IWizardStep<SelectKeePassDatabaseStepPa
 
         if (File.Exists(keePassDbLocation))
         {
-            var masterPassword = GetKeePassDbPassword(keePassDbLocation);
+            using var masterPassword = GetKeePassDbPassword(keePassDbLocation);
             var defaultCredentialsProviderConfiguration =
                 new KeePassCredentialsProviderConfiguration(
                     keePassDbLocation,
-                    () => masterPassword.Clone()
+                    masterPassword.Clone()
                 );
             _credentialsProviderFactory.SetDefaultCredentialsProviderConfiguration(
                 defaultCredentialsProviderConfiguration
@@ -77,14 +79,10 @@ public class SelectKeePassDatabaseStep : IWizardStep<SelectKeePassDatabaseStepPa
 
         while (sensitivePassword == null)
         {
-            var keePassDbPassword = AnsiConsole.Prompt(
-                new TextPrompt<string>("Enter KeePass DB password")
-                    .Secret()
-            ).ToCharArray();
-            sensitivePassword = new SensitiveString(keePassDbPassword);
+            sensitivePassword = SecureConsole.PromptPassword("Enter KeePass DB password");
             var correctPasswordProvided = KeePassCredentialsProvider.CanLogin(
                 keePassDbLocation,
-                () => sensitivePassword.Clone()
+                sensitivePassword
             );
 
             if (!correctPasswordProvided)
