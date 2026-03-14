@@ -30,7 +30,7 @@ public abstract record CredentialBase<TTitle>(TTitle CredentialTitle) : ICredent
         return new CredentialEntry(
             CredentialTitle.ToCredentialEntryTitle(),
             GetUsername(),
-            GetPassword()
+            GetPassword().Clone()
         );
     }
 }

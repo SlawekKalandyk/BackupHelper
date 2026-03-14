@@ -33,7 +33,7 @@ public class CheckCredentialsConnectivityQueryHandler
         CancellationToken cancellationToken
     )
     {
-        var credentialProfile = await _mediator.Send(
+        using var credentialProfile = await _mediator.Send(
             new GetCredentialProfileQuery(
                 request.CredentialProfileName,
                 // Create a fresh SensitiveString so GetCredentialProfileQuery owns its copy.

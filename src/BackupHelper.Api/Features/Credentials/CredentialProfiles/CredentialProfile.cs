@@ -9,5 +9,10 @@ public record CredentialProfile(
     IReadOnlyCollection<CredentialEntry> Credentials
 ) : IDisposable
 {
-    public void Dispose() => Password.Dispose();
+    public void Dispose()
+    {
+        Password.Dispose();
+        foreach (var credential in Credentials)
+            credential.Dispose();
+    }
 }
