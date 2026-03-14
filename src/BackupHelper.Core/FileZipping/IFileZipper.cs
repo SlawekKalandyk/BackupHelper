@@ -1,8 +1,10 @@
-﻿namespace BackupHelper.Core.FileZipping;
+﻿using BackupHelper.Abstractions.Credentials;
+
+namespace BackupHelper.Core.FileZipping;
 
 public interface IFileZipperFactory
 {
-    IFileZipper Create(string zipFilePath, bool overwriteFileIfExists, string? password = null);
+    IFileZipper Create(string zipFilePath, bool overwriteFileIfExists, SensitiveString? password = null);
 }
 
 public interface IFileZipper : IDisposable

@@ -1,4 +1,6 @@
-﻿using BackupHelper.Abstractions;
+﻿using System.Runtime.InteropServices;
+using System.Security.Cryptography;
+using BackupHelper.Abstractions;
 using BackupHelper.Abstractions.Credentials;
 using BackupHelper.Api.Features.Credentials;
 using BackupHelper.Api.Features.Credentials.CredentialProfiles;
@@ -84,7 +86,7 @@ public class EditSMBCredentialStep : IWizardStep<EditSMBCredentialStepParameters
                 _applicationDataHandler.GetCredentialProfilesPath(),
                 request.CredentialProfile.Name
             ),
-            request.CredentialProfile.Password
+            () => request.CredentialProfile.Password.Clone()
         );
         using var credentialsProvider = _credentialsProviderFactory.Create(
             credentialsProviderConfiguration
@@ -122,26 +124,31 @@ public class EditSMBCredentialStep : IWizardStep<EditSMBCredentialStepParameters
         }
         else if (choice == "Change password")
         {
-            var newPassword = Prompt.Password(
-                "Enter new password",
-                validators: [Validators.Required()]
-            );
-            var confirmNewPassword = Prompt.Password(
-                "Confirm new password",
-                validators: [Validators.Required()]
-            );
+            var newPassword = Prompt
+                .Password("Enter new password", validators: [Validators.Required()])
+                .ToCharArray();
+            var confirmNewPassword = Prompt
+                .Password("Confirm new password", validators: [Validators.Required()])
+                .ToCharArray();
 
-            if (newPassword != confirmNewPassword)
+            if (!newPassword.SequenceEqual(confirmNewPassword))
             {
                 Console.WriteLine("Passwords do not match. Please try again.");
-
+                CryptographicOperations.ZeroMemory(MemoryMarshal.AsBytes(newPassword.AsSpan()));
+                CryptographicOperations.ZeroMemory(
+                    MemoryMarshal.AsBytes(confirmNewPassword.AsSpan())
+                );
                 return new EditSMBCredentialStepParameters(
                     request.CredentialProfile,
                     credentialEntryToEdit
                 );
             }
 
-            var newSMBCredentials = existingCredential with { Password = newPassword };
+            CryptographicOperations.ZeroMemory(MemoryMarshal.AsBytes(confirmNewPassword.AsSpan()));
+            var newSMBCredentials = existingCredential with
+            {
+                Password = new SensitiveString(newPassword),
+            };
             await _mediator.Send(
                 new UpdateCredentialCommand(
                     credentialsProviderConfiguration,

@@ -69,7 +69,7 @@ public class DeleteCredentialStep : IWizardStep<DeleteCredentialStepParameters>
                 _applicationDataHandler.GetCredentialProfilesPath(),
                 request.CredentialProfile.Name
             ),
-            request.CredentialProfile.Password
+            () => request.CredentialProfile.Password.Clone()
         );
 
         await _mediator.Send(
@@ -81,7 +81,7 @@ public class DeleteCredentialStep : IWizardStep<DeleteCredentialStepParameters>
         var credentialProfile = await _mediator.Send(
             new GetCredentialProfileQuery(
                 request.CredentialProfile.Name,
-                request.CredentialProfile.Password
+                request.CredentialProfile.Password.Clone()
             ),
             cancellationToken
         );

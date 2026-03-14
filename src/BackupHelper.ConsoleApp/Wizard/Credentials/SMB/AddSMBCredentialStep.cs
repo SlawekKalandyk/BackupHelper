@@ -1,4 +1,5 @@
 ﻿using BackupHelper.Abstractions;
+using BackupHelper.Abstractions.Credentials;
 using BackupHelper.Api.Features.Credentials;
 using BackupHelper.Api.Features.Credentials.CredentialProfiles;
 using BackupHelper.Api.Features.Credentials.SMB;
@@ -36,7 +37,7 @@ public class AddSMBCredentialStep : IWizardStep<AddSMBCredentialStepParameters>
         );
         var credentialsProviderConfiguration = new KeePassCredentialsProviderConfiguration(
             keePassDbLocation,
-            request.CredentialProfile.Password
+            () => request.CredentialProfile.Password.Clone()
         );
 
         var server = Prompt.Input<string>(
@@ -76,9 +77,11 @@ public class AddSMBCredentialStep : IWizardStep<AddSMBCredentialStepParameters>
             "Enter SMB username",
             validators: [Validators.Required()]
         );
-        var password = Prompt.Password("Enter SMB password", validators: [Validators.Required()]);
+        var password = Prompt
+            .Password("Enter SMB password", validators: [Validators.Required()])
+            .ToCharArray();
 
-        var credential = new SMBCredential(server, share, username, password);
+        var credential = new SMBCredential(server, share, username, new SensitiveString(password));
         await _mediator.Send(
             new AddCredentialCommand(
                 credentialsProviderConfiguration,

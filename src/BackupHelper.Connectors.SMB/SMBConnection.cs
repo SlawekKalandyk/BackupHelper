@@ -1,4 +1,5 @@
 ﻿using System.Net;
+using BackupHelper.Abstractions.Credentials;
 using BackupHelper.Connectors.SMB.IO;
 using SMBLibrary;
 using SMBLibrary.Client;
@@ -15,7 +16,7 @@ public class SMBConnection : IDisposable
         string domainName,
         string shareName,
         string username,
-        string password
+        SensitiveString password
     )
     {
         _smb2Client = new SMB2Client();
@@ -24,7 +25,7 @@ public class SMBConnection : IDisposable
         if (!connected)
             throw new InvalidOperationException($"Failed to connect to SMB server at {serverName}");
 
-        var status = _smb2Client.Login(domainName, username, password);
+        var status = _smb2Client.Login(domainName, username, password.Expose());
         SMBHelper.ThrowIfStatusNotSuccess(status, nameof(_smb2Client.Login));
 
         _smbFileStore = _smb2Client.TreeConnect(shareName, out status);
@@ -36,7 +37,7 @@ public class SMBConnection : IDisposable
         string domainName,
         string shareName,
         string username,
-        string password
+        SensitiveString password
     )
     {
         _smb2Client = new SMB2Client();
@@ -45,7 +46,7 @@ public class SMBConnection : IDisposable
         if (!connected)
             throw new InvalidOperationException($"Failed to connect to SMB server at {ipAddress}");
 
-        var status = _smb2Client.Login(domainName, username, password);
+        var status = _smb2Client.Login(domainName, username, password.Expose());
         SMBHelper.ThrowIfStatusNotSuccess(status, nameof(_smb2Client.Login));
 
         _smbFileStore = _smb2Client.TreeConnect(shareName, out status);

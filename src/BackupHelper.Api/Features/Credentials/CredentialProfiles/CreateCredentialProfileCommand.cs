@@ -7,7 +7,7 @@ namespace BackupHelper.Api.Features.Credentials.CredentialProfiles;
 
 public record CreateCredentialProfileCommand(
     string CredentialProfileName,
-    string CredentialProfilePassword
+    SensitiveString CredentialProfilePassword
 ) : IRequest;
 
 public class CreateCredentialProfileCommandHandler : IRequestHandler<CreateCredentialProfileCommand>
@@ -40,7 +40,7 @@ public class CreateCredentialProfileCommandHandler : IRequestHandler<CreateCrede
 
         var keePassCredentialsProviderConfiguration = new KeePassCredentialsProviderConfiguration(
             credentialProfilePath,
-            request.CredentialProfilePassword
+            () => request.CredentialProfilePassword.Clone()
         );
         using var _ = _credentialsProviderFactory.Create(keePassCredentialsProviderConfiguration);
 

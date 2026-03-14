@@ -23,7 +23,7 @@ public abstract class SMBTestsBase : TestsBase
             SMBTestConfigurationProvider.ServerAddress,
             SMBTestConfigurationProvider.ShareName,
             SMBTestConfigurationProvider.Username,
-            SMBTestConfigurationProvider.Password
+            new SensitiveString(SMBTestConfigurationProvider.Password)
         ).ToCredentialEntry();
         credentialsProvider.SetCredential(credentialEntry);
     }

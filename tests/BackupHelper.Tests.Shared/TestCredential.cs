@@ -9,7 +9,7 @@ public record TestCredential(string Title, string Username, string Password)
 
     protected override string GetUsername() => Username;
 
-    protected override string GetPassword() => Password;
+    protected override SensitiveString GetPassword() => new SensitiveString(Password);
 
     public static CredentialEntry CreateCredentialEntry(
         string title,

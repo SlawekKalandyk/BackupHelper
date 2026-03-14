@@ -1,4 +1,5 @@
-﻿using BackupHelper.Core.Credentials;
+﻿using BackupHelper.Abstractions.Credentials;
+using BackupHelper.Core.Credentials;
 using BackupHelper.Tests.Shared;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -18,7 +19,7 @@ public class KeePassCredentialsProviderTests : TestsBase
             ServiceScope.ServiceProvider.GetRequiredService<CredentialHandlerRegistry>();
         using (
             _ = new KeePassCredentialsProvider(
-                new(testDatabasePath, "testPassword"),
+                new(testDatabasePath, () => new SensitiveString("testPassword")),
                 credentialsHandlerRegistry
             )
         ) { }
@@ -33,7 +34,7 @@ public class KeePassCredentialsProviderTests : TestsBase
         var credentialsHandlerRegistry =
             ServiceScope.ServiceProvider.GetRequiredService<CredentialHandlerRegistry>();
         using var provider = new KeePassCredentialsProvider(
-            new(testDatabasePath, "testPassword"),
+            new(testDatabasePath, () => new SensitiveString("testPassword")),
             credentialsHandlerRegistry
         );
 
@@ -58,7 +59,7 @@ public class KeePassCredentialsProviderTests : TestsBase
         var credentialsHandlerRegistry =
             ServiceScope.ServiceProvider.GetRequiredService<CredentialHandlerRegistry>();
         using var provider = new KeePassCredentialsProvider(
-            new(testDatabasePath, "testPassword"),
+            new(testDatabasePath, () => new SensitiveString("testPassword")),
             credentialsHandlerRegistry
         );
 
@@ -85,7 +86,7 @@ public class KeePassCredentialsProviderTests : TestsBase
             ServiceScope.ServiceProvider.GetRequiredService<CredentialHandlerRegistry>();
         using (
             var provider = new KeePassCredentialsProvider(
-                new(testDatabasePath, "testPassword"),
+                new(testDatabasePath, () => new SensitiveString("testPassword")),
                 credentialsHandlerRegistry
             )
         )
@@ -95,7 +96,7 @@ public class KeePassCredentialsProviderTests : TestsBase
 
         using (
             var provider = new KeePassCredentialsProvider(
-                new(testDatabasePath, "testPassword"),
+                new(testDatabasePath, () => new SensitiveString("testPassword")),
                 credentialsHandlerRegistry
             )
         )

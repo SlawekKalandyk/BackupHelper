@@ -1,4 +1,5 @@
-﻿using BackupHelper.Api.Features.Credentials.CredentialProfiles;
+﻿using BackupHelper.Abstractions.Credentials;
+using BackupHelper.Api.Features.Credentials.CredentialProfiles;
 using MediatR;
 using Sharprompt;
 
@@ -43,12 +44,15 @@ public class ShowCredentialProfileInfoStep : IWizardStep<ShowCredentialProfileIn
                 5
             );
 
-            var password = Prompt.Password(
-                "Enter the password for the credential profile",
-                validators: [Validators.Required()]
-            );
+            var password = Prompt
+                .Password(
+                    "Enter the password for the credential profile",
+                    validators: [Validators.Required()]
+                )
+                .ToCharArray();
+            var sensitivePassword = new SensitiveString(password); // zeroes password array
             credentialProfile = await _mediator.Send(
-                new GetCredentialProfileQuery(credentialProfileName, password),
+                new GetCredentialProfileQuery(credentialProfileName, sensitivePassword),
                 cancellationToken
             );
 

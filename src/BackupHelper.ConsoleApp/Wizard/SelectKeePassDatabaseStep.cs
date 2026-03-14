@@ -1,5 +1,4 @@
-﻿using BackupHelper.Abstractions;
-using BackupHelper.Abstractions.Credentials;
+﻿using BackupHelper.Abstractions.Credentials;
 using BackupHelper.Core.Credentials;
 using Sharprompt;
 
@@ -49,9 +48,12 @@ public class SelectKeePassDatabaseStep : IWizardStep<SelectKeePassDatabaseStepPa
 
         if (File.Exists(keePassDbLocation))
         {
-            var keePassDbPassword = GetKeePassDbPassword(keePassDbLocation);
+            var masterPassword = GetKeePassDbPassword(keePassDbLocation);
             var defaultCredentialsProviderConfiguration =
-                new KeePassCredentialsProviderConfiguration(keePassDbLocation, keePassDbPassword);
+                new KeePassCredentialsProviderConfiguration(
+                    keePassDbLocation,
+                    () => masterPassword.Clone()
+                );
             _credentialsProviderFactory.SetDefaultCredentialsProviderConfiguration(
                 defaultCredentialsProviderConfiguration
             );
@@ -60,8 +62,7 @@ public class SelectKeePassDatabaseStep : IWizardStep<SelectKeePassDatabaseStepPa
                 new PerformBackupStepParameters(
                     parameters.BackupPlanLocation,
                     parameters.OutputDirectory,
-                    keePassDbLocation,
-                    keePassDbPassword
+                    keePassDbLocation
                 )
             );
         }
@@ -73,25 +74,27 @@ public class SelectKeePassDatabaseStep : IWizardStep<SelectKeePassDatabaseStepPa
         }
     }
 
-    private string GetKeePassDbPassword(string keePassDbLocation)
+    private SensitiveString GetKeePassDbPassword(string keePassDbLocation)
     {
-        string? keePassDbPassword = null;
+        SensitiveString? sensitivePassword = null;
 
-        while (keePassDbPassword == null)
+        while (sensitivePassword == null)
         {
-            keePassDbPassword = Prompt.Password("Enter KeePass DB password");
+            var keePassDbPassword = Prompt.Password("Enter KeePass DB password").ToCharArray();
+            sensitivePassword = new SensitiveString(keePassDbPassword);
             var correctPasswordProvided = KeePassCredentialsProvider.CanLogin(
                 keePassDbLocation,
-                keePassDbPassword
+                () => sensitivePassword.Clone()
             );
 
             if (!correctPasswordProvided)
             {
                 Console.WriteLine("Incorrect password. Please try again.");
-                keePassDbPassword = null;
+                sensitivePassword.Dispose();
+                sensitivePassword = null;
             }
         }
 
-        return keePassDbPassword;
+        return sensitivePassword;
     }
 }

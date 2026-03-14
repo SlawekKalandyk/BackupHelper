@@ -86,7 +86,7 @@ public class EditAzureBlobCredentialStep : IWizardStep<EditAzureBlobCredentialSt
                 _applicationDataHandler.GetCredentialProfilesPath(),
                 request.CredentialProfile.Name
             ),
-            request.CredentialProfile.Password
+            () => request.CredentialProfile.Password.Clone()
         );
         using var credentialsProvider = _credentialsProviderFactory.Create(
             credentialsProviderConfiguration
@@ -106,12 +106,17 @@ public class EditAzureBlobCredentialStep : IWizardStep<EditAzureBlobCredentialSt
 
         if (choice == "Change Shared Access Storage token")
         {
-            var newSasToken = Prompt.Password(
-                "Enter new Shared Access Storage token",
-                validators: [Validators.Required()]
-            );
+            var newSasToken = Prompt
+                .Password(
+                    "Enter new Shared Access Storage token",
+                    validators: [Validators.Required()]
+                )
+                .ToCharArray();
 
-            var newCredential = existingCredential with { SharedAccessSignature = newSasToken };
+            var newCredential = existingCredential with
+            {
+                SharedAccessSignature = new SensitiveString(newSasToken),
+            };
             await _mediator.Send(
                 new UpdateCredentialCommand(
                     credentialsProviderConfiguration,

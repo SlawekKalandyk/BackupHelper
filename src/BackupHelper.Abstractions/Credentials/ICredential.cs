@@ -23,7 +23,7 @@ public abstract record CredentialBase<TTitle>(TTitle CredentialTitle) : ICredent
 
     protected abstract string GetUsername();
 
-    protected abstract string GetPassword();
+    protected abstract SensitiveString GetPassword();
 
     public CredentialEntry ToCredentialEntry()
     {

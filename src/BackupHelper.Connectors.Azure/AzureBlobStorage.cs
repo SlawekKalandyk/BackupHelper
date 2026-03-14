@@ -88,7 +88,7 @@ public class AzureBlobStorage
     private BlobServiceClient CreateBlobServiceClient(AzureBlobCredential credential)
     {
         var blobServiceUri = new Uri(GetBlobServiceEndpoint(credential));
-        var azureSasCredential = new AzureSasCredential(credential.SharedAccessSignature);
+        var azureSasCredential = new AzureSasCredential(credential.SharedAccessSignature.Expose());
         var blobClientOptions = new BlobClientOptions()
         {
             GeoRedundantSecondaryUri = new Uri(GetBlobServiceSecondaryEndpoint(credential)),

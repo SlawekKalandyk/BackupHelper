@@ -1,4 +1,5 @@
 ﻿using BackupHelper.Abstractions;
+using BackupHelper.Abstractions.Credentials;
 using BackupHelper.Api.Features.Credentials;
 using BackupHelper.Api.Features.Credentials.Azure;
 using BackupHelper.Api.Features.Credentials.CredentialProfiles;
@@ -39,7 +40,7 @@ public class AddAzureBlobCredentialStep : IWizardStep<AddAzureBlobCredentialStep
 
         var credentialsProviderConfiguration = new KeePassCredentialsProviderConfiguration(
             keePassDbLocation,
-            request.CredentialProfile.Password
+            () => request.CredentialProfile.Password.Clone()
         );
 
         var accountName = Prompt.Input<string>(
@@ -71,12 +72,17 @@ public class AddAzureBlobCredentialStep : IWizardStep<AddAzureBlobCredentialStep
             }
         }
 
-        var sharedAccessSignature = Prompt.Password(
-            "Enter Azure Storage Account Shared Access Signature (SAS)",
-            validators: [Validators.Required()]
-        );
+        var sharedAccessSignature = Prompt
+            .Password(
+                "Enter Azure Storage Account Shared Access Signature (SAS)",
+                validators: [Validators.Required()]
+            )
+            .ToCharArray();
 
-        var credential = new AzureBlobCredential(accountName, sharedAccessSignature);
+        var credential = new AzureBlobCredential(
+            accountName,
+            new SensitiveString(sharedAccessSignature)
+        );
 
         await _mediator.Send(
             new AddCredentialCommand(

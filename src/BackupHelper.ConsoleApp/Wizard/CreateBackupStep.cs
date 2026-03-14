@@ -3,9 +3,7 @@ using BackupHelper.Abstractions.Credentials;
 using BackupHelper.Api.Features.BackupProfiles;
 using BackupHelper.Api.Features.Credentials;
 using BackupHelper.Api.Features.Credentials.CredentialProfiles;
-using BackupHelper.Api.Features.Credentials.SMB;
 using BackupHelper.Core.Credentials;
-using BackupHelper.Core.Features;
 using MediatR;
 using Sharprompt;
 
@@ -74,11 +72,11 @@ public class CreateBackupStep : IWizardStep<CreateBackupStepParameters>
                 _applicationDataHandler.GetCredentialProfilesPath(),
                 backupProfile.CredentialProfileName
             );
-            var credentialProfilePassword = GetCredentialProfilePassword(keePassDbLocation);
+            var masterPassword = GetCredentialProfilePassword(keePassDbLocation);
             var defaultCredentialsProviderConfiguration =
                 new KeePassCredentialsProviderConfiguration(
                     keePassDbLocation,
-                    credentialProfilePassword
+                    () => masterPassword.Clone()
                 );
             _credentialsProviderFactory.SetDefaultCredentialsProviderConfiguration(
                 defaultCredentialsProviderConfiguration
@@ -86,7 +84,7 @@ public class CreateBackupStep : IWizardStep<CreateBackupStepParameters>
 
             var canBackup = await CanBackupWithCredentialProfile(
                 backupProfile.CredentialProfileName,
-                credentialProfilePassword,
+                masterPassword,
                 cancellationToken
             );
 
@@ -94,8 +92,7 @@ public class CreateBackupStep : IWizardStep<CreateBackupStepParameters>
                 ? new PerformBackupStepParameters(
                     backupProfile.BackupPlanLocation,
                     backupProfile.WorkingDirectory,
-                    keePassDbLocation,
-                    credentialProfilePassword
+                    keePassDbLocation
                 )
                 : new MainMenuStepParameters();
         }
@@ -112,31 +109,33 @@ public class CreateBackupStep : IWizardStep<CreateBackupStepParameters>
         return new SelectKeePassDatabaseStepParameters(backupPlanLocation, outputDirectory);
     }
 
-    private string GetCredentialProfilePassword(string keePassDbLocation)
+    private SensitiveString GetCredentialProfilePassword(string keePassDbLocation)
     {
-        string? keePassDbPassword = null;
+        SensitiveString? sensitivePassword = null;
 
-        while (keePassDbPassword == null)
+        while (sensitivePassword == null)
         {
-            keePassDbPassword = Prompt.Password("Enter credential profile password");
+            var keePassDbPassword = Prompt.Password("Enter credential profile password").ToCharArray();
+            sensitivePassword = new SensitiveString(keePassDbPassword);
             var correctPasswordProvided = KeePassCredentialsProvider.CanLogin(
                 keePassDbLocation,
-                keePassDbPassword
+                () => sensitivePassword.Clone()
             );
 
             if (!correctPasswordProvided)
             {
                 Console.WriteLine("Incorrect password. Please try again.");
-                keePassDbPassword = null;
+                sensitivePassword.Dispose();
+                sensitivePassword = null;
             }
         }
 
-        return keePassDbPassword;
+        return sensitivePassword;
     }
 
     private async Task<bool> CanBackupWithCredentialProfile(
         string credentialProfileName,
-        string credentialProfilePassword,
+        SensitiveString credentialProfilePassword,
         CancellationToken cancellationToken
     )
     {

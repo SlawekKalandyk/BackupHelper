@@ -1,4 +1,7 @@
-﻿using BackupHelper.Core.BackupZipping;
+﻿using System.Runtime.InteropServices;
+using System.Security.Cryptography;
+using BackupHelper.Abstractions.Credentials;
+using BackupHelper.Core.BackupZipping;
 using BackupHelper.Core.Features;
 using BackupHelper.Core.Sinks;
 using BackupHelper.Sinks.Abstractions;
@@ -21,19 +24,16 @@ public class PerformBackupStepParameters : IWizardParameters
     public PerformBackupStepParameters(
         string backupPlanLocation,
         string? workingDirectory,
-        string keePassDbLocation,
-        string keePassDbPassword
+        string keePassDbLocation
     )
         : this(backupPlanLocation, workingDirectory)
     {
         KeePassDbLocation = keePassDbLocation;
-        KeePassDbPassword = keePassDbPassword;
     }
 
     public string BackupPlanLocation { get; }
     public string? WorkingDirectory { get; }
     public string? KeePassDbLocation { get; }
-    public string? KeePassDbPassword { get; }
 }
 
 public class PerformBackupStep : IWizardStep<PerformBackupStepParameters>
@@ -59,7 +59,7 @@ public class PerformBackupStep : IWizardStep<PerformBackupStepParameters>
     )
     {
         var useEncryption = Prompt.Confirm("Do you want to encrypt the backup?");
-        string? backupPassword = null;
+        SensitiveString? backupPassword = null;
 
         if (useEncryption)
         {
@@ -133,23 +133,29 @@ public class PerformBackupStep : IWizardStep<PerformBackupStepParameters>
         }
     }
 
-    private string GetBackupPassword()
+    private SensitiveString GetBackupPassword()
     {
-        string? backupPassword = null;
+        char[]? backupPassword = null;
 
         while (backupPassword == null)
         {
-            backupPassword = Prompt.Password("Enter backup password");
-            var confirm = Prompt.Password("Confirm password");
+            backupPassword = Prompt.Password("Enter backup password").ToCharArray();
+            var confirm = Prompt.Password("Confirm password").ToCharArray();
 
-            if (backupPassword != confirm)
+            if (!backupPassword.SequenceEqual(confirm))
             {
                 Console.WriteLine("Passwords do not match. Please try again.");
+                CryptographicOperations.ZeroMemory(MemoryMarshal.AsBytes(backupPassword.AsSpan()));
+                CryptographicOperations.ZeroMemory(MemoryMarshal.AsBytes(confirm.AsSpan()));
                 backupPassword = null;
+            }
+            else
+            {
+                CryptographicOperations.ZeroMemory(MemoryMarshal.AsBytes(confirm.AsSpan()));
             }
         }
 
-        return backupPassword;
+        return new SensitiveString(backupPassword);
     }
 
     private IReadOnlyCollection<ISink> GetBackupSinks(BackupPlan backupPlan)

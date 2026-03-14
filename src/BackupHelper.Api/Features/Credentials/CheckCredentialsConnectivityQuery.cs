@@ -7,7 +7,7 @@ namespace BackupHelper.Api.Features.Credentials;
 
 public record CheckCredentialsConnectivityQuery(
     string CredentialProfileName,
-    string CredentialProfilePassword
+    SensitiveString CredentialProfilePassword
 ) : IRequest<IReadOnlyCollection<IDisplayableCredentialEntry>>;
 
 public class CheckCredentialsConnectivityQueryHandler
@@ -36,7 +36,8 @@ public class CheckCredentialsConnectivityQueryHandler
         var credentialProfile = await _mediator.Send(
             new GetCredentialProfileQuery(
                 request.CredentialProfileName,
-                request.CredentialProfilePassword
+                // Create a fresh SensitiveString so GetCredentialProfileQuery owns its copy.
+                request.CredentialProfilePassword.Clone()
             ),
             cancellationToken
         );

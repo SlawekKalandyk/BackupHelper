@@ -5,7 +5,7 @@ using MediatR;
 
 namespace BackupHelper.Api.Features.Credentials.CredentialProfiles;
 
-public record GetCredentialProfileQuery(string Name, string Password)
+public record GetCredentialProfileQuery(string Name, SensitiveString Password)
     : IRequest<CredentialProfile?>;
 
 public class GetCredentialProfileQueryHandler
@@ -38,7 +38,7 @@ public class GetCredentialProfileQueryHandler
 
         var keePassCredentialsProviderConfiguration = new KeePassCredentialsProviderConfiguration(
             credentialProfileFilePath,
-            request.Password
+            () => request.Password.Clone()
         );
         using var credentialsProvider = _credentialsProviderFactory.Create(
             keePassCredentialsProviderConfiguration

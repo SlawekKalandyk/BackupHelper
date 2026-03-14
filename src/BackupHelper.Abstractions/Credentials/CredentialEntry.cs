@@ -3,9 +3,11 @@
 public sealed record CredentialEntry(
     CredentialEntryTitle EntryTitle,
     string Username,
-    string Password
-) : IDisplayableCredentialEntry
+    SensitiveString Password
+) : IDisplayableCredentialEntry, IDisposable
 {
+    public void Dispose() => Password.Dispose();
+
     public string ToDisplayString() => $"- {EntryTitle}; {Username}";
 }
 

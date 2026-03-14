@@ -5,6 +5,9 @@ namespace BackupHelper.Api.Features.Credentials.CredentialProfiles;
 
 public record CredentialProfile(
     string Name,
-    string Password,
+    SensitiveString Password,
     IReadOnlyCollection<CredentialEntry> Credentials
-);
+) : IDisposable
+{
+    public void Dispose() => Password.Dispose();
+}

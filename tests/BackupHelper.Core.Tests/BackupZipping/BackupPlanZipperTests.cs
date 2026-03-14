@@ -37,7 +37,7 @@ public class BackupPlanZipperTests : ZipTestsBase
             _smbTestConfigurationProvider.ServerAddress,
             _smbTestConfigurationProvider.ShareName,
             _smbTestConfigurationProvider.Username,
-            _smbTestConfigurationProvider.Password
+            new SensitiveString(_smbTestConfigurationProvider.Password)
         ).ToCredentialEntry();
         credentialsProvider.SetCredential(credential);
     }

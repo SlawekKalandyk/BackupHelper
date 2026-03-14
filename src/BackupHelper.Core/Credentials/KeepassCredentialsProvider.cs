@@ -1,4 +1,5 @@
-﻿using BackupHelper.Abstractions.Credentials;
+﻿using System.Security.Cryptography;
+using BackupHelper.Abstractions.Credentials;
 using KeePassLib;
 using KeePassLib.Interfaces;
 using KeePassLib.Keys;
@@ -7,8 +8,10 @@ using KeePassLib.Serialization;
 
 namespace BackupHelper.Core.Credentials;
 
-public record KeePassCredentialsProviderConfiguration(string DatabasePath, string MasterPassword)
-    : ICredentialsProviderConfiguration;
+public record KeePassCredentialsProviderConfiguration(
+    string DatabasePath,
+    Func<SensitiveString> MasterPasswordFactory
+) : ICredentialsProviderConfiguration;
 
 public class KeePassCredentialsProvider : ICredentialsProvider
 {
@@ -23,18 +26,19 @@ public class KeePassCredentialsProvider : ICredentialsProvider
     {
         _credentialHandlerRegistry = credentialHandlerRegistry;
         _database = !File.Exists(configuration.DatabasePath)
-            ? CreateDatabase(configuration.DatabasePath, configuration.MasterPassword)
-            : OpenDatabase(configuration.DatabasePath, configuration.MasterPassword);
+            ? CreateDatabase(configuration.DatabasePath, configuration.MasterPasswordFactory)
+            : OpenDatabase(configuration.DatabasePath, configuration.MasterPasswordFactory);
     }
 
-    public static bool CanLogin(string databasePath, string password)
+    public static bool CanLogin(string databasePath, Func<SensitiveString> passwordFactory)
     {
         if (!File.Exists(databasePath))
             return false;
 
         var database = new PwDatabase();
         var compositeKey = new CompositeKey();
-        compositeKey.AddUserKey(new KcpPassword(password));
+        using var sensitivePassword = passwordFactory();
+        compositeKey.AddUserKey(new KcpPassword(sensitivePassword.Expose()));
 
         try
         {
@@ -46,7 +50,7 @@ public class KeePassCredentialsProvider : ICredentialsProvider
 
             return database.IsOpen;
         }
-        catch
+        catch (Exception)
         {
             return false;
         }
@@ -69,7 +73,7 @@ public class KeePassCredentialsProvider : ICredentialsProvider
 
         var user = foundEntry.Strings.ReadSafe(PwDefs.UserNameField);
         var pass = foundEntry.Strings.ReadSafe(PwDefs.PasswordField);
-        var entry = new CredentialEntry(credentialEntryTitle, user, pass);
+        var entry = new CredentialEntry(credentialEntryTitle, user, new SensitiveString(pass));
 
         return _credentialHandlerRegistry.FromCredentialEntry<T>(entry);
     }
@@ -90,14 +94,13 @@ public class KeePassCredentialsProvider : ICredentialsProvider
         entry.Strings.Set(PwDefs.TitleField, new ProtectedString(false, title));
         entry.Strings.Set(
             PwDefs.UserNameField,
-            new ProtectedString(false, credentialEntry.Username)
+            new ProtectedString(true, credentialEntry.Username)
         );
 
-        if (!string.IsNullOrWhiteSpace(credentialEntry.Password))
-            entry.Strings.Set(
-                PwDefs.PasswordField,
-                new ProtectedString(true, credentialEntry.Password)
-            );
+        if (!credentialEntry.Password.IsEmpty)
+        {
+            SetEntryPassword(entry, credentialEntry.Password);
+        }
 
         _database.RootGroup.AddEntry(entry, true);
         _database.Save(_statusLogger);
@@ -116,14 +119,13 @@ public class KeePassCredentialsProvider : ICredentialsProvider
 
         existingEntry.Strings.Set(
             PwDefs.UserNameField,
-            new ProtectedString(false, credentialEntry.Username)
+            new ProtectedString(true, credentialEntry.Username)
         );
 
-        if (!string.IsNullOrWhiteSpace(credentialEntry.Password))
-            existingEntry.Strings.Set(
-                PwDefs.PasswordField,
-                new ProtectedString(true, credentialEntry.Password)
-            );
+        if (!credentialEntry.Password.IsEmpty)
+        {
+            SetEntryPassword(existingEntry, credentialEntry.Password);
+        }
 
         _database.Save(_statusLogger);
     }
@@ -151,30 +153,48 @@ public class KeePassCredentialsProvider : ICredentialsProvider
             .Select(entry => new CredentialEntry(
                 CredentialEntryTitle.Parse(entry.Strings.ReadSafe(PwDefs.TitleField)),
                 entry.Strings.ReadSafe(PwDefs.UserNameField),
-                entry.Strings.ReadSafe(PwDefs.PasswordField)
+                new SensitiveString(entry.Strings.ReadSafe(PwDefs.PasswordField))
             ))
             .ToList();
     }
 
-    private PwDatabase CreateDatabase(string databasePath, string masterPassword)
+    private PwDatabase CreateDatabase(string databasePath, Func<SensitiveString> passwordFactory)
     {
         var database = new PwDatabase();
         var compositeKey = new CompositeKey();
-        compositeKey.AddUserKey(new KcpPassword(masterPassword));
+        using var sensitivePassword = passwordFactory();
+        compositeKey.AddUserKey(new KcpPassword(sensitivePassword.Expose()));
         database.New(new IOConnectionInfo() { Path = databasePath }, compositeKey);
         database.Save(_statusLogger);
 
         return database;
     }
 
-    private static PwDatabase OpenDatabase(string databasePath, string masterPassword)
+    private static PwDatabase OpenDatabase(
+        string databasePath,
+        Func<SensitiveString> passwordFactory
+    )
     {
         var database = new PwDatabase();
         var compositeKey = new CompositeKey();
-        compositeKey.AddUserKey(new KcpPassword(masterPassword));
+        using var sensitivePassword = passwordFactory();
+        compositeKey.AddUserKey(new KcpPassword(sensitivePassword.Expose()));
         database.Open(new IOConnectionInfo() { Path = databasePath }, compositeKey, _statusLogger);
 
         return database;
+    }
+
+    private void SetEntryPassword(PwEntry entry, SensitiveString password)
+    {
+        var passwordBytes = password.ExposeUtf8Bytes().ToArray();
+        try
+        {
+            entry.Strings.Set(PwDefs.PasswordField, new ProtectedString(true, passwordBytes));
+        }
+        finally
+        {
+            CryptographicOperations.ZeroMemory(passwordBytes);
+        }
     }
 
     public void Dispose()
