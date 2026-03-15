@@ -4,6 +4,7 @@ using BackupHelper.Core.BackupZipping;
 using MediatR;
 using Microsoft.Extensions.Logging;
 using Serilog;
+using Serilog.Context;
 using Serilog.Events;
 using Spectre.Console;
 
@@ -34,6 +35,12 @@ public class PerformBackupStepParameters : IWizardParameters
 
 public class PerformBackupStep : IWizardStep<PerformBackupStepParameters>
 {
+    private const string BackupLogDirectoryPropertyName = "BackupLogDirectory";
+    private static readonly Lock LogSinkRegistrationLock = new();
+    private static readonly HashSet<string> RegisteredLogDirectories = new(
+        StringComparer.OrdinalIgnoreCase
+    );
+
     private readonly IMediator _mediator;
     private readonly ILoggerFactory _loggerFactory;
     private readonly ICredentialsProviderFactory _credentialsProviderFactory;
@@ -66,9 +73,12 @@ public class PerformBackupStep : IWizardStep<PerformBackupStepParameters>
             }
 
             var backupPlan = BackupPlan.FromJsonFile(parameters.BackupPlanLocation);
-
-            if (!string.IsNullOrEmpty(backupPlan.LogDirectory))
-                AddBackupLogSink(backupPlan.LogDirectory);
+            var logDirectory = string.IsNullOrWhiteSpace(backupPlan.LogDirectory)
+                ? null
+                : AddBackupLogSink(backupPlan.LogDirectory);
+            using var logDirectoryScope = logDirectory == null
+                ? null
+                : LogContext.PushProperty(BackupLogDirectoryPropertyName, logDirectory);
 
             result = await _mediator.Send(
                 new CreateBackupFileCommand(
@@ -128,16 +138,34 @@ public class PerformBackupStep : IWizardStep<PerformBackupStepParameters>
         return new MainMenuStepParameters();
     }
 
-    private void AddBackupLogSink(string logDirectory)
+    private string AddBackupLogSink(string logDirectory)
     {
-        if (!string.IsNullOrEmpty(logDirectory))
-        {
-            Directory.CreateDirectory(logDirectory);
+        var normalizedLogDirectory = Path.GetFullPath(logDirectory);
 
-            var logFilePath = Path.Combine(logDirectory, "backup-.log");
+        lock (LogSinkRegistrationLock)
+        {
+            if (RegisteredLogDirectories.Contains(normalizedLogDirectory))
+                return normalizedLogDirectory;
+
+            Directory.CreateDirectory(normalizedLogDirectory);
+
+            var logFilePath = Path.Combine(normalizedLogDirectory, "backup-.log");
             var logger = new LoggerConfiguration()
                 .MinimumLevel.Is(LogEventLevel.Information)
+                .Enrich.FromLogContext()
                 .Enrich.WithThreadId()
+                .Filter.ByIncludingOnly(logEvent =>
+                    logEvent.Properties.TryGetValue(
+                        BackupLogDirectoryPropertyName,
+                        out var logDirectoryProperty
+                    )
+                    && logDirectoryProperty is ScalarValue { Value: string propertyValue }
+                    && string.Equals(
+                        propertyValue,
+                        normalizedLogDirectory,
+                        StringComparison.OrdinalIgnoreCase
+                    )
+                )
                 .WriteTo.File(
                     logFilePath,
                     rollingInterval: RollingInterval.Month,
@@ -150,6 +178,9 @@ public class PerformBackupStep : IWizardStep<PerformBackupStepParameters>
                 .CreateLogger();
 
             _loggerFactory.AddSerilog(logger, dispose: true);
+            RegisteredLogDirectories.Add(normalizedLogDirectory);
+
+            return normalizedLogDirectory;
         }
     }
 
