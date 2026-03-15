@@ -11,10 +11,10 @@ namespace BackupHelper.Core.Tests.BackupZipping;
 [TestFixture]
 public class BackupPlanZipperTests : ZipTestsBase
 {
-    private BackupPlanZipperTestsDateTimeProvider _dateTimeProvider;
-    private IBackupPlanZipper _backupPlanZipper;
-    private Unzipper _unzipper;
-    private SMBTestConfigurationProvider _smbTestConfigurationProvider;
+    private BackupPlanZipperTestsDateTimeProvider _dateTimeProvider = null!;
+    private IBackupPlanZipper _backupPlanZipper = null!;
+    private Unzipper _unzipper = null!;
+    private SMBTestConfigurationProvider _smbTestConfigurationProvider = null!;
 
     protected override void OverrideServices(
         IServiceCollection services,

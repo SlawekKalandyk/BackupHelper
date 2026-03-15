@@ -13,9 +13,9 @@ public class TestDirectory : IDisposable
         string? zipPath = null
     )
     {
-        Check.IsNull(name);
-        Check.IsNull(files);
-        Check.IsNull(directories);
+        Check.ThrowIfNull(name);
+        Check.ThrowIfNull(files);
+        Check.ThrowIfNull(directories);
 
         Name = name;
         Files = files;
@@ -26,13 +26,13 @@ public class TestDirectory : IDisposable
     public string Name { get; }
     public List<TestFile> Files { get; }
     public List<TestDirectory> Directories { get; }
-    public string GeneratedDirectoryPath { get; private set; }
-    public string UnzippedFilesDirectoryPath { get; private set; }
+    public string GeneratedDirectoryPath { get; private set; } = string.Empty;
+    public string UnzippedFilesDirectoryPath { get; private set; } = string.Empty;
     public string? ZipPath { get; }
 
     public void Generate(string parentZipPath, string parentDirectoryPath)
     {
-        Check.IsNullOrEmpty(parentDirectoryPath);
+        Check.ThrowIfNullOrEmpty(parentDirectoryPath);
 
         GeneratedDirectoryPath = Path.Combine(parentDirectoryPath, Name);
         UnzippedFilesDirectoryPath = Path.Combine(parentZipPath, ZipPath ?? string.Empty, Name);
@@ -74,7 +74,7 @@ public class TestFile : IDisposable
 
     public TestFile(string name, string? zipPath = null, int fileSizeInMb = 1)
     {
-        Check.IsNull(name);
+        Check.ThrowIfNull(name);
         Check.IsGreaterThanZero(fileSizeInMb);
 
         Name = name;
@@ -84,13 +84,13 @@ public class TestFile : IDisposable
 
     public string Name { get; }
     public int FileSizeInMb { get; }
-    public string GeneratedFilePath { get; private set; }
-    public string UnzippedFilePath { get; private set; }
+    public string GeneratedFilePath { get; private set; } = string.Empty;
+    public string UnzippedFilePath { get; private set; } = string.Empty;
     public string? ZipPath { get; }
 
     public void Generate(string parentZipPath, string parentDirectoryPath)
     {
-        Check.IsNullOrEmpty(parentDirectoryPath);
+        Check.ThrowIfNullOrEmpty(parentDirectoryPath);
 
         GeneratedFilePath = Path.Combine(parentDirectoryPath, Name);
         UnzippedFilePath = Path.Combine(parentZipPath, ZipPath ?? string.Empty, Name);
@@ -128,8 +128,8 @@ public class TestFileStructure : IDisposable
 
     public TestFileStructure(List<TestFile> files, List<TestDirectory> directories)
     {
-        Check.IsNull(files);
-        Check.IsNull(directories);
+        Check.ThrowIfNull(files);
+        Check.ThrowIfNull(directories);
 
         Files = files;
         Directories = directories;
@@ -137,13 +137,13 @@ public class TestFileStructure : IDisposable
 
     public List<TestFile> Files { get; }
     public List<TestDirectory> Directories { get; }
-    public string ZippedFilesDirectoryRootPath { get; private set; }
-    public string UnzippedFilesDirectoryRootPath { get; private set; }
+    public string ZippedFilesDirectoryRootPath { get; private set; } = string.Empty;
+    public string UnzippedFilesDirectoryRootPath { get; private set; } = string.Empty;
 
     public void Generate(string zippedFilesDirectoryRootPath, string unzippedFilesDirectoryRootPath)
     {
-        Check.IsNull(zippedFilesDirectoryRootPath);
-        Check.IsNull(unzippedFilesDirectoryRootPath);
+        Check.ThrowIfNull(zippedFilesDirectoryRootPath);
+        Check.ThrowIfNull(unzippedFilesDirectoryRootPath);
 
         ZippedFilesDirectoryRootPath = zippedFilesDirectoryRootPath;
         UnzippedFilesDirectoryRootPath = unzippedFilesDirectoryRootPath;

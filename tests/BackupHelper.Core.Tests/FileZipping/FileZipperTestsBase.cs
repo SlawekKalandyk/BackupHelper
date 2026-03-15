@@ -10,7 +10,7 @@ namespace BackupHelper.Core.Tests.FileZipping;
 [TestFixture]
 public abstract class FileZipperTestsBase : ZipTestsBase
 {
-    private Unzipper _unzipper;
+    private Unzipper _unzipper = null!;
     private const string TestPassword = "Test$Password123";
     private const string WrongPassword = "WrongPassword!";
 

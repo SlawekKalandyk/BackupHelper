@@ -23,8 +23,10 @@ public class GetCredentialProfileNamesQueryHandler
         var credentialProfilesPath = _applicationDataHandler.GetCredentialProfilesPath();
         var credentialProfiles = Directory
             .GetFiles(credentialProfilesPath)
-            .Select(Path.GetFileName);
+            .Select(Path.GetFileName)
+            .OfType<string>()
+            .ToList();
 
-        return Task.FromResult<IReadOnlyList<string>>(credentialProfiles.ToList());
+        return Task.FromResult<IReadOnlyList<string>>(credentialProfiles);
     }
 }

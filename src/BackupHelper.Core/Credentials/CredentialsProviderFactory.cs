@@ -5,6 +5,7 @@ namespace BackupHelper.Core.Credentials;
 public class CredentialsProviderFactory : ICredentialsProviderFactory
 {
     private readonly CredentialHandlerRegistry _credentialHandlerRegistry;
+    private readonly Lock _configurationLock = new();
     private ICredentialsProviderConfiguration? _defaultConfiguration;
 
     public CredentialsProviderFactory(CredentialHandlerRegistry credentialHandlerRegistry)
@@ -32,21 +33,39 @@ public class CredentialsProviderFactory : ICredentialsProviderFactory
     )
     {
         ArgumentNullException.ThrowIfNull(configuration);
-        _defaultConfiguration?.Dispose();
-        _defaultConfiguration = configuration;
+
+        lock (_configurationLock)
+        {
+            _defaultConfiguration?.Dispose();
+            _defaultConfiguration = configuration;
+        }
     }
 
     public void ClearDefaultCredentialsProviderConfiguration()
     {
-        _defaultConfiguration?.Dispose();
-        _defaultConfiguration = null;
+        lock (_configurationLock)
+        {
+            _defaultConfiguration?.Dispose();
+            _defaultConfiguration = null;
+        }
     }
 
-    public ICredentialsProvider GetDefaultCredentialsProvider() =>
-        Create(_defaultConfiguration ?? new NullCredentialsProviderConfiguration());
+    public ICredentialsProvider GetDefaultCredentialsProvider()
+    {
+        lock (_configurationLock)
+        {
+            return _defaultConfiguration == null
+                ? new NullCredentialsProvider()
+                : Create(_defaultConfiguration);
+        }
+    }
 
     public void Dispose()
     {
-        _defaultConfiguration?.Dispose();
+        lock (_configurationLock)
+        {
+            _defaultConfiguration?.Dispose();
+            _defaultConfiguration = null;
+        }
     }
 }

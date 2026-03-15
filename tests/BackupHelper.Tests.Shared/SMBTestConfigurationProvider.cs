@@ -1,4 +1,5 @@
-﻿using System.Runtime.CompilerServices;
+﻿using System.Diagnostics.CodeAnalysis;
+using System.Runtime.CompilerServices;
 using System.Text;
 using BackupHelper.Abstractions.Credentials;
 using BackupHelper.Connectors.SMB;
@@ -10,20 +11,25 @@ public class SMBTestConfigurationProvider
 {
     public SMBTestConfigurationProvider(IConfiguration configuration)
     {
-        ServerAddress = configuration["SMB:server"];
-        ThrowIfNullOrEmpty(ServerAddress);
+        var serverAddress = configuration["SMB:server"];
+        ThrowIfNullOrEmpty(serverAddress);
+        ServerAddress = serverAddress;
 
-        ShareName = configuration["SMB:share"];
-        ThrowIfNullOrEmpty(ShareName);
+        var shareName = configuration["SMB:share"];
+        ThrowIfNullOrEmpty(shareName);
+        ShareName = shareName;
 
-        Username = configuration["SMB:username"];
-        ThrowIfNullOrEmpty(Username);
+        var username = configuration["SMB:username"];
+        ThrowIfNullOrEmpty(username);
+        Username = username;
 
-        Password = configuration["SMB:password"];
-        ThrowIfNullOrEmpty(Password);
+        var password = configuration["SMB:password"];
+        ThrowIfNullOrEmpty(password);
+        Password = password;
 
-        TestsDirectoryName = configuration["SMB:testsDirectory"];
-        ThrowIfNullOrEmpty(TestsDirectoryName);
+        var testsDirectoryName = configuration["SMB:testsDirectory"];
+        ThrowIfNullOrEmpty(testsDirectoryName);
+        TestsDirectoryName = testsDirectoryName;
     }
 
     /// <summary>
@@ -96,7 +102,7 @@ public class SMBTestConfigurationProvider
     }
 
     private void ThrowIfNullOrEmpty(
-        string? value,
+        [NotNull] string? value,
         [CallerArgumentExpression("value")] string? name = null
     )
     {

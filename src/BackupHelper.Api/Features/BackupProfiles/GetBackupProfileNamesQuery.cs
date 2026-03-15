@@ -21,8 +21,12 @@ public class GetBackupProfileNamesQueryHandler
     )
     {
         var backupProfilesPath = _applicationDataHandler.GetBackupProfilesPath();
-        var backupProfiles = Directory.GetFiles(backupProfilesPath).Select(Path.GetFileName);
+        var backupProfiles = Directory
+            .GetFiles(backupProfilesPath)
+            .Select(Path.GetFileName)
+            .OfType<string>()
+            .ToList();
 
-        return Task.FromResult<IReadOnlyList<string>>(backupProfiles.ToList());
+        return Task.FromResult<IReadOnlyList<string>>(backupProfiles);
     }
 }

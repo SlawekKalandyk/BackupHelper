@@ -2,7 +2,7 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
-namespace BackupHelper.Api;
+namespace BackupHelper.ConsoleApp;
 
 public static class ConfigureServices
 {

@@ -147,6 +147,13 @@ public class BackupEntryConverter : JsonConverter<BackupEntry>
                 var compressionLevel = obj["compressionLevel"]?.ToObject<int?>();
                 var timeZone = obj["timeZone"]?.ToString();
 
+                if (string.IsNullOrWhiteSpace(filePath))
+                {
+                    throw new JsonSerializationException(
+                        "Backup file entry must contain a non-empty 'path' value."
+                    );
+                }
+
                 return new BackupFileEntry
                 {
                     FilePath = filePath,
@@ -161,6 +168,13 @@ public class BackupEntryConverter : JsonConverter<BackupEntry>
             {
                 var name = obj["name"]?.ToString();
                 var items = obj["items"]?.ToObject<List<BackupEntry>>(serializer);
+
+                if (string.IsNullOrWhiteSpace(name))
+                {
+                    throw new JsonSerializationException(
+                        "Backup directory entry must contain a non-empty 'name' value."
+                    );
+                }
 
                 return new BackupDirectoryEntry
                 {
