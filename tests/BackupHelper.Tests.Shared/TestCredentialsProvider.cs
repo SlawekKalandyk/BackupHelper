@@ -22,6 +22,11 @@ public class TestCredentialsProviderFactory : ICredentialsProviderFactory
         throw new NotImplementedException();
     }
 
+    public void ClearDefaultCredentialsProviderConfiguration()
+    {
+        throw new NotImplementedException();
+    }
+
     public ICredentialsProvider GetDefaultCredentialsProvider() => TestCredentialsProvider;
 
     public void Dispose()

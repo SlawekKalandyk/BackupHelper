@@ -39,16 +39,19 @@ public class PerformBackupStep : IWizardStep<PerformBackupStepParameters>
     private readonly IMediator _mediator;
     private readonly ILoggerFactory _loggerFactory;
     private readonly ISinkManager _sinkManager;
+    private readonly ICredentialsProviderFactory _credentialsProviderFactory;
 
     public PerformBackupStep(
         IMediator mediator,
         ILoggerFactory loggerFactory,
-        ISinkManager sinkManager
+        ISinkManager sinkManager,
+        ICredentialsProviderFactory credentialsProviderFactory
     )
     {
         _mediator = mediator;
         _loggerFactory = loggerFactory;
         _sinkManager = sinkManager;
+        _credentialsProviderFactory = credentialsProviderFactory;
     }
 
     public async Task<IWizardParameters?> Handle(
@@ -98,12 +101,15 @@ public class PerformBackupStep : IWizardStep<PerformBackupStepParameters>
         }
         finally
         {
+            _credentialsProviderFactory.ClearDefaultCredentialsProviderConfiguration();
+
             foreach (var sink in backupSinks)
             {
                 sink.Dispose();
             }
 
             backupPassword?.Dispose();
+
             if (result != null && File.Exists(result.OutputFilePath))
             {
                 File.Delete(result.OutputFilePath);

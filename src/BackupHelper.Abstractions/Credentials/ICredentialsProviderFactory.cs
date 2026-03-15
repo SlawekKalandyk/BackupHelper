@@ -6,5 +6,6 @@ public interface ICredentialsProviderFactory : IDisposable
     void SetDefaultCredentialsProviderConfiguration(
         ICredentialsProviderConfiguration configuration
     );
+    void ClearDefaultCredentialsProviderConfiguration();
     ICredentialsProvider GetDefaultCredentialsProvider();
 }

@@ -79,27 +79,36 @@ public class CreateBackupStep : IWizardStep<CreateBackupStepParameters>
             );
             using var masterPassword = GetCredentialProfilePassword(keePassDbLocation);
             var defaultCredentialsProviderConfiguration =
-                new KeePassCredentialsProviderConfiguration(
-                    keePassDbLocation,
-                    masterPassword
-                );
+                new KeePassCredentialsProviderConfiguration(keePassDbLocation, masterPassword);
             _credentialsProviderFactory.SetDefaultCredentialsProviderConfiguration(
                 defaultCredentialsProviderConfiguration
             );
 
-            var canBackup = await CanBackupWithCredentialProfile(
-                backupProfile.CredentialProfileName,
-                masterPassword,
-                cancellationToken
-            );
+            var proceedToPerformBackup = false;
+            try
+            {
+                var canBackup = await CanBackupWithCredentialProfile(
+                    backupProfile.CredentialProfileName,
+                    masterPassword,
+                    cancellationToken
+                );
 
-            return canBackup
-                ? new PerformBackupStepParameters(
+                if (!canBackup)
+                    return new MainMenuStepParameters();
+
+                proceedToPerformBackup = true;
+                return new PerformBackupStepParameters(
                     backupProfile.BackupPlanLocation,
                     backupProfile.WorkingDirectory,
                     keePassDbLocation
-                )
-                : new MainMenuStepParameters();
+                );
+            }
+            finally
+            {
+                // Keep only when intentionally handing off to PerformBackupStep.
+                if (!proceedToPerformBackup)
+                    _credentialsProviderFactory.ClearDefaultCredentialsProviderConfiguration();
+            }
         }
 
         var backupPlanLocation = AnsiConsole.Ask<string>("Select backup plan location");

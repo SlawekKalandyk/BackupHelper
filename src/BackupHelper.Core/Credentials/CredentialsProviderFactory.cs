@@ -36,6 +36,12 @@ public class CredentialsProviderFactory : ICredentialsProviderFactory
         _defaultConfiguration = configuration;
     }
 
+    public void ClearDefaultCredentialsProviderConfiguration()
+    {
+        _defaultConfiguration?.Dispose();
+        _defaultConfiguration = null;
+    }
+
     public ICredentialsProvider GetDefaultCredentialsProvider() =>
         Create(_defaultConfiguration ?? new NullCredentialsProviderConfiguration());
 
