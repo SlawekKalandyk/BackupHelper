@@ -17,9 +17,10 @@ public class KeePassCredentialsProviderTests : TestsBase
 
         var credentialsHandlerRegistry =
             ServiceScope.ServiceProvider.GetRequiredService<CredentialHandlerRegistry>();
+        using var masterPassword = new SensitiveString("testPassword");
         using var config = new KeePassCredentialsProviderConfiguration(
             testDatabasePath,
-            new SensitiveString("testPassword")
+            masterPassword
         );
         using (_ = new KeePassCredentialsProvider(config, credentialsHandlerRegistry)) { }
 
@@ -32,9 +33,10 @@ public class KeePassCredentialsProviderTests : TestsBase
         var testDatabasePath = Path.Combine(TestsDirectoryRootPath, "test.kdbx");
         var credentialsHandlerRegistry =
             ServiceScope.ServiceProvider.GetRequiredService<CredentialHandlerRegistry>();
+        using var masterPassword = new SensitiveString("testPassword");
         using var config = new KeePassCredentialsProviderConfiguration(
             testDatabasePath,
-            new SensitiveString("testPassword")
+            masterPassword
         );
         using var provider = new KeePassCredentialsProvider(config, credentialsHandlerRegistry);
 
@@ -59,9 +61,10 @@ public class KeePassCredentialsProviderTests : TestsBase
         var testDatabasePath = Path.Combine(TestsDirectoryRootPath, "test.kdbx");
         var credentialsHandlerRegistry =
             ServiceScope.ServiceProvider.GetRequiredService<CredentialHandlerRegistry>();
+        using var masterPassword = new SensitiveString("testPassword");
         using var config = new KeePassCredentialsProviderConfiguration(
             testDatabasePath,
-            new SensitiveString("testPassword")
+            masterPassword
         );
         using var provider = new KeePassCredentialsProvider(config, credentialsHandlerRegistry);
 
@@ -86,10 +89,11 @@ public class KeePassCredentialsProviderTests : TestsBase
         var testDatabasePath = Path.Combine(TestsDirectoryRootPath, "test.kdbx");
         var credentialsHandlerRegistry =
             ServiceScope.ServiceProvider.GetRequiredService<CredentialHandlerRegistry>();
+        using var masterPassword = new SensitiveString("testPassword");
 
         using var config = new KeePassCredentialsProviderConfiguration(
             testDatabasePath,
-            new SensitiveString("testPassword")
+            masterPassword
         );
 
         using (

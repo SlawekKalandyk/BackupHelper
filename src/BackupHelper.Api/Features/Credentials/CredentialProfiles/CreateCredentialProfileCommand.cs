@@ -40,7 +40,7 @@ public class CreateCredentialProfileCommandHandler : IRequestHandler<CreateCrede
 
         using var keePassCredentialsProviderConfiguration = new KeePassCredentialsProviderConfiguration(
             credentialProfilePath,
-            request.CredentialProfilePassword.Clone()
+            request.CredentialProfilePassword
         );
         using var _ = _credentialsProviderFactory.Create(keePassCredentialsProviderConfiguration);
 

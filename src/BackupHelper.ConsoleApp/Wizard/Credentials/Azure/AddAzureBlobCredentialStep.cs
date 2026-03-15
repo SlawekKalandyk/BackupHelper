@@ -40,7 +40,7 @@ public class AddAzureBlobCredentialStep : IWizardStep<AddAzureBlobCredentialStep
 
         using var credentialsProviderConfiguration = new KeePassCredentialsProviderConfiguration(
             keePassDbLocation,
-            request.CredentialProfile.Password.Clone()
+            request.CredentialProfile.Password
         );
 
         var accountName = AnsiConsole.Ask<string>("Enter Azure Storage Account Name");
@@ -70,7 +70,7 @@ public class AddAzureBlobCredentialStep : IWizardStep<AddAzureBlobCredentialStep
             }
         }
 
-        var sharedAccessSignature = SecureConsole.PromptPassword(
+        using var sharedAccessSignature = SecureConsole.PromptPassword(
             "Enter Azure Storage Account Shared Access Signature (SAS)"
         );
 

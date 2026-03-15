@@ -37,7 +37,7 @@ public class AddSMBCredentialStep : IWizardStep<AddSMBCredentialStepParameters>
         );
         using var credentialsProviderConfiguration = new KeePassCredentialsProviderConfiguration(
             keePassDbLocation,
-            request.CredentialProfile.Password.Clone()
+            request.CredentialProfile.Password
         );
 
         var server = AnsiConsole.Prompt(
@@ -77,7 +77,7 @@ public class AddSMBCredentialStep : IWizardStep<AddSMBCredentialStepParameters>
         }
 
         var username = AnsiConsole.Ask<string>("Enter SMB username");
-        var password = SecureConsole.PromptPassword("Enter SMB password");
+        using var password = SecureConsole.PromptPassword("Enter SMB password");
 
         using var credential = new SMBCredential(server, share, username, password);
         using var credentialEntryToAdd = credential.ToCredentialEntry();

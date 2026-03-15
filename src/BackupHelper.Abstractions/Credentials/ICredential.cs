@@ -24,7 +24,7 @@ public abstract record CredentialBase<TTitle> : ICredential<TTitle>
     protected CredentialBase(TTitle credentialTitle, SensitiveString password)
     {
         CredentialTitle = credentialTitle;
-        _password = password;
+        _password = password.Clone();
     }
 
     public TTitle CredentialTitle { get; }
@@ -36,11 +36,7 @@ public abstract record CredentialBase<TTitle> : ICredential<TTitle>
 
     public CredentialEntry ToCredentialEntry()
     {
-        return new CredentialEntry(
-            CredentialTitle.ToCredentialEntryTitle(),
-            GetUsername(),
-            _password.Clone()
-        );
+        return new CredentialEntry(CredentialTitle.ToCredentialEntryTitle(), GetUsername(), _password);
     }
 
     public virtual void Dispose()

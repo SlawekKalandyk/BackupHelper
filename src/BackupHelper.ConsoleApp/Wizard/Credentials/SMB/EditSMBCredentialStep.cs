@@ -88,7 +88,7 @@ public class EditSMBCredentialStep : IWizardStep<EditSMBCredentialStepParameters
                 _applicationDataHandler.GetCredentialProfilesPath(),
                 request.CredentialProfile.Name
             ),
-            request.CredentialProfile.Password.Clone()
+            request.CredentialProfile.Password
         );
         using var credentialsProvider = _credentialsProviderFactory.Create(
             credentialsProviderConfiguration
@@ -111,11 +111,12 @@ public class EditSMBCredentialStep : IWizardStep<EditSMBCredentialStepParameters
         {
             Console.WriteLine($"Current username: {existingCredential.Username}");
             var newUsername = AnsiConsole.Ask<string>("Enter new username");
-            using var newCredential = existingCredential with
-            {
-                Username = newUsername,
-                Password = existingCredential.Password.Clone()
-            };
+            using var newCredential = new SMBCredential(
+                existingCredential.Server,
+                existingCredential.ShareName,
+                newUsername,
+                existingCredential.Password
+            );
             using var existingEntry = existingCredential.ToCredentialEntry();
             using var newEntry = newCredential.ToCredentialEntry();
             await _mediator.Send(
@@ -130,17 +131,21 @@ public class EditSMBCredentialStep : IWizardStep<EditSMBCredentialStepParameters
         }
         else if (choice == "Change password")
         {
-            var newPassword = SecureConsole.PromptPassword("Enter new password");
+            using var newPassword = SecureConsole.PromptPassword("Enter new password");
             using var confirmNewPassword = SecureConsole.PromptPassword("Confirm new password");
 
             if (!newPassword.Equals(confirmNewPassword))
             {
                 Console.WriteLine("Passwords do not match. Please try again.");
-                newPassword.Dispose();
                 return request with { CredentialEntryToEdit = credentialEntryToEdit };
             }
 
-            using var newSMBCredentials = existingCredential with { Password = newPassword };
+            using var newSMBCredentials = new SMBCredential(
+                existingCredential.Server,
+                existingCredential.ShareName,
+                existingCredential.Username,
+                newPassword
+            );
             using var existingPassEntry = existingCredential.ToCredentialEntry();
             using var newPassEntry = newSMBCredentials.ToCredentialEntry();
             await _mediator.Send(

@@ -81,7 +81,7 @@ public class CreateBackupStep : IWizardStep<CreateBackupStepParameters>
             var defaultCredentialsProviderConfiguration =
                 new KeePassCredentialsProviderConfiguration(
                     keePassDbLocation,
-                    masterPassword.Clone()
+                    masterPassword
                 );
             _credentialsProviderFactory.SetDefaultCredentialsProviderConfiguration(
                 defaultCredentialsProviderConfiguration

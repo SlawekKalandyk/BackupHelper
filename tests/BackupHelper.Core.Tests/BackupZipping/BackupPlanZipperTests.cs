@@ -33,11 +33,12 @@ public class BackupPlanZipperTests : ZipTestsBase
         base.AddCredentials(credentialsProvider, configuration);
         _smbTestConfigurationProvider = new SMBTestConfigurationProvider(configuration);
 
+        using var password = new SensitiveString(_smbTestConfigurationProvider.Password);
         using var smbCredential = new SMBCredential(
             _smbTestConfigurationProvider.ServerAddress,
             _smbTestConfigurationProvider.ShareName,
             _smbTestConfigurationProvider.Username,
-            new SensitiveString(_smbTestConfigurationProvider.Password)
+            password
         );
         credentialsProvider.SetCredential(smbCredential.ToCredentialEntry());
     }

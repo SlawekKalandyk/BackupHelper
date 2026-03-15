@@ -8,11 +8,17 @@ using KeePassLib.Serialization;
 
 namespace BackupHelper.Core.Credentials;
 
-public record KeePassCredentialsProviderConfiguration(
-    string DatabasePath,
-    SensitiveString MasterPassword
-) : ICredentialsProviderConfiguration
+public record KeePassCredentialsProviderConfiguration : ICredentialsProviderConfiguration
 {
+    public KeePassCredentialsProviderConfiguration(string databasePath, SensitiveString masterPassword)
+    {
+        DatabasePath = databasePath;
+        MasterPassword = masterPassword.Clone();
+    }
+
+    public string DatabasePath { get; }
+    public SensitiveString MasterPassword { get; }
+
     public void Dispose()
     {
         MasterPassword.Dispose();
@@ -157,11 +163,18 @@ public class KeePassCredentialsProvider : ICredentialsProvider
         var entries = _database.RootGroup.Entries;
 
         return entries
-            .Select(entry => new CredentialEntry(
-                CredentialEntryTitle.Parse(entry.Strings.ReadSafe(PwDefs.TitleField)),
-                entry.Strings.ReadSafe(PwDefs.UserNameField),
-                GetSensitiveStringFromProtectedString(entry.Strings.Get(PwDefs.PasswordField))
-            ))
+            .Select(entry =>
+            {
+                using var password = GetSensitiveStringFromProtectedString(
+                    entry.Strings.Get(PwDefs.PasswordField)
+                );
+
+                return new CredentialEntry(
+                    CredentialEntryTitle.Parse(entry.Strings.ReadSafe(PwDefs.TitleField)),
+                    entry.Strings.ReadSafe(PwDefs.UserNameField),
+                    password
+                );
+            })
             .ToList();
     }
 

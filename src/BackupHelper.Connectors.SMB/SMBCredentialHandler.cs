@@ -19,10 +19,10 @@ public class SMBCredentialHandler : CredentialHandlerBase<SMBCredential>
         var server = entry.EntryTitle.Pairs[nameof(SMBCredential.Server)];
         var shareName = entry.EntryTitle.Pairs[nameof(SMBCredential.ShareName)];
         return new SMBCredential(
-            Server: server,
-            ShareName: shareName,
-            Username: entry.Username,
-            Password: entry.Password.Clone()
+            server,
+            shareName,
+            entry.Username,
+            entry.Password
         );
     }
 

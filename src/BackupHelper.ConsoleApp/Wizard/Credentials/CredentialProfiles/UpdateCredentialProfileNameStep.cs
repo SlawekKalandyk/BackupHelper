@@ -59,9 +59,8 @@ public class UpdateCredentialProfileNameStep
         Console.WriteLine("Credential profile name updated successfully!");
 
         // Fetch fresh profile with new name
-        using var passwordClone = credentialProfile.Password.Clone();
         var freshProfile = await _mediator.Send(
-            new GetCredentialProfileQuery(newName, passwordClone),
+            new GetCredentialProfileQuery(newName, credentialProfile.Password),
             cancellationToken
         );
         credentialProfile.Dispose();

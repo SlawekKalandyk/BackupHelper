@@ -33,11 +33,10 @@ public class CheckCredentialsConnectivityQueryHandler
         CancellationToken cancellationToken
     )
     {
-        using var queryPassword = request.CredentialProfilePassword.Clone();
         using var credentialProfile = await _mediator.Send(
             new GetCredentialProfileQuery(
                 request.CredentialProfileName,
-                queryPassword
+                request.CredentialProfilePassword
             ),
             cancellationToken
         );

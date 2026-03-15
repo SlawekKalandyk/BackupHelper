@@ -5,14 +5,22 @@ namespace BackupHelper.Connectors.SMB;
 [System.Diagnostics.DebuggerDisplay(
     "SMBCredential {{ Server = {Server}, ShareName = {ShareName}, Username = {Username} }}"
 )]
-public record SMBCredential(
-    string Server,
-    string ShareName,
-    string Username,
-    SensitiveString Password
-) : CredentialBase<SMBCredentialTitle>(new SMBCredentialTitle(Server, ShareName), Password)
+public record SMBCredential : CredentialBase<SMBCredentialTitle>
 {
+    public SMBCredential(string server, string shareName, string username, SensitiveString password)
+        : base(new SMBCredentialTitle(server, shareName), password)
+    {
+        Server = server;
+        ShareName = shareName;
+        Username = username;
+    }
+
     public const string CredentialKind = "smb";
+
+    public string Server { get; }
+    public string ShareName { get; }
+    public string Username { get; }
+    public SensitiveString Password => CredentialPassword;
 
     public SMBShareInfo GetSMBShareInfo() => new SMBShareInfo(Server, ShareName);
 

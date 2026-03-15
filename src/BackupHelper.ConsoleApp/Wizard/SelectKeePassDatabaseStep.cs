@@ -51,7 +51,7 @@ public class SelectKeePassDatabaseStep : IWizardStep<SelectKeePassDatabaseStepPa
             var defaultCredentialsProviderConfiguration =
                 new KeePassCredentialsProviderConfiguration(
                     keePassDbLocation,
-                    masterPassword.Clone()
+                    masterPassword
                 );
             _credentialsProviderFactory.SetDefaultCredentialsProviderConfiguration(
                 defaultCredentialsProviderConfiguration

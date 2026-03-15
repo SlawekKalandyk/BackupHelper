@@ -61,7 +61,7 @@ public class SMBConnectionPool : ResourcePoolBase<SMBConnection, SMBShareInfo>
             shareInfo.ServerIPAddress.ToString(),
             shareInfo.ShareName,
             credential.Username,
-            credential.Password!.Clone()
+            credential.Password!
         );
     }
 }

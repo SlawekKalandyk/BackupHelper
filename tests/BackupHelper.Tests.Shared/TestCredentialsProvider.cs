@@ -81,7 +81,7 @@ public class TestCredentialsProvider : ICredentialsProvider
 
     public IReadOnlyCollection<CredentialEntry> GetCredentials() =>
         _credentials
-            .Values.Select(v => new CredentialEntry(v.EntryTitle, v.Username, v.Password.Clone()))
+            .Values.Select(v => new CredentialEntry(v.EntryTitle, v.Username, v.Password))
             .ToList()
             .AsReadOnly();
 

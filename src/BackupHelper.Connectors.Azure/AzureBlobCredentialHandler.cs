@@ -7,7 +7,7 @@ public class AzureBlobCredentialHandler : CredentialHandlerBase<AzureBlobCredent
     public override string Kind => AzureBlobCredential.CredentialKind;
 
     public override AzureBlobCredential FromCredentialEntry(CredentialEntry entry) =>
-        new(entry.Username, entry.Password.Clone());
+        new(entry.Username, entry.Password);
 
     protected override async Task<bool> TestConnectionAsyncCore(
         AzureBlobCredential credential,

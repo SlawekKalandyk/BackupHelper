@@ -39,7 +39,7 @@ public class GetCredentialProfileQueryHandler
         using var keePassCredentialsProviderConfiguration =
             new KeePassCredentialsProviderConfiguration(
                 credentialProfileFilePath,
-                request.Password.Clone()
+                request.Password
             );
         using var credentialsProvider = _credentialsProviderFactory.Create(
             keePassCredentialsProviderConfiguration
@@ -47,7 +47,7 @@ public class GetCredentialProfileQueryHandler
         var credentials = credentialsProvider.GetCredentials();
         var credentialProfile = new CredentialProfile(
             request.Name,
-            request.Password.Clone(),
+            request.Password,
             credentials
         );
 
