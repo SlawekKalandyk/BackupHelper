@@ -1,6 +1,6 @@
 ﻿namespace BackupHelper.Sinks.Abstractions;
 
-public interface ISink
+public interface ISink : IDisposable
 {
     ISinkDestination Destination { get; }
     string Description { get; }
@@ -34,4 +34,6 @@ public abstract class SinkBase<T> : ISink
     );
 
     public abstract Task<bool> IsAvailableAsync(CancellationToken cancellationToken = default);
+
+    public virtual void Dispose() { }
 }

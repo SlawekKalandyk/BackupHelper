@@ -60,6 +60,7 @@ public class PerformBackupStep : IWizardStep<PerformBackupStepParameters>
 
         SensitiveString? backupPassword = null;
         CreateBackupFileCommandResult? result = null;
+        IReadOnlyCollection<ISink> backupSinks = [];
         try
         {
             if (useEncryption)
@@ -81,7 +82,7 @@ public class PerformBackupStep : IWizardStep<PerformBackupStepParameters>
                 cancellationToken
             );
 
-            var backupSinks = GetBackupSinks(backupPlan);
+            backupSinks = GetBackupSinks(backupPlan);
 
             foreach (var sink in backupSinks)
             {
@@ -97,6 +98,11 @@ public class PerformBackupStep : IWizardStep<PerformBackupStepParameters>
         }
         finally
         {
+            foreach (var sink in backupSinks)
+            {
+                sink.Dispose();
+            }
+
             backupPassword?.Dispose();
             if (result != null && File.Exists(result.OutputFilePath))
             {

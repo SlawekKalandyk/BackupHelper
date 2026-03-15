@@ -16,27 +16,36 @@ public interface ICredential<TTitle> : ICredential
     new TTitle CredentialTitle { get; }
 }
 
-public abstract record CredentialBase<TTitle>(TTitle CredentialTitle) : ICredential<TTitle>
+public abstract record CredentialBase<TTitle> : ICredential<TTitle>
     where TTitle : ICredentialTitle
 {
+    private readonly SensitiveString _password;
+
+    protected CredentialBase(TTitle credentialTitle, SensitiveString password)
+    {
+        CredentialTitle = credentialTitle;
+        _password = password;
+    }
+
+    public TTitle CredentialTitle { get; }
     ICredentialTitle ICredential.CredentialTitle => CredentialTitle;
 
     protected abstract string GetUsername();
 
-    protected abstract SensitiveString GetPassword();
+    protected SensitiveString CredentialPassword => _password;
 
     public CredentialEntry ToCredentialEntry()
     {
         return new CredentialEntry(
             CredentialTitle.ToCredentialEntryTitle(),
             GetUsername(),
-            GetPassword().Clone()
+            _password.Clone()
         );
     }
 
     public virtual void Dispose()
     {
-        GetPassword().Dispose();
+        _password.Dispose();
         GC.SuppressFinalize(this);
     }
 

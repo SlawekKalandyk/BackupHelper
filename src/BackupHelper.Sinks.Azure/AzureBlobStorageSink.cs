@@ -1,4 +1,5 @@
-﻿using BackupHelper.Connectors.Azure;
+﻿using BackupHelper.Abstractions.Credentials;
+using BackupHelper.Connectors.Azure;
 using BackupHelper.Sinks.Abstractions;
 
 namespace BackupHelper.Sinks.Azure;
@@ -9,11 +10,12 @@ public class AzureBlobStorageSink : SinkBase<AzureBlobStorageSinkDestination>
 
     public AzureBlobStorageSink(
         AzureBlobStorageSinkDestination destination,
-        AzureBlobCredential credential
+        string accountName,
+        SensitiveString sharedAccessSignature
     )
         : base(destination)
     {
-        _storage = new AzureBlobStorage(credential);
+        _storage = new AzureBlobStorage(accountName, sharedAccessSignature.Expose());
     }
 
     public override string Description =>

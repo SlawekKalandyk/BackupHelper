@@ -4,13 +4,14 @@ namespace BackupHelper.Connectors.Azure;
 
 [System.Diagnostics.DebuggerDisplay("AzureBlobCredential {{ AccountName = {AccountName} }}")]
 public record AzureBlobCredential(string AccountName, SensitiveString SharedAccessSignature)
-    : CredentialBase<AzureBlobCredentialTitle>(new AzureBlobCredentialTitle(AccountName))
+    : CredentialBase<AzureBlobCredentialTitle>(
+        new AzureBlobCredentialTitle(AccountName),
+        SharedAccessSignature
+    )
 {
     public const string CredentialKind = "azure";
 
     protected override string GetUsername() => AccountName;
-
-    protected override SensitiveString GetPassword() => SharedAccessSignature;
 
     public override string ToString() => $"AzureBlobCredential {{ AccountName = {AccountName} }}";
 }

@@ -11,10 +11,11 @@ public class VssBackup : IDisposable
     private readonly ILogger<VssBackup> _logger;
 
     /// <summary>A reference to the VSS context.</summary>
-    private IVssBackupComponents _backup;
+    private IVssBackupComponents? _backup;
 
     /// <summary>Some persistent context for the current snapshot.</summary>
-    private Snapshot _snapshot;
+    private Snapshot? _snapshot;
+    private bool _disposed;
 
     /// <summary>
     /// Constructs a VssBackup object and initializes some of the necessary
@@ -76,6 +77,9 @@ public class VssBackup : IDisposable
     /// <returns>A full path to the same file on the snapshot.</returns>
     public string GetSnapshotPath(string localPath)
     {
+        if (_snapshot == null)
+            throw new InvalidOperationException("VSS snapshot has not been initialized.");
+
         Trace.WriteLine("New volume: " + _snapshot.Root);
 
         // This bit replaces the file's normal root information with root
@@ -170,6 +174,9 @@ public class VssBackup : IDisposable
     /// </summary>
     private void Discovery(string fullPath)
     {
+        if (_backup == null)
+            throw new InvalidOperationException("VSS backup components are not initialized.");
+
         // Once we are finished with the writer metadata, we can dispose
         // of it.
         _backup.FreeWriterMetadata();
@@ -188,7 +195,8 @@ public class VssBackup : IDisposable
     /// </summary>
     private void PreBackup()
     {
-        Debug.Assert(_snapshot != null);
+        if (_backup == null || _snapshot == null)
+            throw new InvalidOperationException("VSS backup state has not been initialized.");
 
         // This next bit is a way to tell writers just what sort of backup
         // they should be preparing for.  The important parts for us now
@@ -214,6 +222,9 @@ public class VssBackup : IDisposable
     /// </summary>
     private void Complete()
     {
+        if (_backup == null)
+            return;
+
         try
         {
             // The BackupComplete event must be sent to all the writers.
@@ -235,6 +246,11 @@ public class VssBackup : IDisposable
     /// </summary>
     public void Dispose()
     {
+        if (_disposed)
+            return;
+
+        _disposed = true;
+
         try
         {
             Complete();
@@ -244,7 +260,22 @@ public class VssBackup : IDisposable
             _logger.LogError(ex, "An error occurred while completing the VSS backup.");
         }
 
-        _snapshot.Dispose();
-        _backup.Dispose();
+        try
+        {
+            _snapshot?.Dispose();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "An error occurred while disposing the VSS snapshot.");
+        }
+
+        try
+        {
+            _backup?.Dispose();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "An error occurred while disposing VSS backup components.");
+        }
     }
 }

@@ -24,6 +24,7 @@ public abstract class ResourcePoolBase<TResource, TResourceId> : IDisposable
     private readonly CancellationTokenSource _cleanupCancellationSource =
         new CancellationTokenSource();
     private Task? _cleanupTask;
+    private int _disposeState;
 
     protected ResourcePoolBase(ILogger logger, int maxResourcesPerIdentifier, TimeSpan idleTimeout)
     {
@@ -35,6 +36,7 @@ public abstract class ResourcePoolBase<TResource, TResourceId> : IDisposable
 
     public TResource GetResource(TResourceId resourceId)
     {
+        ThrowIfDisposed();
         _poolLock.Wait();
 
         try
@@ -72,6 +74,7 @@ public abstract class ResourcePoolBase<TResource, TResourceId> : IDisposable
 
     public void ReturnResource(TResourceId resourceId, TResource resource)
     {
+        ThrowIfDisposed();
         _poolLock.Wait();
 
         try
@@ -170,8 +173,23 @@ public abstract class ResourcePoolBase<TResource, TResourceId> : IDisposable
 
     public void Dispose()
     {
+        if (Interlocked.Exchange(ref _disposeState, 1) == 1)
+            return;
+
         _cleanupCancellationSource.Cancel();
-        _cleanupTask?.Wait();
+        try
+        {
+            _cleanupTask?.Wait();
+        }
+        catch (OperationCanceledException)
+        {
+            // Expected when cancellation is requested.
+        }
+        catch (AggregateException ex)
+            when (ex.InnerExceptions.All(e => e is OperationCanceledException))
+        {
+            // Expected when cancellation is requested.
+        }
 
         foreach (var pool in _resourcePools.Values)
         {
@@ -183,6 +201,12 @@ public abstract class ResourcePoolBase<TResource, TResourceId> : IDisposable
 
         _poolLock.Dispose();
         _cleanupCancellationSource.Dispose();
+    }
+
+    private void ThrowIfDisposed()
+    {
+        if (Volatile.Read(ref _disposeState) == 1)
+            throw new ObjectDisposedException(GetType().FullName);
     }
 
     /// <summary>
