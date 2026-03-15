@@ -4,13 +4,16 @@ namespace BackupHelper.Tests.Shared;
 
 public static class Check
 {
-    public static void IsNull(object? obj, [CallerArgumentExpression("obj")] string? name = null)
+    public static void ThrowIfNull(
+        object? obj,
+        [CallerArgumentExpression("obj")] string? name = null
+    )
     {
         if (obj == null)
             throw new ArgumentNullException($"'{name}' cannot be null");
     }
 
-    public static void IsNullOrEmpty(
+    public static void ThrowIfNullOrEmpty(
         string? value,
         [CallerArgumentExpression("value")] string? name = null
     )

@@ -24,8 +24,10 @@ public class GetBackupProfilesQueryHandler
         var backupProfilesPath = _applicationDataHandler.GetBackupProfilesPath();
         var backupProfiles = Directory
             .GetFiles(backupProfilesPath)
-            .Select(path => JsonConvert.DeserializeObject<BackupProfile>(File.ReadAllText(path)));
+            .Select(path => JsonConvert.DeserializeObject<BackupProfile>(File.ReadAllText(path)))
+            .OfType<BackupProfile>()
+            .ToList();
 
-        return Task.FromResult<IReadOnlyCollection<BackupProfile>>(backupProfiles.ToList());
+        return Task.FromResult<IReadOnlyCollection<BackupProfile>>(backupProfiles);
     }
 }

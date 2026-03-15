@@ -4,7 +4,7 @@ using BackupHelper.Core.Utilities;
 using MediatR;
 using Microsoft.Extensions.Logging;
 
-namespace BackupHelper.Core.Features;
+namespace BackupHelper.Api.Features;
 
 public record CreateBackupFileCommand(
     BackupPlan BackupPlan,

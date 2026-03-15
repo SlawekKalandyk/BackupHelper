@@ -9,7 +9,7 @@ namespace BackupHelper.Sources.SMB.Tests;
 [TestFixture]
 public abstract class SMBTestsBase : TestsBase
 {
-    protected SMBTestConfigurationProvider SMBTestConfigurationProvider { get; private set; }
+    protected SMBTestConfigurationProvider SMBTestConfigurationProvider { get; private set; } = null!;
 
     protected override void AddCredentials(
         TestCredentialsProvider credentialsProvider,

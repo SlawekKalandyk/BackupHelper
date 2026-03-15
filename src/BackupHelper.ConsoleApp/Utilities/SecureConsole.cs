@@ -7,7 +7,7 @@ public static class SecureConsole
 {
     public static SensitiveString PromptPassword(string message)
     {
-        Span<char> buffer = stackalloc char[128];
+        Span<char> buffer = stackalloc char[512];
         var length = Prompt(message, buffer);
         var password = buffer[..length];
         var sensitivePassword = new SensitiveString(password);

@@ -73,20 +73,21 @@ public class FileSystemSource : ISource
         }
         catch (IOException)
         {
-#if !DEBUG
             try
             {
-#endif
                 var fileInUseSource = _fileInUseSourceManager.GetFileInUseSource(path);
                 return fileInUseFunc(fileInUseSource, path);
-#if !DEBUG
             }
             catch (Exception e)
             {
-                _logger.LogError(e, "Error in {CallerName} for path: {Path}", callerName, path);
-                return default;
+                _logger.LogError(
+                    e,
+                    "Error in {CallerName} for path: {Path}. Returning default value to preserve compatibility.",
+                    callerName,
+                    path
+                );
+                return default!;
             }
-#endif
         }
     }
 

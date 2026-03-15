@@ -17,6 +17,7 @@
     <PackageReference Include="Shouldly" Version="4.3.0" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\..\src\BackupHelper.Api\BackupHelper.Api.csproj" />
     <ProjectReference Include="..\..\src\BackupHelper.Core\BackupHelper.Core.csproj" />
     <ProjectReference Include="..\BackupHelper.Tests.Shared\BackupHelper.Tests.Shared.csproj" />
   </ItemGroup>

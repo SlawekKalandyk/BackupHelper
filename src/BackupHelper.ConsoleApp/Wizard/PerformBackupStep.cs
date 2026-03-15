@@ -1,11 +1,10 @@
 ﻿using BackupHelper.Abstractions.Credentials;
+using BackupHelper.Api.Features;
 using BackupHelper.Core.BackupZipping;
-using BackupHelper.Core.Features;
-using BackupHelper.Core.Sinks;
-using BackupHelper.Sinks.Abstractions;
 using MediatR;
 using Microsoft.Extensions.Logging;
 using Serilog;
+using Serilog.Context;
 using Serilog.Events;
 using Spectre.Console;
 
@@ -36,21 +35,24 @@ public class PerformBackupStepParameters : IWizardParameters
 
 public class PerformBackupStep : IWizardStep<PerformBackupStepParameters>
 {
+    private const string BackupLogDirectoryPropertyName = "BackupLogDirectory";
+    private static readonly Lock LogSinkRegistrationLock = new();
+    private static readonly HashSet<string> RegisteredLogDirectories = new(
+        StringComparer.OrdinalIgnoreCase
+    );
+
     private readonly IMediator _mediator;
     private readonly ILoggerFactory _loggerFactory;
-    private readonly ISinkManager _sinkManager;
     private readonly ICredentialsProviderFactory _credentialsProviderFactory;
 
     public PerformBackupStep(
         IMediator mediator,
         ILoggerFactory loggerFactory,
-        ISinkManager sinkManager,
         ICredentialsProviderFactory credentialsProviderFactory
     )
     {
         _mediator = mediator;
         _loggerFactory = loggerFactory;
-        _sinkManager = sinkManager;
         _credentialsProviderFactory = credentialsProviderFactory;
     }
 
@@ -63,7 +65,6 @@ public class PerformBackupStep : IWizardStep<PerformBackupStepParameters>
 
         SensitiveString? backupPassword = null;
         CreateBackupFileCommandResult? result = null;
-        IReadOnlyCollection<ISink> backupSinks = [];
         try
         {
             if (useEncryption)
@@ -72,9 +73,12 @@ public class PerformBackupStep : IWizardStep<PerformBackupStepParameters>
             }
 
             var backupPlan = BackupPlan.FromJsonFile(parameters.BackupPlanLocation);
-
-            if (!string.IsNullOrEmpty(backupPlan.LogDirectory))
-                AddBackupLogSink(backupPlan.LogDirectory);
+            var logDirectory = string.IsNullOrWhiteSpace(backupPlan.LogDirectory)
+                ? null
+                : AddBackupLogSink(backupPlan.LogDirectory);
+            using var logDirectoryScope = logDirectory == null
+                ? null
+                : LogContext.PushProperty(BackupLogDirectoryPropertyName, logDirectory);
 
             result = await _mediator.Send(
                 new CreateBackupFileCommand(
@@ -85,11 +89,31 @@ public class PerformBackupStep : IWizardStep<PerformBackupStepParameters>
                 cancellationToken
             );
 
-            backupSinks = GetBackupSinks(backupPlan);
-
-            foreach (var sink in backupSinks)
+            foreach (var sinkDestination in backupPlan.Sinks)
             {
-                await UploadToSink(sink, result.OutputFilePath);
+                var sinkUploadResult = await _mediator.Send(
+                    new UploadBackupToSinkCommand(sinkDestination, result.OutputFilePath),
+                    cancellationToken
+                );
+
+                switch (sinkUploadResult.Status)
+                {
+                    case BackupSinkUploadStatus.Uploaded:
+                        Console.WriteLine(
+                            $"Uploaded backup to sink: {sinkUploadResult.SinkDescription}"
+                        );
+                        break;
+                    case BackupSinkUploadStatus.Failed:
+                        Console.WriteLine(
+                            $"Failed to upload backup to sink '{sinkUploadResult.SinkDescription}': {sinkUploadResult.FailureMessage}"
+                        );
+                        break;
+                    case BackupSinkUploadStatus.SkippedUnavailable:
+                        Console.WriteLine(
+                            $"Sink '{sinkUploadResult.SinkDescription}' is not available. Skipping upload."
+                        );
+                        break;
+                }
             }
 
             Console.WriteLine("Backup completed successfully.");
@@ -103,11 +127,6 @@ public class PerformBackupStep : IWizardStep<PerformBackupStepParameters>
         {
             _credentialsProviderFactory.ClearDefaultCredentialsProviderConfiguration();
 
-            foreach (var sink in backupSinks)
-            {
-                sink.Dispose();
-            }
-
             backupPassword?.Dispose();
 
             if (result != null && File.Exists(result.OutputFilePath))
@@ -119,16 +138,34 @@ public class PerformBackupStep : IWizardStep<PerformBackupStepParameters>
         return new MainMenuStepParameters();
     }
 
-    private void AddBackupLogSink(string logDirectory)
+    private string AddBackupLogSink(string logDirectory)
     {
-        if (!string.IsNullOrEmpty(logDirectory))
-        {
-            Directory.CreateDirectory(logDirectory);
+        var normalizedLogDirectory = Path.GetFullPath(logDirectory);
 
-            var logFilePath = Path.Combine(logDirectory, "backup-.log");
+        lock (LogSinkRegistrationLock)
+        {
+            if (RegisteredLogDirectories.Contains(normalizedLogDirectory))
+                return normalizedLogDirectory;
+
+            Directory.CreateDirectory(normalizedLogDirectory);
+
+            var logFilePath = Path.Combine(normalizedLogDirectory, "backup-.log");
             var logger = new LoggerConfiguration()
                 .MinimumLevel.Is(LogEventLevel.Information)
+                .Enrich.FromLogContext()
                 .Enrich.WithThreadId()
+                .Filter.ByIncludingOnly(logEvent =>
+                    logEvent.Properties.TryGetValue(
+                        BackupLogDirectoryPropertyName,
+                        out var logDirectoryProperty
+                    )
+                    && logDirectoryProperty is ScalarValue { Value: string propertyValue }
+                    && string.Equals(
+                        propertyValue,
+                        normalizedLogDirectory,
+                        StringComparison.OrdinalIgnoreCase
+                    )
+                )
                 .WriteTo.File(
                     logFilePath,
                     rollingInterval: RollingInterval.Month,
@@ -141,6 +178,9 @@ public class PerformBackupStep : IWizardStep<PerformBackupStepParameters>
                 .CreateLogger();
 
             _loggerFactory.AddSerilog(logger, dispose: true);
+            RegisteredLogDirectories.Add(normalizedLogDirectory);
+
+            return normalizedLogDirectory;
         }
     }
 
@@ -164,32 +204,4 @@ public class PerformBackupStep : IWizardStep<PerformBackupStepParameters>
         return backupPassword;
     }
 
-    private IReadOnlyCollection<ISink> GetBackupSinks(BackupPlan backupPlan)
-    {
-        return backupPlan
-            .Sinks.Select(sinkDestination => _sinkManager.GetSink(sinkDestination))
-            .ToList();
-    }
-
-    private async Task UploadToSink(ISink sink, string outputFilePath)
-    {
-        if (await sink.IsAvailableAsync())
-        {
-            try
-            {
-                await sink.UploadAsync(outputFilePath);
-                Console.WriteLine($"Uploaded backup to sink: {sink.Description}");
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine(
-                    $"Failed to upload backup to sink '{sink.Description}': {ex.GetBaseException().Message}"
-                );
-            }
-        }
-        else
-        {
-            Console.WriteLine($"Sink '{sink.Description}' is not available. Skipping upload.");
-        }
-    }
 }

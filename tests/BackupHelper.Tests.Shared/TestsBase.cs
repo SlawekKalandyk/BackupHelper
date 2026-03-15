@@ -16,14 +16,14 @@ public abstract class TestsBase
     /// <summary>
     /// Scope for services used in tests.
     /// </summary>
-    protected IServiceScope ServiceScope { get; private set; }
+    protected IServiceScope ServiceScope { get; private set; } = null!;
 
     /// <summary>
     /// Directory root path for files used in tests.
     /// </summary>
-    protected string TestsDirectoryRootPath { get; set; }
+    protected string TestsDirectoryRootPath { get; set; } = string.Empty;
 
-    private ServiceProvider ServiceProvider { get; set; }
+    private ServiceProvider ServiceProvider { get; set; } = null!;
 
     [OneTimeSetUp]
     protected virtual void OneTimeSetup()

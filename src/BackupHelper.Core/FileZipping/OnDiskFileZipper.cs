@@ -121,7 +121,7 @@ public class OnDiskFileZipper : FileZipperBase
                 var fileSizeMB = (int)
                     Math.Ceiling((double)_sourceManager.GetFileSize(filePath) / (1024 * 1024));
                 var zipTask =
-                    fileSizeMB < MemoryLimitMB
+                    MemoryLimitMB <= 0 || fileSizeMB < MemoryLimitMB
                         ? new ZipTask(
                             fileSizeMB,
                             new Task(
@@ -272,7 +272,13 @@ public class OnDiskFileZipper : FileZipperBase
     public override void Dispose()
     {
         base.Dispose();
-        ZipTaskQueue.Stop();
+
+        if (_zipTaskQueue != null)
+        {
+            _zipTaskQueue.Stop();
+            _zipTaskQueue.WaitForCompletion();
+        }
+
         _zipOutputStream.Dispose();
         _zipFileStream.Dispose();
     }
