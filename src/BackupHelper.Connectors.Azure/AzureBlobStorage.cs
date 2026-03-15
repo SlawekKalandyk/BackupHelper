@@ -5,13 +5,16 @@ namespace BackupHelper.Connectors.Azure;
 
 public class AzureBlobStorage
 {
-    private readonly AzureBlobCredential _credential;
+    private readonly string _accountName;
     private readonly BlobServiceClient _blobServiceClient;
 
     public AzureBlobStorage(AzureBlobCredential credential)
+        : this(credential.AccountName, credential.SharedAccessSignature.Expose()) { }
+
+    public AzureBlobStorage(string accountName, string sharedAccessSignature)
     {
-        _credential = credential;
-        _blobServiceClient = CreateBlobServiceClient(credential);
+        _accountName = accountName;
+        _blobServiceClient = CreateBlobServiceClient(accountName, sharedAccessSignature);
     }
 
     // TODO: Properly handle exceptions, return some kind of result object instead of throwing.
@@ -31,7 +34,7 @@ public class AzureBlobStorage
         if (!isContainerAvailable)
         {
             throw new InvalidOperationException(
-                $"The specified container '{containerName}' does not exist at the Azure Blob Storage account '{_credential.AccountName}'."
+                $"The specified container '{containerName}' does not exist at the Azure Blob Storage account '{_accountName}'."
             );
         }
 
@@ -85,20 +88,23 @@ public class AzureBlobStorage
         }
     }
 
-    private BlobServiceClient CreateBlobServiceClient(AzureBlobCredential credential)
+    private BlobServiceClient CreateBlobServiceClient(
+        string accountName,
+        string sharedAccessSignature
+    )
     {
-        var blobServiceUri = new Uri(GetBlobServiceEndpoint(credential));
-        var azureSasCredential = new AzureSasCredential(credential.SharedAccessSignature);
+        var blobServiceUri = new Uri(GetBlobServiceEndpoint(accountName));
+        var azureSasCredential = new AzureSasCredential(sharedAccessSignature);
         var blobClientOptions = new BlobClientOptions()
         {
-            GeoRedundantSecondaryUri = new Uri(GetBlobServiceSecondaryEndpoint(credential)),
+            GeoRedundantSecondaryUri = new Uri(GetBlobServiceSecondaryEndpoint(accountName)),
         };
         return new BlobServiceClient(blobServiceUri, azureSasCredential, blobClientOptions);
     }
 
-    private string GetBlobServiceEndpoint(AzureBlobCredential credential) =>
-        $"https://{credential.AccountName}.blob.core.windows.net";
+    private string GetBlobServiceEndpoint(string accountName) =>
+        $"https://{accountName}.blob.core.windows.net";
 
-    private string GetBlobServiceSecondaryEndpoint(AzureBlobCredential credential) =>
-        $"https://{credential.AccountName}-secondary.blob.core.windows.net";
+    private string GetBlobServiceSecondaryEndpoint(string accountName) =>
+        $"https://{accountName}-secondary.blob.core.windows.net";
 }

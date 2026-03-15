@@ -1,4 +1,6 @@
+using System.Text;
 using BackupHelper.Abstractions;
+using BackupHelper.Abstractions.Credentials;
 using BackupHelper.Core.FileZipping;
 using BackupHelper.Core.Sources;
 using BackupHelper.Core.Utilities;
@@ -25,7 +27,11 @@ public class BackupPlanZipper : IBackupPlanZipper
         _dateTimeProvider = dateTimeProvider;
     }
 
-    public void CreateZipFile(BackupPlan plan, string outputFilePath, string? password = null)
+    public void CreateZipFile(
+        BackupPlan plan,
+        string outputFilePath,
+        SensitiveString? password = null
+    )
     {
         _logger.LogInformation("Creating backup file at {OutputPath}", outputFilePath);
 
@@ -58,7 +64,7 @@ public class BackupPlanZipper : IBackupPlanZipper
             LogFailedFiles(fileZipper.FailedFiles);
         }
 
-        if (!string.IsNullOrWhiteSpace(password))
+        if (password != null)
         {
             EncryptZipFile(outputFilePath, password);
         }
@@ -145,7 +151,7 @@ public class BackupPlanZipper : IBackupPlanZipper
         }
     }
 
-    private void EncryptZipFile(string zipPath, string password)
+    private void EncryptZipFile(string zipPath, SensitiveString password)
     {
         var extension = Path.GetExtension(zipPath);
         var pathWithoutExtension = Path.GetFileNameWithoutExtension(zipPath);
@@ -159,9 +165,11 @@ public class BackupPlanZipper : IBackupPlanZipper
 
         File.Move(zipPath, innerZipPath, true);
 
+        // FastZip requires a string password; the string cannot be zeroed due to .NET string
+        // immutability. The SensitiveString bytes remain zeroable and are owned by the caller.
         var fastZip = new FastZip()
         {
-            Password = password,
+            Password = password.Expose(),
             CreateEmptyDirectories = true,
             EntryEncryptionMethod = ZipEncryptionMethod.AES256,
             CompressionLevel = 0,
@@ -175,7 +183,7 @@ public class BackupPlanZipper : IBackupPlanZipper
     {
         if (failedFiles.Count > 0)
         {
-            var stringBuilder = new System.Text.StringBuilder();
+            var stringBuilder = new StringBuilder();
             stringBuilder.AppendLine("The following files failed to be added to the zip archive:");
             foreach (var failedFile in failedFiles)
             {

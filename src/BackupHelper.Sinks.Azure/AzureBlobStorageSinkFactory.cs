@@ -18,7 +18,7 @@ public class AzureBlobStorageSinkFactory
 
     public override AzureBlobStorageSink CreateSink(AzureBlobStorageSinkDestination destination)
     {
-        var credential = _credentialsProvider.GetCredential<AzureBlobCredential>(
+        using var credential = _credentialsProvider.GetCredential<AzureBlobCredential>(
             new AzureBlobCredentialTitle(destination.AccountName)
         );
 
@@ -29,6 +29,10 @@ public class AzureBlobStorageSinkFactory
             );
         }
 
-        return new AzureBlobStorageSink(destination, credential);
+        return new AzureBlobStorageSink(
+            destination,
+            credential.AccountName,
+            credential.SharedAccessSignature
+        );
     }
 }

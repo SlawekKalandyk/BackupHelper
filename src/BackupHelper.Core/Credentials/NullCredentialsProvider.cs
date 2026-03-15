@@ -2,7 +2,13 @@
 
 namespace BackupHelper.Core.Credentials;
 
-public record NullCredentialsProviderConfiguration : ICredentialsProviderConfiguration;
+public record NullCredentialsProviderConfiguration : ICredentialsProviderConfiguration
+{
+    public void Dispose()
+    {
+        // TODO release managed resources here
+    }
+}
 
 public class NullCredentialsProvider : ICredentialsProvider
 {

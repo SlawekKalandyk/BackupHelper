@@ -1,6 +1,6 @@
 ﻿using BackupHelper.Api.Features.Credentials.CredentialProfiles;
 using MediatR;
-using Sharprompt;
+using Spectre.Console;
 
 namespace BackupHelper.ConsoleApp.Wizard.Credentials.CredentialProfiles;
 
@@ -31,12 +31,13 @@ public class DeleteCredentialProfileStep : IWizardStep<DeleteCredentialProfileSt
             return new ManageCredentialProfilesStepParameters();
         }
 
-        var credentialProfileName = Prompt.Select(
-            "Select a credential profile to delete",
-            credentialProfileNames,
-            5
+        var credentialProfileName = AnsiConsole.Prompt(
+            new SelectionPrompt<string>()
+                .Title("Select a credential profile to delete")
+                .PageSize(5)
+                .AddChoices(credentialProfileNames)
         );
-        var confirmation = Prompt.Confirm(
+        var confirmation = AnsiConsole.Confirm(
             $"Are you sure you want to delete the credential profile '{credentialProfileName}'?"
         );
 

@@ -32,18 +32,27 @@ public class UpdateCredentialCommandHandler : IRequestHandler<UpdateCredentialCo
             request.CredentialsProviderConfiguration
         );
         var credentials = credentialsProvider.GetCredentials();
-        var credential = credentials.FirstOrDefault(c =>
-            c.EntryTitle == request.NewCredentialEntry.EntryTitle
-        );
 
-        if (credential == null)
+        try
         {
-            throw new InvalidOperationException(
-                $"Credential with title '{request.NewCredentialEntry.EntryTitle}' does not exist and cannot be updated."
+            var credential = credentials.FirstOrDefault(c =>
+                c.EntryTitle == request.NewCredentialEntry.EntryTitle
             );
-        }
 
-        credentialsProvider.UpdateCredential(request.NewCredentialEntry);
+            if (credential == null)
+            {
+                throw new InvalidOperationException(
+                    $"Credential with title '{request.NewCredentialEntry.EntryTitle}' does not exist and cannot be updated."
+                );
+            }
+
+            credentialsProvider.UpdateCredential(request.NewCredentialEntry);
+        }
+        finally
+        {
+            foreach (var entry in credentials)
+                entry.Dispose();
+        }
 
         return Task.CompletedTask;
     }

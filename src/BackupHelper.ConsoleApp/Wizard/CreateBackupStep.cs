@@ -3,11 +3,9 @@ using BackupHelper.Abstractions.Credentials;
 using BackupHelper.Api.Features.BackupProfiles;
 using BackupHelper.Api.Features.Credentials;
 using BackupHelper.Api.Features.Credentials.CredentialProfiles;
-using BackupHelper.Api.Features.Credentials.SMB;
 using BackupHelper.Core.Credentials;
-using BackupHelper.Core.Features;
 using MediatR;
-using Sharprompt;
+using Spectre.Console;
 
 namespace BackupHelper.ConsoleApp.Wizard;
 
@@ -35,7 +33,7 @@ public class CreateBackupStep : IWizardStep<CreateBackupStepParameters>
         CancellationToken cancellationToken
     )
     {
-        var useProfile = Prompt.Confirm("Do you want to use an existing backup profile?");
+        var useProfile = AnsiConsole.Confirm("Do you want to use an existing backup profile?");
 
         if (useProfile)
         {
@@ -43,7 +41,12 @@ public class CreateBackupStep : IWizardStep<CreateBackupStepParameters>
                 new GetBackupProfileNamesQuery(),
                 cancellationToken
             );
-            var backupProfileName = Prompt.Select("Select a backup profile", backupProfiles, 5);
+            var backupProfileName = AnsiConsole.Prompt(
+                new SelectionPrompt<string>()
+                    .Title("Select a backup profile")
+                    .PageSize(5)
+                    .AddChoices(backupProfiles)
+            );
             var backupProfile = await _mediator.Send(
                 new GetBackupProfileQuery(backupProfileName),
                 cancellationToken
@@ -74,69 +77,72 @@ public class CreateBackupStep : IWizardStep<CreateBackupStepParameters>
                 _applicationDataHandler.GetCredentialProfilesPath(),
                 backupProfile.CredentialProfileName
             );
-            var credentialProfilePassword = GetCredentialProfilePassword(keePassDbLocation);
+            using var masterPassword = GetCredentialProfilePassword(keePassDbLocation);
             var defaultCredentialsProviderConfiguration =
-                new KeePassCredentialsProviderConfiguration(
-                    keePassDbLocation,
-                    credentialProfilePassword
-                );
+                new KeePassCredentialsProviderConfiguration(keePassDbLocation, masterPassword);
             _credentialsProviderFactory.SetDefaultCredentialsProviderConfiguration(
                 defaultCredentialsProviderConfiguration
             );
 
-            var canBackup = await CanBackupWithCredentialProfile(
-                backupProfile.CredentialProfileName,
-                credentialProfilePassword,
-                cancellationToken
-            );
+            var proceedToPerformBackup = false;
+            try
+            {
+                var canBackup = await CanBackupWithCredentialProfile(
+                    backupProfile.CredentialProfileName,
+                    masterPassword,
+                    cancellationToken
+                );
 
-            return canBackup
-                ? new PerformBackupStepParameters(
+                if (!canBackup)
+                    return new MainMenuStepParameters();
+
+                proceedToPerformBackup = true;
+                return new PerformBackupStepParameters(
                     backupProfile.BackupPlanLocation,
                     backupProfile.WorkingDirectory,
-                    keePassDbLocation,
-                    credentialProfilePassword
-                )
-                : new MainMenuStepParameters();
+                    keePassDbLocation
+                );
+            }
+            finally
+            {
+                // Keep only when intentionally handing off to PerformBackupStep.
+                if (!proceedToPerformBackup)
+                    _credentialsProviderFactory.ClearDefaultCredentialsProviderConfiguration();
+            }
         }
 
-        var backupPlanLocation = Prompt.Input<string>(
-            "Select backup plan location",
-            validators: [Validators.Required()]
-        );
-        var outputDirectory = Prompt.Input<string>(
-            "Select output directory",
-            validators: [Validators.Required()]
-        );
+        var backupPlanLocation = AnsiConsole.Ask<string>("Select backup plan location");
+        var outputDirectory = AnsiConsole.Ask<string>("Select output directory");
 
         return new SelectKeePassDatabaseStepParameters(backupPlanLocation, outputDirectory);
     }
 
-    private string GetCredentialProfilePassword(string keePassDbLocation)
+    private SensitiveString GetCredentialProfilePassword(string keePassDbLocation)
     {
-        string? keePassDbPassword = null;
+        SensitiveString? sensitivePassword = null;
 
-        while (keePassDbPassword == null)
+        while (sensitivePassword == null)
         {
-            keePassDbPassword = Prompt.Password("Enter credential profile password");
+            sensitivePassword = SecureConsole.PromptPassword("Enter credential profile password");
             var correctPasswordProvided = KeePassCredentialsProvider.CanLogin(
                 keePassDbLocation,
-                keePassDbPassword
+                sensitivePassword
             );
 
             if (!correctPasswordProvided)
             {
                 Console.WriteLine("Incorrect password. Please try again.");
-                keePassDbPassword = null;
+                sensitivePassword.Dispose();
+                sensitivePassword = null;
             }
         }
 
-        return keePassDbPassword;
+        return sensitivePassword;
     }
 
     private async Task<bool> CanBackupWithCredentialProfile(
         string credentialProfileName,
-        string credentialProfilePassword,
+        SensitiveString credentialProfilePassword,
         CancellationToken cancellationToken
     )
     {
@@ -156,7 +162,7 @@ public class CreateBackupStep : IWizardStep<CreateBackupStepParameters>
                 Console.WriteLine(string.Join(Environment.NewLine, credential.ToDisplayString()));
             }
 
-            var backupAnyway = Prompt.Confirm(
+            var backupAnyway = AnsiConsole.Confirm(
                 "Do you want to proceed with the backup anyway?",
                 false
             );

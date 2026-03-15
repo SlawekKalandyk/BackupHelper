@@ -18,7 +18,7 @@ internal class Program
             .AddConsoleInterfaceServices(configuration)
             .AddLogging();
 
-        var serviceProvider = serviceCollection.BuildServiceProvider();
+        using var serviceProvider = serviceCollection.BuildServiceProvider();
         var mediator = serviceProvider.GetRequiredService<IMediator>();
 
         IWizardParameters? parameters = new MainMenuStepParameters();

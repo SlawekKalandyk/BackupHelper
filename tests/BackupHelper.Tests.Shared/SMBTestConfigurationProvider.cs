@@ -1,5 +1,6 @@
 ﻿using System.Runtime.CompilerServices;
 using System.Text;
+using BackupHelper.Abstractions.Credentials;
 using BackupHelper.Connectors.SMB;
 using Microsoft.Extensions.Configuration;
 
@@ -71,7 +72,8 @@ public class SMBTestConfigurationProvider
 
     public SMBConnection GetSMBConnection()
     {
-        return new SMBConnection(ServerAddress, string.Empty, ShareName, Username, Password);
+        using var password = new SensitiveString(Password);
+        return new SMBConnection(ServerAddress, string.Empty, ShareName, Username, password);
     }
 
     public void CreateTestDirectory(string directoryPath)

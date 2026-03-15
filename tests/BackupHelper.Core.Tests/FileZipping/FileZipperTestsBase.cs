@@ -1,4 +1,5 @@
-﻿using BackupHelper.Core.FileZipping;
+﻿using BackupHelper.Abstractions.Credentials;
+using BackupHelper.Core.FileZipping;
 using BackupHelper.Core.Tests.Extensions;
 using BackupHelper.Tests.Shared;
 using ICSharpCode.SharpZipLib.Zip;
@@ -44,10 +45,11 @@ public abstract class FileZipperTestsBase : ZipTestsBase
 
     protected IFileZipper CreateFileZipperWithPassword(string password)
     {
+        using var sensitivePassword = new SensitiveString(password);
         var fileZipperFactory =
             ServiceScope.ServiceProvider.GetRequiredService<IFileZipperFactory>();
 
-        return fileZipperFactory.Create(ZipFilePath, true, password);
+        return fileZipperFactory.Create(ZipFilePath, true, sensitivePassword);
     }
 
     protected void PrepareZipFileWithPassword(

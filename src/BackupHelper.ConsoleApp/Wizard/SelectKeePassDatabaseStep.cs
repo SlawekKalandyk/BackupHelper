@@ -1,7 +1,6 @@
-﻿using BackupHelper.Abstractions;
-using BackupHelper.Abstractions.Credentials;
+﻿using BackupHelper.Abstractions.Credentials;
 using BackupHelper.Core.Credentials;
-using Sharprompt;
+using Spectre.Console;
 
 namespace BackupHelper.ConsoleApp.Wizard;
 
@@ -29,7 +28,9 @@ public class SelectKeePassDatabaseStep : IWizardStep<SelectKeePassDatabaseStepPa
 
         if (string.IsNullOrEmpty(parameters.KeePassDbLocation))
         {
-            var selectKeePassDb = Prompt.Confirm("Do you want to select an existing KeePass DB?");
+            var selectKeePassDb = AnsiConsole.Confirm(
+                "Do you want to select an existing KeePass DB?"
+            );
 
             if (!selectKeePassDb)
             {
@@ -41,17 +42,17 @@ public class SelectKeePassDatabaseStep : IWizardStep<SelectKeePassDatabaseStepPa
                 );
             }
 
-            keePassDbLocation = Prompt.Input<string>(
-                "Enter KeePass DB location",
-                validators: [Validators.Required()]
-            );
+            keePassDbLocation = AnsiConsole.Ask<string>("Enter KeePass DB location");
         }
 
         if (File.Exists(keePassDbLocation))
         {
-            var keePassDbPassword = GetKeePassDbPassword(keePassDbLocation);
+            using var masterPassword = GetKeePassDbPassword(keePassDbLocation);
             var defaultCredentialsProviderConfiguration =
-                new KeePassCredentialsProviderConfiguration(keePassDbLocation, keePassDbPassword);
+                new KeePassCredentialsProviderConfiguration(
+                    keePassDbLocation,
+                    masterPassword
+                );
             _credentialsProviderFactory.SetDefaultCredentialsProviderConfiguration(
                 defaultCredentialsProviderConfiguration
             );
@@ -60,8 +61,7 @@ public class SelectKeePassDatabaseStep : IWizardStep<SelectKeePassDatabaseStepPa
                 new PerformBackupStepParameters(
                     parameters.BackupPlanLocation,
                     parameters.OutputDirectory,
-                    keePassDbLocation,
-                    keePassDbPassword
+                    keePassDbLocation
                 )
             );
         }
@@ -73,25 +73,26 @@ public class SelectKeePassDatabaseStep : IWizardStep<SelectKeePassDatabaseStepPa
         }
     }
 
-    private string GetKeePassDbPassword(string keePassDbLocation)
+    private SensitiveString GetKeePassDbPassword(string keePassDbLocation)
     {
-        string? keePassDbPassword = null;
+        SensitiveString? sensitivePassword = null;
 
-        while (keePassDbPassword == null)
+        while (sensitivePassword == null)
         {
-            keePassDbPassword = Prompt.Password("Enter KeePass DB password");
+            sensitivePassword = SecureConsole.PromptPassword("Enter KeePass DB password");
             var correctPasswordProvided = KeePassCredentialsProvider.CanLogin(
                 keePassDbLocation,
-                keePassDbPassword
+                sensitivePassword
             );
 
             if (!correctPasswordProvided)
             {
                 Console.WriteLine("Incorrect password. Please try again.");
-                keePassDbPassword = null;
+                sensitivePassword.Dispose();
+                sensitivePassword = null;
             }
         }
 
-        return keePassDbPassword;
+        return sensitivePassword;
     }
 }

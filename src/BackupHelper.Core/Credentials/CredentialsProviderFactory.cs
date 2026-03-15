@@ -1,5 +1,4 @@
-﻿using BackupHelper.Abstractions;
-using BackupHelper.Abstractions.Credentials;
+﻿using BackupHelper.Abstractions.Credentials;
 
 namespace BackupHelper.Core.Credentials;
 
@@ -32,14 +31,22 @@ public class CredentialsProviderFactory : ICredentialsProviderFactory
         ICredentialsProviderConfiguration configuration
     )
     {
-        _defaultConfiguration =
-            configuration
-            ?? throw new ArgumentNullException(
-                nameof(configuration),
-                "Configuration cannot be null."
-            );
+        ArgumentNullException.ThrowIfNull(configuration);
+        _defaultConfiguration?.Dispose();
+        _defaultConfiguration = configuration;
+    }
+
+    public void ClearDefaultCredentialsProviderConfiguration()
+    {
+        _defaultConfiguration?.Dispose();
+        _defaultConfiguration = null;
     }
 
     public ICredentialsProvider GetDefaultCredentialsProvider() =>
         Create(_defaultConfiguration ?? new NullCredentialsProviderConfiguration());
+
+    public void Dispose()
+    {
+        _defaultConfiguration?.Dispose();
+    }
 }

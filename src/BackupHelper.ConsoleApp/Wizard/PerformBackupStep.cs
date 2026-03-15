@@ -1,4 +1,5 @@
-﻿using BackupHelper.Core.BackupZipping;
+﻿using BackupHelper.Abstractions.Credentials;
+using BackupHelper.Core.BackupZipping;
 using BackupHelper.Core.Features;
 using BackupHelper.Core.Sinks;
 using BackupHelper.Sinks.Abstractions;
@@ -6,7 +7,7 @@ using MediatR;
 using Microsoft.Extensions.Logging;
 using Serilog;
 using Serilog.Events;
-using Sharprompt;
+using Spectre.Console;
 
 namespace BackupHelper.ConsoleApp.Wizard;
 
@@ -21,19 +22,16 @@ public class PerformBackupStepParameters : IWizardParameters
     public PerformBackupStepParameters(
         string backupPlanLocation,
         string? workingDirectory,
-        string keePassDbLocation,
-        string keePassDbPassword
+        string keePassDbLocation
     )
         : this(backupPlanLocation, workingDirectory)
     {
         KeePassDbLocation = keePassDbLocation;
-        KeePassDbPassword = keePassDbPassword;
     }
 
     public string BackupPlanLocation { get; }
     public string? WorkingDirectory { get; }
     public string? KeePassDbLocation { get; }
-    public string? KeePassDbPassword { get; }
 }
 
 public class PerformBackupStep : IWizardStep<PerformBackupStepParameters>
@@ -41,16 +39,19 @@ public class PerformBackupStep : IWizardStep<PerformBackupStepParameters>
     private readonly IMediator _mediator;
     private readonly ILoggerFactory _loggerFactory;
     private readonly ISinkManager _sinkManager;
+    private readonly ICredentialsProviderFactory _credentialsProviderFactory;
 
     public PerformBackupStep(
         IMediator mediator,
         ILoggerFactory loggerFactory,
-        ISinkManager sinkManager
+        ISinkManager sinkManager,
+        ICredentialsProviderFactory credentialsProviderFactory
     )
     {
         _mediator = mediator;
         _loggerFactory = loggerFactory;
         _sinkManager = sinkManager;
+        _credentialsProviderFactory = credentialsProviderFactory;
     }
 
     public async Task<IWizardParameters?> Handle(
@@ -58,22 +59,23 @@ public class PerformBackupStep : IWizardStep<PerformBackupStepParameters>
         CancellationToken cancellationToken
     )
     {
-        var useEncryption = Prompt.Confirm("Do you want to encrypt the backup?");
-        string? backupPassword = null;
+        var useEncryption = AnsiConsole.Confirm("Do you want to encrypt the backup?");
 
-        if (useEncryption)
-        {
-            backupPassword = GetBackupPassword();
-        }
-
-        var backupPlan = BackupPlan.FromJsonFile(parameters.BackupPlanLocation);
-
-        if (!string.IsNullOrEmpty(backupPlan.LogDirectory))
-            AddBackupLogSink(backupPlan.LogDirectory);
-
+        SensitiveString? backupPassword = null;
         CreateBackupFileCommandResult? result = null;
+        IReadOnlyCollection<ISink> backupSinks = [];
         try
         {
+            if (useEncryption)
+            {
+                backupPassword = GetBackupPassword();
+            }
+
+            var backupPlan = BackupPlan.FromJsonFile(parameters.BackupPlanLocation);
+
+            if (!string.IsNullOrEmpty(backupPlan.LogDirectory))
+                AddBackupLogSink(backupPlan.LogDirectory);
+
             result = await _mediator.Send(
                 new CreateBackupFileCommand(
                     backupPlan,
@@ -83,7 +85,7 @@ public class PerformBackupStep : IWizardStep<PerformBackupStepParameters>
                 cancellationToken
             );
 
-            var backupSinks = GetBackupSinks(backupPlan);
+            backupSinks = GetBackupSinks(backupPlan);
 
             foreach (var sink in backupSinks)
             {
@@ -99,6 +101,15 @@ public class PerformBackupStep : IWizardStep<PerformBackupStepParameters>
         }
         finally
         {
+            _credentialsProviderFactory.ClearDefaultCredentialsProviderConfiguration();
+
+            foreach (var sink in backupSinks)
+            {
+                sink.Dispose();
+            }
+
+            backupPassword?.Dispose();
+
             if (result != null && File.Exists(result.OutputFilePath))
             {
                 File.Delete(result.OutputFilePath);
@@ -133,18 +144,19 @@ public class PerformBackupStep : IWizardStep<PerformBackupStepParameters>
         }
     }
 
-    private string GetBackupPassword()
+    private SensitiveString GetBackupPassword()
     {
-        string? backupPassword = null;
+        SensitiveString? backupPassword = null;
 
         while (backupPassword == null)
         {
-            backupPassword = Prompt.Password("Enter backup password");
-            var confirm = Prompt.Password("Confirm password");
+            backupPassword = SecureConsole.PromptPassword("Enter backup password");
+            using var confirm = SecureConsole.PromptPassword("Confirm password");
 
-            if (backupPassword != confirm)
+            if (!backupPassword.Equals(confirm))
             {
                 Console.WriteLine("Passwords do not match. Please try again.");
+                backupPassword.Dispose();
                 backupPassword = null;
             }
         }

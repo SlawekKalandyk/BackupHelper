@@ -19,13 +19,14 @@ public abstract class SMBTestsBase : TestsBase
         base.AddCredentials(credentialsProvider, configuration);
 
         SMBTestConfigurationProvider = new SMBTestConfigurationProvider(configuration);
-        var credentialEntry = new SMBCredential(
+        using var password = new SensitiveString(SMBTestConfigurationProvider.Password);
+        using var smbCredential = new SMBCredential(
             SMBTestConfigurationProvider.ServerAddress,
             SMBTestConfigurationProvider.ShareName,
             SMBTestConfigurationProvider.Username,
-            SMBTestConfigurationProvider.Password
-        ).ToCredentialEntry();
-        credentialsProvider.SetCredential(credentialEntry);
+            password
+        );
+        credentialsProvider.SetCredential(smbCredential.ToCredentialEntry());
     }
 
     [SetUp]

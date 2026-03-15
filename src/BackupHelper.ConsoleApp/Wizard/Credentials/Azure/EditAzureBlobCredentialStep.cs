@@ -6,7 +6,7 @@ using BackupHelper.Connectors.Azure;
 using BackupHelper.ConsoleApp.Wizard.Credentials.CredentialProfiles;
 using BackupHelper.Core.Credentials;
 using MediatR;
-using Sharprompt;
+using Spectre.Console;
 
 namespace BackupHelper.ConsoleApp.Wizard.Credentials.Azure;
 
@@ -50,6 +50,7 @@ public class EditAzureBlobCredentialStep : IWizardStep<EditAzureBlobCredentialSt
             Console.WriteLine(
                 "No Azure Blob Credentials available to edit. Please add a credential first."
             );
+            request.CredentialEntryToEdit?.Dispose();
             return new EditCredentialProfileStepParameters(request.CredentialProfile);
         }
 
@@ -62,37 +63,41 @@ public class EditAzureBlobCredentialStep : IWizardStep<EditAzureBlobCredentialSt
                 entry => entry
             );
 
-            var credentialEntryName = Prompt.Select(
-                "Select an Azure Blob Credential to edit",
-                credentialDictionary.Keys.ToList(),
-                5
+            var credentialEntryName = AnsiConsole.Prompt(
+                new SelectionPrompt<CredentialEntryTitle>()
+                    .Title("Select an Azure Blob Credential to edit")
+                    .PageSize(5)
+                    .AddChoices(credentialDictionary.Keys.ToList())
             );
 
             credentialEntryToEdit = credentialDictionary[credentialEntryName];
         }
 
-        var choice = Prompt.Select(
-            "Select an option to edit",
-            ["Change Shared Access Storage token", "Back to Credential Profile Menu"]
+        var choice = AnsiConsole.Prompt(
+            new SelectionPrompt<string>()
+                .Title("Select an option to edit")
+                .AddChoices("Change Shared Access Storage token", "Back to Credential Profile Menu")
         );
 
         if (choice == "Back to Credential Profile Menu")
         {
+            request.CredentialEntryToEdit?.Dispose();
             return new EditCredentialProfileStepParameters(request.CredentialProfile);
         }
 
-        var credentialsProviderConfiguration = new KeePassCredentialsProviderConfiguration(
+        using var credentialsProviderConfiguration = new KeePassCredentialsProviderConfiguration(
             Path.Combine(
                 _applicationDataHandler.GetCredentialProfilesPath(),
                 request.CredentialProfile.Name
             ),
             request.CredentialProfile.Password
         );
+    
         using var credentialsProvider = _credentialsProviderFactory.Create(
             credentialsProviderConfiguration
         );
 
-        var existingCredential = credentialsProvider.GetCredential<AzureBlobCredential>(
+        using var existingCredential = credentialsProvider.GetCredential<AzureBlobCredential>(
             credentialEntryToEdit
         );
 
@@ -101,28 +106,34 @@ public class EditAzureBlobCredentialStep : IWizardStep<EditAzureBlobCredentialSt
             Console.WriteLine(
                 $"No existing Azure Blob credentials found for {credentialEntryToEdit.EntryTitle}. Please create them first."
             );
+            request.CredentialEntryToEdit?.Dispose();
             return new EditCredentialProfileStepParameters(request.CredentialProfile);
         }
 
         if (choice == "Change Shared Access Storage token")
         {
-            var newSasToken = Prompt.Password(
-                "Enter new Shared Access Storage token",
-                validators: [Validators.Required()]
+            using var newSasToken = SecureConsole.PromptPassword(
+                "Enter new Shared Access Storage token"
             );
 
-            var newCredential = existingCredential with { SharedAccessSignature = newSasToken };
+            using var newCredential = new AzureBlobCredential(
+                existingCredential.AccountName,
+                newSasToken
+            );
+            using var existingEntry = existingCredential.ToCredentialEntry();
+            using var newEntry = newCredential.ToCredentialEntry();
             await _mediator.Send(
                 new UpdateCredentialCommand(
                     credentialsProviderConfiguration,
-                    existingCredential.ToCredentialEntry(),
-                    newCredential.ToCredentialEntry()
+                    existingEntry,
+                    newEntry
                 ),
                 cancellationToken
             );
             Console.WriteLine("Azure Blob credential updated successfully!");
         }
 
+        request.CredentialEntryToEdit?.Dispose();
         return new EditCredentialProfileStepParameters(request.CredentialProfile);
     }
 }

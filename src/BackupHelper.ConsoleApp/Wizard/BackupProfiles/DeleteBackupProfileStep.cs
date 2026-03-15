@@ -1,6 +1,6 @@
 ﻿using BackupHelper.Api.Features.BackupProfiles;
 using MediatR;
-using Sharprompt;
+using Spectre.Console;
 
 namespace BackupHelper.ConsoleApp.Wizard.BackupProfiles;
 
@@ -32,12 +32,13 @@ public class DeleteBackupProfileStep : IWizardStep<DeleteBackupProfileStepParame
             return new ManageBackupProfilesStepParameters();
         }
 
-        var backupProfileName = Prompt.Select(
-            "Select a backup profile to delete",
-            backupProfileNames,
-            5
+        var backupProfileName = AnsiConsole.Prompt(
+            new SelectionPrompt<string>()
+                .Title("Select a backup profile to delete")
+                .PageSize(5)
+                .AddChoices(backupProfileNames)
         );
-        var confirmation = Prompt.Confirm(
+        var confirmation = AnsiConsole.Confirm(
             $"Are you sure you want to delete the backup profile '{backupProfileName}'?"
         );
 

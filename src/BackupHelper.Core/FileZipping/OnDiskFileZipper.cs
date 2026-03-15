@@ -1,4 +1,5 @@
-﻿using BackupHelper.Core.Sources;
+﻿using BackupHelper.Abstractions.Credentials;
+using BackupHelper.Core.Sources;
 using BackupHelper.Core.Utilities;
 using ICSharpCode.SharpZipLib.Checksum;
 using ICSharpCode.SharpZipLib.Zip;
@@ -19,7 +20,11 @@ public class OnDiskFileZipperFactory : IFileZipperFactory
         _sourceManager = sourceManager;
     }
 
-    public IFileZipper Create(string zipFilePath, bool overwriteFileIfExists, string? password)
+    public IFileZipper Create(
+        string zipFilePath,
+        bool overwriteFileIfExists,
+        SensitiveString? password
+    )
     {
         return new OnDiskFileZipper(
             _loggerFactory,
@@ -37,7 +42,6 @@ public class OnDiskFileZipper : FileZipperBase
     private readonly ILogger<OnDiskFileZipper> _logger;
     private readonly ILoggerFactory _loggerFactory;
     private readonly ISourceManager _sourceManager;
-    private readonly string? _password;
     private readonly FileStream _zipFileStream;
     private readonly ZipOutputStream _zipOutputStream;
     private readonly bool _encrypt;
@@ -48,23 +52,22 @@ public class OnDiskFileZipper : FileZipperBase
         ISourceManager sourceManager,
         string zipFilePath,
         bool overwriteFileIfExists,
-        string? password
+        SensitiveString? password
     )
         : base(zipFilePath, overwriteFileIfExists)
     {
         _logger = loggerFactory.CreateLogger<OnDiskFileZipper>();
         _loggerFactory = loggerFactory;
         _sourceManager = sourceManager;
-        _password = password;
 
         var fileMode = overwriteFileIfExists ? FileMode.Create : FileMode.CreateNew;
         _zipFileStream = new FileStream(zipFilePath, fileMode, FileAccess.ReadWrite);
         _zipOutputStream = new ZipOutputStream(_zipFileStream);
         _zipOutputStream.UseZip64 = UseZip64.On;
 
-        if (!string.IsNullOrEmpty(password))
+        if (password is not null && !password.IsEmpty)
         {
-            _zipOutputStream.Password = password;
+            _zipOutputStream.Password = password.Expose();
             _encrypt = true;
         }
     }

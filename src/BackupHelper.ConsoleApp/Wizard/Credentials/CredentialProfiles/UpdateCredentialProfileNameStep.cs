@@ -1,7 +1,7 @@
 ﻿using BackupHelper.Api.Features.BackupProfiles;
 using BackupHelper.Api.Features.Credentials.CredentialProfiles;
 using MediatR;
-using Sharprompt;
+using Spectre.Console;
 
 namespace BackupHelper.ConsoleApp.Wizard.Credentials.CredentialProfiles;
 
@@ -24,9 +24,8 @@ public class UpdateCredentialProfileNameStep
     )
     {
         var credentialProfile = request.CredentialProfile;
-        var newName = Prompt.Input<string>(
-            "Enter new credential profile name",
-            validators: [Validators.Required()]
+        var newName = AnsiConsole.Ask<string>(
+            "Enter new credential profile name"
         );
         var profileExists = await _mediator.Send(
             new CheckCredentialProfileExistsQuery(newName),
@@ -59,6 +58,13 @@ public class UpdateCredentialProfileNameStep
 
         Console.WriteLine("Credential profile name updated successfully!");
 
-        return new EditCredentialProfileStepParameters(credentialProfile);
+        // Fetch fresh profile with new name
+        var freshProfile = await _mediator.Send(
+            new GetCredentialProfileQuery(newName, credentialProfile.Password),
+            cancellationToken
+        );
+        credentialProfile.Dispose();
+
+        return new EditCredentialProfileStepParameters(freshProfile);
     }
 }

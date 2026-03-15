@@ -6,7 +6,7 @@ using BackupHelper.Connectors.SMB;
 using BackupHelper.ConsoleApp.Wizard.Credentials.CredentialProfiles;
 using BackupHelper.Core.Credentials;
 using MediatR;
-using Sharprompt;
+using Spectre.Console;
 
 namespace BackupHelper.ConsoleApp.Wizard.Credentials.SMB;
 
@@ -50,6 +50,7 @@ public class EditSMBCredentialStep : IWizardStep<EditSMBCredentialStepParameters
             Console.WriteLine(
                 "No SMB credentials available to edit. Please add a credential first."
             );
+            request.CredentialEntryToEdit?.Dispose();
             return new EditCredentialProfileStepParameters(request.CredentialProfile);
         }
 
@@ -61,25 +62,28 @@ public class EditSMBCredentialStep : IWizardStep<EditSMBCredentialStepParameters
                 entry => entry.EntryTitle,
                 entry => entry
             );
-            var credentialTitle = Prompt.Select(
-                "Select a credential to edit",
-                credentialDictionary.Keys,
-                5
+            var credentialTitle = AnsiConsole.Prompt(
+                new SelectionPrompt<CredentialEntryTitle>()
+                    .Title("Select a credential to edit")
+                    .PageSize(5)
+                    .AddChoices(credentialDictionary.Keys)
             );
             credentialEntryToEdit = credentialDictionary[credentialTitle];
         }
 
-        var choice = Prompt.Select(
-            "Select an option to edit",
-            ["Change username", "Change password", "Back to Credential Profile Menu"]
+        var choice = AnsiConsole.Prompt(
+            new SelectionPrompt<string>()
+                .Title("Select an option to edit")
+                .AddChoices("Change username", "Change password", "Back to Credential Profile Menu")
         );
 
         if (choice == "Back to Credential Profile Menu")
         {
+            request.CredentialEntryToEdit?.Dispose();
             return new EditCredentialProfileStepParameters(request.CredentialProfile);
         }
 
-        var credentialsProviderConfiguration = new KeePassCredentialsProviderConfiguration(
+        using var credentialsProviderConfiguration = new KeePassCredentialsProviderConfiguration(
             Path.Combine(
                 _applicationDataHandler.GetCredentialProfilesPath(),
                 request.CredentialProfile.Name
@@ -90,7 +94,7 @@ public class EditSMBCredentialStep : IWizardStep<EditSMBCredentialStepParameters
             credentialsProviderConfiguration
         );
 
-        var existingCredential = credentialsProvider.GetCredential<SMBCredential>(
+        using var existingCredential = credentialsProvider.GetCredential<SMBCredential>(
             credentialEntryToEdit
         );
 
@@ -99,22 +103,27 @@ public class EditSMBCredentialStep : IWizardStep<EditSMBCredentialStepParameters
             Console.WriteLine(
                 $"No existing SMB credentials found for {credentialEntryToEdit.EntryTitle}. Please create them first."
             );
+            request.CredentialEntryToEdit?.Dispose();
             return new EditCredentialProfileStepParameters(request.CredentialProfile);
         }
 
         if (choice == "Change username")
         {
             Console.WriteLine($"Current username: {existingCredential.Username}");
-            var newUsername = Prompt.Input<string>(
-                "Enter new username",
-                validators: [Validators.Required()]
+            var newUsername = AnsiConsole.Ask<string>("Enter new username");
+            using var newCredential = new SMBCredential(
+                existingCredential.Server,
+                existingCredential.ShareName,
+                newUsername,
+                existingCredential.Password
             );
-            var newCredential = existingCredential with { Username = newUsername };
+            using var existingEntry = existingCredential.ToCredentialEntry();
+            using var newEntry = newCredential.ToCredentialEntry();
             await _mediator.Send(
                 new UpdateCredentialCommand(
                     credentialsProviderConfiguration,
-                    existingCredential.ToCredentialEntry(),
-                    newCredential.ToCredentialEntry()
+                    existingEntry,
+                    newEntry
                 ),
                 cancellationToken
             );
@@ -122,37 +131,35 @@ public class EditSMBCredentialStep : IWizardStep<EditSMBCredentialStepParameters
         }
         else if (choice == "Change password")
         {
-            var newPassword = Prompt.Password(
-                "Enter new password",
-                validators: [Validators.Required()]
-            );
-            var confirmNewPassword = Prompt.Password(
-                "Confirm new password",
-                validators: [Validators.Required()]
-            );
+            using var newPassword = SecureConsole.PromptPassword("Enter new password");
+            using var confirmNewPassword = SecureConsole.PromptPassword("Confirm new password");
 
-            if (newPassword != confirmNewPassword)
+            if (!newPassword.Equals(confirmNewPassword))
             {
                 Console.WriteLine("Passwords do not match. Please try again.");
-
-                return new EditSMBCredentialStepParameters(
-                    request.CredentialProfile,
-                    credentialEntryToEdit
-                );
+                return request with { CredentialEntryToEdit = credentialEntryToEdit };
             }
 
-            var newSMBCredentials = existingCredential with { Password = newPassword };
+            using var newSMBCredentials = new SMBCredential(
+                existingCredential.Server,
+                existingCredential.ShareName,
+                existingCredential.Username,
+                newPassword
+            );
+            using var existingPassEntry = existingCredential.ToCredentialEntry();
+            using var newPassEntry = newSMBCredentials.ToCredentialEntry();
             await _mediator.Send(
                 new UpdateCredentialCommand(
                     credentialsProviderConfiguration,
-                    existingCredential.ToCredentialEntry(),
-                    newSMBCredentials.ToCredentialEntry()
+                    existingPassEntry,
+                    newPassEntry
                 ),
                 cancellationToken
             );
             Console.WriteLine("SMB credential password updated successfully!");
         }
 
+        request.CredentialEntryToEdit?.Dispose();
         return new EditCredentialProfileStepParameters(request.CredentialProfile);
     }
 }

@@ -1,4 +1,5 @@
 ﻿using BackupHelper.Abstractions;
+using BackupHelper.Abstractions.Credentials;
 using BackupHelper.Api.Features.Credentials;
 using BackupHelper.Api.Features.Credentials.Azure;
 using BackupHelper.Api.Features.Credentials.CredentialProfiles;
@@ -6,7 +7,7 @@ using BackupHelper.Connectors.Azure;
 using BackupHelper.ConsoleApp.Wizard.Credentials.CredentialProfiles;
 using BackupHelper.Core.Credentials;
 using MediatR;
-using Sharprompt;
+using Spectre.Console;
 
 namespace BackupHelper.ConsoleApp.Wizard.Credentials.Azure;
 
@@ -37,15 +38,12 @@ public class AddAzureBlobCredentialStep : IWizardStep<AddAzureBlobCredentialStep
             request.CredentialProfile.Name
         );
 
-        var credentialsProviderConfiguration = new KeePassCredentialsProviderConfiguration(
+        using var credentialsProviderConfiguration = new KeePassCredentialsProviderConfiguration(
             keePassDbLocation,
             request.CredentialProfile.Password
         );
 
-        var accountName = Prompt.Input<string>(
-            "Enter Azure Storage Account Name",
-            validators: [Validators.Required()]
-        );
+        var accountName = AnsiConsole.Ask<string>("Enter Azure Storage Account Name");
 
         var credentialEntry = await _mediator.Send(
             new GetAzureBlobCredentialQuery(credentialsProviderConfiguration, accountName),
@@ -54,7 +52,7 @@ public class AddAzureBlobCredentialStep : IWizardStep<AddAzureBlobCredentialStep
 
         if (credentialEntry != null)
         {
-            var editCredential = Prompt.Confirm(
+            var editCredential = AnsiConsole.Confirm(
                 $"Azure Blob credential for account '{accountName}' exists. Do you want to edit it?"
             );
 
@@ -67,27 +65,25 @@ public class AddAzureBlobCredentialStep : IWizardStep<AddAzureBlobCredentialStep
             }
             else
             {
+                credentialEntry.Dispose();
                 return new EditCredentialProfileStepParameters(request.CredentialProfile);
             }
         }
 
-        var sharedAccessSignature = Prompt.Password(
-            "Enter Azure Storage Account Shared Access Signature (SAS)",
-            validators: [Validators.Required()]
+        using var sharedAccessSignature = SecureConsole.PromptPassword(
+            "Enter Azure Storage Account Shared Access Signature (SAS)"
         );
 
-        var credential = new AzureBlobCredential(accountName, sharedAccessSignature);
+        using var credential = new AzureBlobCredential(accountName, sharedAccessSignature);
 
+        using var credentialEntryToAdd = credential.ToCredentialEntry();
         await _mediator.Send(
-            new AddCredentialCommand(
-                credentialsProviderConfiguration,
-                credential.ToCredentialEntry()
-            ),
+            new AddCredentialCommand(credentialsProviderConfiguration, credentialEntryToAdd),
             cancellationToken
         );
 
         Console.WriteLine("Azure Blob credential added successfully!");
-        var addAnother = Prompt.Confirm("Do you want to add another Azure Blob credential?");
+        var addAnother = AnsiConsole.Confirm("Do you want to add another Azure Blob credential?");
 
         return addAnother
             ? new AddAzureBlobCredentialStepParameters(request.CredentialProfile)

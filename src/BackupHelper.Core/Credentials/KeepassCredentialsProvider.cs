@@ -1,4 +1,5 @@
-﻿using BackupHelper.Abstractions.Credentials;
+﻿using System.Security.Cryptography;
+using BackupHelper.Abstractions.Credentials;
 using KeePassLib;
 using KeePassLib.Interfaces;
 using KeePassLib.Keys;
@@ -7,14 +8,28 @@ using KeePassLib.Serialization;
 
 namespace BackupHelper.Core.Credentials;
 
-public record KeePassCredentialsProviderConfiguration(string DatabasePath, string MasterPassword)
-    : ICredentialsProviderConfiguration;
+public record KeePassCredentialsProviderConfiguration : ICredentialsProviderConfiguration
+{
+    public KeePassCredentialsProviderConfiguration(string databasePath, SensitiveString masterPassword)
+    {
+        DatabasePath = databasePath;
+        MasterPassword = masterPassword.Clone();
+    }
+
+    public string DatabasePath { get; }
+    public SensitiveString MasterPassword { get; }
+
+    public void Dispose()
+    {
+        MasterPassword.Dispose();
+    }
+}
 
 public class KeePassCredentialsProvider : ICredentialsProvider
 {
     private readonly CredentialHandlerRegistry _credentialHandlerRegistry;
     private static readonly IStatusLogger _statusLogger = new NullStatusLogger();
-    private PwDatabase _database;
+    private readonly PwDatabase _database;
 
     public KeePassCredentialsProvider(
         KeePassCredentialsProviderConfiguration configuration,
@@ -27,14 +42,14 @@ public class KeePassCredentialsProvider : ICredentialsProvider
             : OpenDatabase(configuration.DatabasePath, configuration.MasterPassword);
     }
 
-    public static bool CanLogin(string databasePath, string password)
+    public static bool CanLogin(string databasePath, SensitiveString password)
     {
         if (!File.Exists(databasePath))
             return false;
 
         var database = new PwDatabase();
         var compositeKey = new CompositeKey();
-        compositeKey.AddUserKey(new KcpPassword(password));
+        compositeKey.AddUserKey(GetKcpPassword(password));
 
         try
         {
@@ -46,13 +61,13 @@ public class KeePassCredentialsProvider : ICredentialsProvider
 
             return database.IsOpen;
         }
-        catch
+        catch (Exception)
         {
             return false;
         }
         finally
         {
-            database?.Close();
+            database.Close();
         }
     }
 
@@ -68,8 +83,10 @@ public class KeePassCredentialsProvider : ICredentialsProvider
             return default;
 
         var user = foundEntry.Strings.ReadSafe(PwDefs.UserNameField);
-        var pass = foundEntry.Strings.ReadSafe(PwDefs.PasswordField);
-        var entry = new CredentialEntry(credentialEntryTitle, user, pass);
+        using var pass = GetSensitiveStringFromProtectedString(
+            foundEntry.Strings.Get(PwDefs.PasswordField)
+        );
+        using var entry = new CredentialEntry(credentialEntryTitle, user, pass);
 
         return _credentialHandlerRegistry.FromCredentialEntry<T>(entry);
     }
@@ -90,14 +107,13 @@ public class KeePassCredentialsProvider : ICredentialsProvider
         entry.Strings.Set(PwDefs.TitleField, new ProtectedString(false, title));
         entry.Strings.Set(
             PwDefs.UserNameField,
-            new ProtectedString(false, credentialEntry.Username)
+            new ProtectedString(true, credentialEntry.Username)
         );
 
-        if (!string.IsNullOrWhiteSpace(credentialEntry.Password))
-            entry.Strings.Set(
-                PwDefs.PasswordField,
-                new ProtectedString(true, credentialEntry.Password)
-            );
+        if (!credentialEntry.Password.IsEmpty)
+        {
+            SetEntryPassword(entry, credentialEntry.Password);
+        }
 
         _database.RootGroup.AddEntry(entry, true);
         _database.Save(_statusLogger);
@@ -116,14 +132,13 @@ public class KeePassCredentialsProvider : ICredentialsProvider
 
         existingEntry.Strings.Set(
             PwDefs.UserNameField,
-            new ProtectedString(false, credentialEntry.Username)
+            new ProtectedString(true, credentialEntry.Username)
         );
 
-        if (!string.IsNullOrWhiteSpace(credentialEntry.Password))
-            existingEntry.Strings.Set(
-                PwDefs.PasswordField,
-                new ProtectedString(true, credentialEntry.Password)
-            );
+        if (!credentialEntry.Password.IsEmpty)
+        {
+            SetEntryPassword(existingEntry, credentialEntry.Password);
+        }
 
         _database.Save(_statusLogger);
     }
@@ -148,37 +163,83 @@ public class KeePassCredentialsProvider : ICredentialsProvider
         var entries = _database.RootGroup.Entries;
 
         return entries
-            .Select(entry => new CredentialEntry(
-                CredentialEntryTitle.Parse(entry.Strings.ReadSafe(PwDefs.TitleField)),
-                entry.Strings.ReadSafe(PwDefs.UserNameField),
-                entry.Strings.ReadSafe(PwDefs.PasswordField)
-            ))
+            .Select(entry =>
+            {
+                using var password = GetSensitiveStringFromProtectedString(
+                    entry.Strings.Get(PwDefs.PasswordField)
+                );
+
+                return new CredentialEntry(
+                    CredentialEntryTitle.Parse(entry.Strings.ReadSafe(PwDefs.TitleField)),
+                    entry.Strings.ReadSafe(PwDefs.UserNameField),
+                    password
+                );
+            })
             .ToList();
     }
 
-    private PwDatabase CreateDatabase(string databasePath, string masterPassword)
+    private PwDatabase CreateDatabase(string databasePath, SensitiveString password)
     {
         var database = new PwDatabase();
         var compositeKey = new CompositeKey();
-        compositeKey.AddUserKey(new KcpPassword(masterPassword));
+        compositeKey.AddUserKey(GetKcpPassword(password));
         database.New(new IOConnectionInfo() { Path = databasePath }, compositeKey);
         database.Save(_statusLogger);
 
         return database;
     }
 
-    private static PwDatabase OpenDatabase(string databasePath, string masterPassword)
+    private static PwDatabase OpenDatabase(string databasePath, SensitiveString password)
     {
         var database = new PwDatabase();
         var compositeKey = new CompositeKey();
-        compositeKey.AddUserKey(new KcpPassword(masterPassword));
+        compositeKey.AddUserKey(GetKcpPassword(password));
         database.Open(new IOConnectionInfo() { Path = databasePath }, compositeKey, _statusLogger);
 
         return database;
     }
 
+    private void SetEntryPassword(PwEntry entry, SensitiveString password)
+    {
+        var passwordBytes = password.ExposeUtf8Bytes().ToArray();
+        try
+        {
+            entry.Strings.Set(PwDefs.PasswordField, new ProtectedString(true, passwordBytes));
+        }
+        finally
+        {
+            CryptographicOperations.ZeroMemory(passwordBytes);
+        }
+    }
+
+    private static KcpPassword GetKcpPassword(SensitiveString password)
+    {
+        var passwordBytes = password.ExposeUtf8Bytes().ToArray();
+        try
+        {
+            return new KcpPassword(passwordBytes);
+        }
+        finally
+        {
+            CryptographicOperations.ZeroMemory(passwordBytes);
+        }
+    }
+
+    private SensitiveString GetSensitiveStringFromProtectedString(ProtectedString protectedString)
+    {
+        var bytes = protectedString.ReadUtf8();
+        try
+        {
+            return new SensitiveString(bytes);
+        }
+        finally
+        {
+            CryptographicOperations.ZeroMemory(bytes);
+        }
+    }
+
     public void Dispose()
     {
-        _database?.Close();
+        _database.Close();
     }
 }

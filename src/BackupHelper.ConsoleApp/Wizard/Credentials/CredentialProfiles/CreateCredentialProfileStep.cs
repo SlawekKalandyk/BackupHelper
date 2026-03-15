@@ -1,6 +1,7 @@
-﻿using BackupHelper.Api.Features.Credentials.CredentialProfiles;
+﻿using BackupHelper.Abstractions.Credentials;
+using BackupHelper.Api.Features.Credentials.CredentialProfiles;
 using MediatR;
-using Sharprompt;
+using Spectre.Console;
 
 namespace BackupHelper.ConsoleApp.Wizard.Credentials.CredentialProfiles;
 
@@ -20,7 +21,7 @@ public class CreateCredentialProfileStep : IWizardStep<CreateCredentialProfileSt
         CancellationToken cancellationToken
     )
     {
-        var name = Prompt.Input<string>("Enter credential profile name");
+        var name = AnsiConsole.Ask<string>("Enter credential profile name");
         var profileExists = await _mediator.Send(
             new CheckCredentialProfileExistsQuery(name),
             cancellationToken
@@ -35,12 +36,12 @@ public class CreateCredentialProfileStep : IWizardStep<CreateCredentialProfileSt
             return new CreateCredentialProfileStepParameters();
         }
 
-        var password = Prompt.Password(
-            "Enter credential profile password",
-            validators: [Validators.Required()]
-        );
+        using var sensitivePassword = SecureConsole.PromptPassword("Enter credential profile password");
 
-        await _mediator.Send(new CreateCredentialProfileCommand(name, password), cancellationToken);
+        await _mediator.Send(
+            new CreateCredentialProfileCommand(name, sensitivePassword),
+            cancellationToken
+        );
 
         Console.WriteLine("Credential profile created successfully!");
 

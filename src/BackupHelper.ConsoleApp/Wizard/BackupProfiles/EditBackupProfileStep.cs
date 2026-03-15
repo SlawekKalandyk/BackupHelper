@@ -3,7 +3,7 @@ using BackupHelper.Api.Features.Credentials;
 using BackupHelper.Api.Features.Credentials.CredentialProfiles;
 using BackupHelper.ConsoleApp.Utilities;
 using MediatR;
-using Sharprompt;
+using Spectre.Console;
 
 namespace BackupHelper.ConsoleApp.Wizard.BackupProfiles;
 
@@ -39,10 +39,11 @@ public class EditBackupProfileStep : IWizardStep<EditBackupProfileStepParameters
                 return new ManageBackupProfilesStepParameters();
             }
 
-            backupProfileName = Prompt.Select(
-                "Select a backup profile to edit",
-                backupProfileNames,
-                5
+            backupProfileName = AnsiConsole.Prompt(
+                new SelectionPrompt<string>()
+                    .Title("Select a backup profile to edit")
+                    .PageSize(5)
+                    .AddChoices(backupProfileNames)
             );
         }
 
@@ -58,16 +59,17 @@ public class EditBackupProfileStep : IWizardStep<EditBackupProfileStepParameters
             return new ManageBackupProfilesStepParameters();
         }
 
-        var choice = Prompt.Select(
-            "Select property to edit",
-            [
-                "Show Backup Profile Info",
-                "Name",
-                "Backup Plan Location",
-                "Change Credential Profile",
-                "Change Working Directory",
-                "Cancel",
-            ]
+        var choice = AnsiConsole.Prompt(
+            new SelectionPrompt<string>()
+                .Title("Select property to edit")
+                .AddChoices(
+                    "Show Backup Profile Info",
+                    "Name",
+                    "Backup Plan Location",
+                    "Change Credential Profile",
+                    "Change Working Directory",
+                    "Cancel"
+                )
         );
 
         if (choice == "Cancel")
@@ -84,10 +86,7 @@ public class EditBackupProfileStep : IWizardStep<EditBackupProfileStepParameters
         }
         else if (choice == "Name")
         {
-            var newName = Prompt.Input<string>(
-                "Enter new name",
-                validators: [Validators.Required()]
-            );
+            var newName = AnsiConsole.Ask<string>("Enter new name");
             var updatedBackupProfile = backupProfile with { Name = newName };
             await _mediator.Send(
                 new UpdateBackupProfileCommand(backupProfile, updatedBackupProfile),
@@ -97,9 +96,9 @@ public class EditBackupProfileStep : IWizardStep<EditBackupProfileStepParameters
         }
         else if (choice == "Backup Plan Location")
         {
-            var newLocation = Prompt.Input<string>(
-                "Enter new backup plan location",
-                validators: [Validators.Required(), ValidatorsHelper.FileExists]
+            var newLocation = AnsiConsole.Prompt(
+                new TextPrompt<string>("Enter new backup plan location")
+                    .Validate(ValidatorsHelper.FileExists)
             );
             var updatedBackupProfile = backupProfile with { BackupPlanLocation = newLocation };
             await _mediator.Send(
@@ -114,10 +113,11 @@ public class EditBackupProfileStep : IWizardStep<EditBackupProfileStepParameters
                 new GetCredentialProfileNamesQuery(),
                 cancellationToken
             );
-            var credentialProfileName = Prompt.Select(
-                "Select a credential profile to use for this backup profile",
-                credentialProfileNames,
-                pageSize: 5
+            var credentialProfileName = AnsiConsole.Prompt(
+                new SelectionPrompt<string>()
+                    .Title("Select a credential profile to use for this backup profile")
+                    .PageSize(5)
+                    .AddChoices(credentialProfileNames)
             );
             var updatedBackupProfile = backupProfile with
             {
@@ -131,10 +131,10 @@ public class EditBackupProfileStep : IWizardStep<EditBackupProfileStepParameters
         }
         else if (choice == "Change Working Directory")
         {
-            var newWorkingDirectory = Prompt.Input<string>(
-                "Enter new working directory for temporary files (leave blank to use temp directory)",
-                defaultValue: string.Empty,
-                validators: [ValidatorsHelper.DirectoryExistsIfNotEmpty]
+            var newWorkingDirectory = AnsiConsole.Prompt(
+                new TextPrompt<string>("Enter new working directory for temporary files (leave blank to use temp directory)")
+                    .AllowEmpty()
+                    .Validate(ValidatorsHelper.DirectoryExistsIfNotEmpty)
             );
             var updatedBackupProfile = backupProfile with
             {

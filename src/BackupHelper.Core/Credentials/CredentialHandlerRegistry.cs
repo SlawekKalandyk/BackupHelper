@@ -31,6 +31,7 @@ public class CredentialHandlerRegistry
         if (credential is T typed)
             return typed;
 
+        credential.Dispose();
         throw new NotSupportedException(
             $"Credential kind `{entry.EntryTitle.Kind}` does not produce `{typeof(T).Name}`."
         );
@@ -52,6 +53,7 @@ public class CredentialHandlerRegistry
             return true;
         }
 
+        createdCredential.Dispose();
         return false;
     }
 
@@ -66,6 +68,7 @@ public class CredentialHandlerRegistry
         {
             if (TryGetCredentialFromEntry<T>(entry, out var credential) && credential != null)
             {
+                credential?.Dispose();
                 entriesOfType.Add(entry);
             }
         }

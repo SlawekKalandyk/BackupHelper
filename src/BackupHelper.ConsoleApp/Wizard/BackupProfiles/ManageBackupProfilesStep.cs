@@ -1,4 +1,4 @@
-﻿using Sharprompt;
+﻿using Spectre.Console;
 
 namespace BackupHelper.ConsoleApp.Wizard.BackupProfiles;
 
@@ -11,15 +11,16 @@ public class ManageBackupProfilesStep : IWizardStep<ManageBackupProfilesStepPara
         CancellationToken cancellationToken
     )
     {
-        var choice = Prompt.Select(
-            "Manage Backup Profiles",
-            [
-                "Create new backup profile",
-                "Show backup profile info",
-                "Edit existing backup profile",
-                "Delete backup profile",
-                "Back to main menu",
-            ]
+        var choice = AnsiConsole.Prompt(
+            new SelectionPrompt<string>()
+                .Title("Manage Backup Profiles")
+                .AddChoices(
+                    "Create new backup profile",
+                    "Show backup profile info",
+                    "Edit existing backup profile",
+                    "Delete backup profile",
+                    "Back to main menu"
+                )
         );
 
         return Task.FromResult<IWizardParameters?>(

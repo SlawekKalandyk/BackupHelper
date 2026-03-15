@@ -1,4 +1,5 @@
-﻿using BackupHelper.Core.BackupZipping;
+﻿using BackupHelper.Abstractions.Credentials;
+using BackupHelper.Core.BackupZipping;
 using BackupHelper.Core.Utilities;
 using MediatR;
 using Microsoft.Extensions.Logging;
@@ -8,7 +9,7 @@ namespace BackupHelper.Core.Features;
 public record CreateBackupFileCommand(
     BackupPlan BackupPlan,
     string? OutputDirectory,
-    string? Password = null
+    SensitiveString? Password = null
 ) : IRequest<CreateBackupFileCommandResult>;
 
 public record CreateBackupFileCommandResult(string OutputFilePath);

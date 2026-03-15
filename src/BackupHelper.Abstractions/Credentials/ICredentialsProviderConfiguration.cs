@@ -1,3 +1,3 @@
 ﻿namespace BackupHelper.Abstractions.Credentials;
 
-public interface ICredentialsProviderConfiguration { }
+public interface ICredentialsProviderConfiguration : IDisposable { }

@@ -90,5 +90,8 @@ public class FileSystemSource : ISource
         }
     }
 
-    public void Dispose() { }
+    public void Dispose()
+    {
+        _fileInUseSourceManager.Dispose();
+    }
 }

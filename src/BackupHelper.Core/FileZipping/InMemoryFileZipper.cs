@@ -1,4 +1,5 @@
-﻿using BackupHelper.Core.Sources;
+﻿using BackupHelper.Abstractions.Credentials;
+using BackupHelper.Core.Sources;
 using BackupHelper.Core.Utilities;
 using ICSharpCode.SharpZipLib.Zip;
 using Microsoft.Extensions.Logging;
@@ -19,7 +20,11 @@ public class InMemoryFileZipperFactory : IFileZipperFactory
         _sourceManager = sourceManager;
     }
 
-    public IFileZipper Create(string zipFilePath, bool overwriteFileIfExists, string? password)
+    public IFileZipper Create(
+        string zipFilePath,
+        bool overwriteFileIfExists,
+        SensitiveString? password
+    )
     {
         return new InMemoryFileZipper(
             _logger,
@@ -44,7 +49,7 @@ public class InMemoryFileZipper : FileZipperBase
         ISourceManager sourceManager,
         string zipFilePath,
         bool overwriteFileIfExists,
-        string? password
+        SensitiveString? password
     )
         : base(zipFilePath, overwriteFileIfExists)
     {
@@ -53,9 +58,9 @@ public class InMemoryFileZipper : FileZipperBase
         _zipMemoryStream = new MemoryStream();
         _zipOutputStream = new ZipOutputStream(_zipMemoryStream);
 
-        if (!string.IsNullOrEmpty(password))
+        if (password is not null && !password.IsEmpty)
         {
-            _zipOutputStream.Password = password;
+            _zipOutputStream.Password = password.Expose();
             _encrypt = true;
         }
 
@@ -152,6 +157,7 @@ public class InMemoryFileZipper : FileZipperBase
 
     public override void Dispose()
     {
+        base.Dispose();
         _zipOutputStream.Dispose();
         _zipMemoryStream.Dispose();
     }

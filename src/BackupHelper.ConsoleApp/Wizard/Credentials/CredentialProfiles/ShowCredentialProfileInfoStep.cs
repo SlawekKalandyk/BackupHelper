@@ -1,6 +1,7 @@
-﻿using BackupHelper.Api.Features.Credentials.CredentialProfiles;
+﻿using BackupHelper.Abstractions.Credentials;
+using BackupHelper.Api.Features.Credentials.CredentialProfiles;
 using MediatR;
-using Sharprompt;
+using Spectre.Console;
 
 namespace BackupHelper.ConsoleApp.Wizard.Credentials.CredentialProfiles;
 
@@ -37,25 +38,24 @@ public class ShowCredentialProfileInfoStep : IWizardStep<ShowCredentialProfileIn
                 return new ManageCredentialProfilesStepParameters();
             }
 
-            var credentialProfileName = Prompt.Select(
-                "Select a credential profile to view",
-                credentialProfileNames,
-                5
+            var credentialProfileName = AnsiConsole.Prompt(
+                new SelectionPrompt<string>()
+                    .Title("Select a credential profile to view")
+                    .PageSize(5)
+                    .AddChoices(credentialProfileNames)
             );
 
-            var password = Prompt.Password(
-                "Enter the password for the credential profile",
-                validators: [Validators.Required()]
+            using var sensitivePassword = SecureConsole.PromptPassword(
+                "Enter the password for the credential profile"
             );
             credentialProfile = await _mediator.Send(
-                new GetCredentialProfileQuery(credentialProfileName, password),
+                new GetCredentialProfileQuery(credentialProfileName, sensitivePassword),
                 cancellationToken
             );
 
             if (credentialProfile == null)
             {
                 Console.WriteLine($"Credential profile '{credentialProfileName}' not found.");
-
                 return new ManageCredentialProfilesStepParameters();
             }
         }
@@ -66,6 +66,8 @@ public class ShowCredentialProfileInfoStep : IWizardStep<ShowCredentialProfileIn
         {
             Console.WriteLine(credential.ToDisplayString());
         }
+
+        credentialProfile.Dispose();
 
         return new ManageCredentialProfilesStepParameters();
     }
