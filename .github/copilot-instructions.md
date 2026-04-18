@@ -50,7 +50,7 @@ ConsoleApp (wizard interaction and app entry)
    - SinkDestinationConverter.ReadJson()
 - When adding new backup entry or sink destination types, update converter switch/dispatch logic in this file.
 - Preserve current BackupPlan options and defaults:
-   - Items, Sinks, LogDirectory, EncryptHeaders
+   - Items, Sinks, LogDirectory
    - ThreadLimit, MemoryLimitMB, CompressionLevel, ZipFileNameSuffix
 
 ## Sources
