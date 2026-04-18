@@ -16,6 +16,15 @@ public interface ISink : IDisposable
     Task<bool> IsAvailableAsync(CancellationToken cancellationToken = default);
 }
 
+public interface IPrunableSink
+{
+    Task PruneBackupsAsync(
+        string uploadedBackupFileName,
+        int maxBackups,
+        CancellationToken cancellationToken = default
+    );
+}
+
 public abstract class SinkBase<T> : ISink
     where T : ISinkDestination
 {

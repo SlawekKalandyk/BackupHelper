@@ -106,6 +106,9 @@ public class BackupPlan
     [JsonProperty("sinkUploadParallelism")]
     public int? SinkUploadParallelism { get; set; }
 
+    [JsonProperty("maxBackups")]
+    public int? MaxBackups { get; set; }
+
     public static async Task<BackupPlan> FromJsonFileAsync(
         string inputPath,
         CancellationToken cancellationToken = default
@@ -289,6 +292,9 @@ public class SinkDestinationConverter : JsonConverter<ISinkDestination>
 
                 writer.WritePropertyName("destinationDirectory");
                 writer.WriteValue(fileSystemDestination.DestinationDirectory);
+
+                writer.WritePropertyName("maxBackups");
+                writer.WriteValue(fileSystemDestination.MaxBackups);
                 break;
 
             case AzureBlobStorageSinkDestination azureDestination:
@@ -300,6 +306,9 @@ public class SinkDestinationConverter : JsonConverter<ISinkDestination>
 
                 writer.WritePropertyName("container");
                 writer.WriteValue(azureDestination.Container);
+
+                writer.WritePropertyName("maxBackups");
+                writer.WriteValue(azureDestination.MaxBackups);
                 break;
 
             case SMBSinkDestination smbDestination:
@@ -314,6 +323,9 @@ public class SinkDestinationConverter : JsonConverter<ISinkDestination>
 
                 writer.WritePropertyName("destinationDirectory");
                 writer.WriteValue(smbDestination.DestinationDirectory);
+
+                writer.WritePropertyName("maxBackups");
+                writer.WriteValue(smbDestination.MaxBackups);
                 break;
 
             default:

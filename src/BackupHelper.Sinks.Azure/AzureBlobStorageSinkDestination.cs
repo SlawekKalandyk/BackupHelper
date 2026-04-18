@@ -2,7 +2,11 @@
 
 namespace BackupHelper.Sinks.Azure;
 
-public record AzureBlobStorageSinkDestination(string AccountName, string Container)
+public record AzureBlobStorageSinkDestination(
+    string AccountName,
+    string Container,
+    int? MaxBackups = null
+)
     : ISinkDestination
 {
     public const string SinkKind = "AzureBlobStorage";
