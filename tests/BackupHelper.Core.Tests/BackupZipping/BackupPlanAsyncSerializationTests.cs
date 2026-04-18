@@ -45,7 +45,6 @@ public class BackupPlanAsyncSerializationTests
                 new AzureBlobStorageSinkDestination("backupaccount", "nightly", MaxBackups: 7),
             ],
             LogDirectory = @"C:\\logs",
-            EncryptHeaders = true,
             ThreadLimit = 2,
             MemoryLimitMB = 128,
             CompressionLevel = 6,

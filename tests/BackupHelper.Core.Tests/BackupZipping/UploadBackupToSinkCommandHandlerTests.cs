@@ -48,6 +48,39 @@ public class UploadBackupToSinkCommandHandlerTests : TestsBase
     }
 
     [Test]
+    public async Task GivenFileSystemSinkWithMissingDestinationDirectory_WhenUploading_ThenDirectoryIsCreatedAndUploadSucceeds()
+    {
+        var sourceDirectory = Path.Join(TestsDirectoryRootPath, "source");
+        Directory.CreateDirectory(sourceDirectory);
+        var sourceFilePath = Path.Join(sourceDirectory, "output.zip");
+        await File.WriteAllTextAsync(sourceFilePath, "backup-content");
+
+        var destinationDirectory = Path.Join(TestsDirectoryRootPath, "missing-destination");
+
+        var sinkManager = new TestSinkManager(
+            new Dictionary<string, ISink>
+            {
+                [FileSystemSinkDestination.SinkKind] = new FileSystemSink(
+                    new FileSystemSinkDestination(destinationDirectory)
+                ),
+            }
+        );
+        var handler = CreateHandler(sinkManager);
+
+        var result = await handler.Handle(
+            new UploadBackupToSinkCommand(
+                new FileSystemSinkDestination(destinationDirectory),
+                sourceFilePath
+            ),
+            CancellationToken.None
+        );
+
+        result.Status.ShouldBe(BackupSinkUploadStatus.Uploaded);
+        Directory.Exists(destinationDirectory).ShouldBeTrue();
+        File.Exists(Path.Join(destinationDirectory, Path.GetFileName(sourceFilePath))).ShouldBeTrue();
+    }
+
+    [Test]
     public async Task GivenAvailableSinkThatThrows_WhenUploading_ThenResultIsFailedAndSinkIsDisposed()
     {
         var sink = new TestSink(

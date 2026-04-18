@@ -47,7 +47,22 @@ public class FileSystemSink : SinkBase<FileSystemSinkDestination>, IPrunableSink
 
     public override Task<bool> IsAvailableAsync(CancellationToken cancellationToken = default)
     {
-        return Task.FromResult(Directory.Exists(TypedDestination.DestinationDirectory));
+        cancellationToken.ThrowIfCancellationRequested();
+
+        if (string.IsNullOrWhiteSpace(TypedDestination.DestinationDirectory))
+        {
+            return Task.FromResult(false);
+        }
+
+        try
+        {
+            Directory.CreateDirectory(TypedDestination.DestinationDirectory);
+            return Task.FromResult(true);
+        }
+        catch
+        {
+            return Task.FromResult(false);
+        }
     }
 
     public async Task PruneBackupsAsync(
