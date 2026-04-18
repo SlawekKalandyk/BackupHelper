@@ -1,10 +1,12 @@
+using System.Text;
 using BackupHelper.Abstractions.Credentials;
 using BackupHelper.Connectors.SMB;
 using BackupHelper.Sinks.Abstractions;
+using BackupHelper.Sinks.Abstractions.Retention;
 
 namespace BackupHelper.Sinks.SMB;
 
-public class SMBSink : SinkBase<SMBSinkDestination>
+public class SMBSink : SinkBase<SMBSinkDestination>, IPrunableSink
 {
     private readonly string _server;
     private readonly string _shareName;
@@ -27,8 +29,10 @@ public class SMBSink : SinkBase<SMBSinkDestination>
     }
 
     public override string Description =>
-        $"SMB Sink to \\\\{TypedDestination.Server}\\{TypedDestination.ShareName}\\{TypedDestination.DestinationDirectory}"
-            .TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+        $"SMB Sink to \\\\{TypedDestination.Server}\\{TypedDestination.ShareName}\\{TypedDestination.DestinationDirectory}".TrimEnd(
+            Path.DirectorySeparatorChar,
+            Path.AltDirectorySeparatorChar
+        );
 
     public override async Task UploadAsync(
         string sourceFilePath,
@@ -70,6 +74,53 @@ public class SMBSink : SinkBase<SMBSinkDestination>
         }
     }
 
+    public async Task PruneBackupsAsync(
+        string uploadedBackupFileName,
+        int maxBackups,
+        CancellationToken cancellationToken = default
+    )
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+
+        if (maxBackups <= 0 || string.IsNullOrWhiteSpace(uploadedBackupFileName))
+        {
+            return;
+        }
+
+        using var connection = CreateConnection();
+        EnsureDirectoryExists(connection, TypedDestination.DestinationDirectory);
+
+        var manifestFilePath = GetFilePathInDestinationDirectory(
+            BackupsRetentionConstants.ManifestFileName
+        );
+        var manifest = await ReadManifestAsync(connection, manifestFilePath, cancellationToken);
+        var existingBackupFiles = GetExistingBackupFileNames(connection);
+        var pruningPlan = BackupsRetentionPlanner.CreatePlanForCaseInsensitiveStorage(
+            manifest,
+            existingBackupFiles,
+            uploadedBackupFileName,
+            maxBackups
+        );
+
+        foreach (var backupFileName in pruningPlan.BackupFileNamesToDelete)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+
+            var backupFilePath = GetFilePathInDestinationDirectory(backupFileName);
+            if (connection.FileExists(backupFilePath))
+            {
+                connection.DeleteFile(backupFilePath);
+            }
+        }
+
+        await WriteManifestAsync(
+            connection,
+            manifestFilePath,
+            pruningPlan.UpdatedManifest,
+            cancellationToken
+        );
+    }
+
     public override void Dispose()
     {
         _password.Dispose();
@@ -79,6 +130,64 @@ public class SMBSink : SinkBase<SMBSinkDestination>
     private SMBConnection CreateConnection()
     {
         return new SMBConnection(_server, string.Empty, _shareName, _username, _password);
+    }
+
+    private HashSet<string> GetExistingBackupFileNames(SMBConnection connection)
+    {
+        var normalizedDirectoryPath = NormalizeDirectoryPath(TypedDestination.DestinationDirectory);
+
+        return connection
+            .GetFiles(normalizedDirectoryPath)
+            .Select(Path.GetFileName)
+            .Where(fileName => !string.IsNullOrWhiteSpace(fileName))
+            .Select(fileName => fileName!)
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+    }
+
+    private async Task<BackupsManifest> ReadManifestAsync(
+        SMBConnection connection,
+        string manifestFilePath,
+        CancellationToken cancellationToken
+    )
+    {
+        if (!connection.FileExists(manifestFilePath))
+        {
+            return new BackupsManifest();
+        }
+
+        await using var stream = connection.GetStream(manifestFilePath);
+        using var reader = new StreamReader(stream, Encoding.UTF8);
+        var manifestJson = await reader.ReadToEndAsync(cancellationToken);
+        return BackupsManifestJsonSerializer.DeserializeOrDefault(manifestJson);
+    }
+
+    private static async Task WriteManifestAsync(
+        SMBConnection connection,
+        string manifestFilePath,
+        BackupsManifest manifest,
+        CancellationToken cancellationToken
+    )
+    {
+        if (connection.FileExists(manifestFilePath))
+        {
+            connection.DeleteFile(manifestFilePath);
+        }
+
+        var manifestJson = BackupsManifestJsonSerializer.Serialize(manifest);
+        await using var stream = connection.CreateFile(manifestFilePath);
+        using var writer = new StreamWriter(stream, Encoding.UTF8, leaveOpen: false);
+
+        await writer.WriteAsync(manifestJson.AsMemory(), cancellationToken);
+        await writer.FlushAsync(cancellationToken);
+    }
+
+    private string GetFilePathInDestinationDirectory(string fileName)
+    {
+        var normalizedDirectoryPath = NormalizeDirectoryPath(TypedDestination.DestinationDirectory);
+
+        return string.IsNullOrEmpty(normalizedDirectoryPath)
+            ? fileName
+            : Path.Join(normalizedDirectoryPath, fileName);
     }
 
     private string GetDestinationFilePath(string sourceFilePath)

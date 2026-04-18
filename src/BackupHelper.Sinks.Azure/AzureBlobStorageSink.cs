@@ -1,10 +1,11 @@
 ﻿using BackupHelper.Abstractions.Credentials;
 using BackupHelper.Connectors.Azure;
 using BackupHelper.Sinks.Abstractions;
+using BackupHelper.Sinks.Abstractions.Retention;
 
 namespace BackupHelper.Sinks.Azure;
 
-public class AzureBlobStorageSink : SinkBase<AzureBlobStorageSinkDestination>
+public class AzureBlobStorageSink : SinkBase<AzureBlobStorageSinkDestination>, IPrunableSink
 {
     private readonly AzureBlobStorage _storage;
 
@@ -59,5 +60,71 @@ public class AzureBlobStorageSink : SinkBase<AzureBlobStorageSinkDestination>
         {
             return false;
         }
+    }
+
+    public async Task PruneBackupsAsync(
+        string uploadedBackupFileName,
+        int maxBackups,
+        CancellationToken cancellationToken = default
+    )
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+
+        if (maxBackups <= 0 || string.IsNullOrWhiteSpace(uploadedBackupFileName))
+        {
+            return;
+        }
+
+        var containerName = TypedDestination.Container;
+        var manifest = await ReadManifestAsync(containerName, cancellationToken);
+        var existingBlobNames = await _storage.GetBlobNamesAsync(containerName, cancellationToken);
+        var pruningPlan = BackupsRetentionPlanner.CreatePlanForCaseSensitiveStorage(
+            manifest,
+            existingBlobNames,
+            uploadedBackupFileName,
+            maxBackups
+        );
+
+        foreach (var backupFileName in pruningPlan.BackupFileNamesToDelete)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+
+            await _storage.DeleteBlobIfExistsAsync(
+                containerName,
+                backupFileName,
+                cancellationToken
+            );
+        }
+
+        await WriteManifestAsync(containerName, pruningPlan.UpdatedManifest, cancellationToken);
+    }
+
+    private async Task<BackupsManifest> ReadManifestAsync(
+        string containerName,
+        CancellationToken cancellationToken
+    )
+    {
+        var manifestJson = await _storage.DownloadBlobTextAsync(
+            containerName,
+            BackupsRetentionConstants.ManifestFileName,
+            cancellationToken
+        );
+
+        return BackupsManifestJsonSerializer.DeserializeOrDefault(manifestJson);
+    }
+
+    private async Task WriteManifestAsync(
+        string containerName,
+        BackupsManifest manifest,
+        CancellationToken cancellationToken
+    )
+    {
+        var manifestJson = BackupsManifestJsonSerializer.Serialize(manifest);
+        await _storage.UploadBlobTextAsync(
+            containerName,
+            BackupsRetentionConstants.ManifestFileName,
+            manifestJson,
+            cancellationToken
+        );
     }
 }

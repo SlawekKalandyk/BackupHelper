@@ -130,7 +130,11 @@ public class PerformBackupStep : IWizardStep<PerformBackupStepParameters>
             foreach (var sinkDestination in backupPlan.Sinks)
             {
                 var sinkUploadResult = await _mediator.Send(
-                    new UploadBackupToSinkCommand(sinkDestination, outputFilePath),
+                    new UploadBackupToSinkCommand(
+                        sinkDestination,
+                        outputFilePath,
+                        backupPlan.MaxBackups
+                    ),
                     cancellationToken
                 );
                 PrintSinkUploadStatus(sinkUploadResult);
@@ -150,7 +154,11 @@ public class PerformBackupStep : IWizardStep<PerformBackupStepParameters>
             async (sinkDestination, ct) =>
             {
                 var sinkUploadResult = await _mediator.Send(
-                    new UploadBackupToSinkCommand(sinkDestination, outputFilePath),
+                    new UploadBackupToSinkCommand(
+                        sinkDestination,
+                        outputFilePath,
+                        backupPlan.MaxBackups
+                    ),
                     ct
                 );
                 results.Add(sinkUploadResult);

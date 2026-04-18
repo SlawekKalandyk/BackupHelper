@@ -74,6 +74,98 @@ public class AzureBlobStorage
         return containerExists.Value;
     }
 
+    public async Task<bool> BlobExistsAsync(
+        string containerName,
+        string blobName,
+        CancellationToken cancellationToken = default
+    )
+    {
+        var containerClient = _blobServiceClient.GetBlobContainerClient(containerName);
+        var blobClient = containerClient.GetBlobClient(blobName);
+        var blobExists = await blobClient.ExistsAsync(cancellationToken);
+
+        if (!blobExists.HasValue)
+        {
+            throw new InvalidOperationException("Failed to determine if blob exists.");
+        }
+
+        return blobExists.Value;
+    }
+
+    public async Task<string?> DownloadBlobTextAsync(
+        string containerName,
+        string blobName,
+        CancellationToken cancellationToken = default
+    )
+    {
+        var containerClient = _blobServiceClient.GetBlobContainerClient(containerName);
+        var blobClient = containerClient.GetBlobClient(blobName);
+
+        var blobExists = await blobClient.ExistsAsync(cancellationToken);
+        if (!blobExists.Value)
+        {
+            return null;
+        }
+
+        var response = await blobClient.DownloadContentAsync(cancellationToken);
+        return response.Value.Content.ToString();
+    }
+
+    public async Task UploadBlobTextAsync(
+        string containerName,
+        string blobName,
+        string content,
+        CancellationToken cancellationToken = default
+    )
+    {
+        var containerClient = _blobServiceClient.GetBlobContainerClient(containerName);
+        var blobClient = containerClient.GetBlobClient(blobName);
+        var uploadResponse = await blobClient.UploadAsync(
+            BinaryData.FromString(content),
+            overwrite: true,
+            cancellationToken
+        );
+
+        var status = uploadResponse.GetRawResponse().Status;
+
+        if (status < 200 || status >= 300)
+        {
+            throw new InvalidOperationException(
+                $"Failed to upload blob '{blobName}' to container '{containerName}'. HTTP Status: {status}."
+            );
+        }
+    }
+
+    public async Task DeleteBlobIfExistsAsync(
+        string containerName,
+        string blobName,
+        CancellationToken cancellationToken = default
+    )
+    {
+        var containerClient = _blobServiceClient.GetBlobContainerClient(containerName);
+        var blobClient = containerClient.GetBlobClient(blobName);
+
+        await blobClient.DeleteIfExistsAsync(cancellationToken: cancellationToken);
+    }
+
+    public async Task<IReadOnlyList<string>> GetBlobNamesAsync(
+        string containerName,
+        CancellationToken cancellationToken = default
+    )
+    {
+        var containerClient = _blobServiceClient.GetBlobContainerClient(containerName);
+        var blobNames = new List<string>();
+
+        await foreach (
+            var blobItem in containerClient.GetBlobsAsync(cancellationToken: cancellationToken)
+        )
+        {
+            blobNames.Add(blobItem.Name);
+        }
+
+        return blobNames;
+    }
+
     public async Task<bool> TestConnectionAsync(CancellationToken cancellationToken = default)
     {
         try

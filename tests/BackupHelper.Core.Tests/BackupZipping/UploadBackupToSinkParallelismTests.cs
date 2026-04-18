@@ -7,6 +7,7 @@ using BackupHelper.Core.Sinks;
 using BackupHelper.Sinks.Abstractions;
 using BackupHelper.Tests.Shared;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging.Abstractions;
 
 namespace BackupHelper.Core.Tests.BackupZipping;
 
@@ -63,7 +64,10 @@ public class UploadBackupToSinkParallelismTests : ZipTestsBase
         );
 
         var sinkManager = new TestSinkManager(sinks);
-        var handler = new UploadBackupToSinkCommandHandler(sinkManager);
+        var handler = new UploadBackupToSinkCommandHandler(
+            sinkManager,
+            NullLogger<UploadBackupToSinkCommandHandler>.Instance
+        );
         var uploadResults = new ConcurrentBag<BackupSinkUploadResult>();
 
         // Act: upload to all sinks concurrently, matching sink parallelism behavior.
