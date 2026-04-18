@@ -13,87 +13,124 @@ public class SourceManager : ISourceManager
         _sources = sources.ToDictionary(s => s.GetScheme());
     }
 
-    public Stream GetStream(string path)
+    public Task<Stream> GetStreamAsync(string path, CancellationToken cancellationToken = default)
     {
-        return GetFromSource(
+        cancellationToken.ThrowIfCancellationRequested();
+        return GetFromSourceAsync(
             path,
-            (source, pathWithoutScheme) => source.GetStream(pathWithoutScheme)
+            (source, pathWithoutScheme, ct) => source.GetStreamAsync(pathWithoutScheme, ct),
+            cancellationToken
         );
     }
 
-    public IEnumerable<string> GetSubDirectories(string path)
+    public Task<IEnumerable<string>> GetSubDirectoriesAsync(
+        string path,
+        CancellationToken cancellationToken = default
+    )
     {
-        return GetFromSource(
+        cancellationToken.ThrowIfCancellationRequested();
+        return GetFromSourceAsync(
             path,
-            (source, pathWithoutScheme) =>
+            async (source, pathWithoutScheme, ct) =>
             {
                 var scheme = GetScheme(path);
+                var directories = await source.GetSubDirectoriesAsync(pathWithoutScheme, ct);
+
                 return string.IsNullOrEmpty(scheme)
-                    ? source.GetSubDirectories(pathWithoutScheme)
-                    : source
-                        .GetSubDirectories(pathWithoutScheme)
-                        .Select(dir => Path.Join(scheme + ISource.PrefixSeparator, dir));
-            }
+                    ? directories
+                    : directories.Select(dir => Path.Join(scheme + ISource.PrefixSeparator, dir));
+            },
+            cancellationToken
         );
     }
 
-    public IEnumerable<string> GetFiles(string path)
+    public Task<IEnumerable<string>> GetFilesAsync(
+        string path,
+        CancellationToken cancellationToken = default
+    )
     {
-        return GetFromSource(
+        cancellationToken.ThrowIfCancellationRequested();
+        return GetFromSourceAsync(
             path,
-            (source, pathWithoutScheme) =>
+            async (source, pathWithoutScheme, ct) =>
             {
                 var scheme = GetScheme(path);
+                var files = await source.GetFilesAsync(pathWithoutScheme, ct);
+
                 return string.IsNullOrEmpty(scheme)
-                    ? source.GetFiles(pathWithoutScheme)
-                    : source
-                        .GetFiles(pathWithoutScheme)
-                        .Select(dir => Path.Join(scheme + ISource.PrefixSeparator, dir));
-            }
+                    ? files
+                    : files.Select(file => Path.Join(scheme + ISource.PrefixSeparator, file));
+            },
+            cancellationToken
         );
     }
 
-    public bool FileExists(string path)
+    public Task<bool> FileExistsAsync(string path, CancellationToken cancellationToken = default)
     {
-        return GetFromSource(
+        cancellationToken.ThrowIfCancellationRequested();
+        return GetFromSourceAsync(
             path,
-            (source, pathWithoutScheme) => source.FileExists(pathWithoutScheme)
+            (source, pathWithoutScheme, ct) => source.FileExistsAsync(pathWithoutScheme, ct),
+            cancellationToken
         );
     }
 
-    public bool DirectoryExists(string path)
+    public Task<bool> DirectoryExistsAsync(
+        string path,
+        CancellationToken cancellationToken = default
+    )
     {
-        return GetFromSource(
+        cancellationToken.ThrowIfCancellationRequested();
+        return GetFromSourceAsync(
             path,
-            (source, pathWithoutScheme) => source.DirectoryExists(pathWithoutScheme)
+            (source, pathWithoutScheme, ct) => source.DirectoryExistsAsync(pathWithoutScheme, ct),
+            cancellationToken
         );
     }
 
-    public DateTime? GetFileLastWriteTime(string path)
+    public Task<DateTime?> GetFileLastWriteTimeAsync(
+        string path,
+        CancellationToken cancellationToken = default
+    )
     {
-        return GetFromSource(
+        cancellationToken.ThrowIfCancellationRequested();
+        return GetFromSourceAsync(
             path,
-            (source, pathWithoutScheme) => source.GetFileLastWriteTime(pathWithoutScheme)
+            (source, pathWithoutScheme, ct) =>
+                source.GetFileLastWriteTimeAsync(pathWithoutScheme, ct),
+            cancellationToken
         );
     }
 
-    public DateTime? GetDirectoryLastWriteTime(string path)
+    public Task<DateTime?> GetDirectoryLastWriteTimeAsync(
+        string path,
+        CancellationToken cancellationToken = default
+    )
     {
-        return GetFromSource(
+        cancellationToken.ThrowIfCancellationRequested();
+        return GetFromSourceAsync(
             path,
-            (source, pathWithoutScheme) => source.GetDirectoryLastWriteTime(pathWithoutScheme)
+            (source, pathWithoutScheme, ct) =>
+                source.GetDirectoryLastWriteTimeAsync(pathWithoutScheme, ct),
+            cancellationToken
         );
     }
 
-    public long GetFileSize(string path)
+    public Task<long> GetFileSizeAsync(string path, CancellationToken cancellationToken = default)
     {
-        return GetFromSource(
+        cancellationToken.ThrowIfCancellationRequested();
+        return GetFromSourceAsync(
             path,
-            (source, pathWithoutScheme) => source.GetFileSize(pathWithoutScheme)
+            (source, pathWithoutScheme, ct) => source.GetFileSizeAsync(pathWithoutScheme, ct),
+            cancellationToken
         );
     }
 
-    private T GetFromSource<T>(string path, Func<ISource, string, T> action)
+    private Task<T> GetFromSourceAsync<T>(
+        string path,
+        Func<ISource, string, CancellationToken, Task<T>> action,
+        CancellationToken cancellationToken
+    )
     {
         var scheme = GetScheme(path);
 
@@ -104,14 +141,14 @@ public class SourceManager : ISourceManager
                 throw new NotSupportedException("No default file source is registered.");
             }
 
-            return action(defaultSource, path);
+            return action(defaultSource, path, cancellationToken);
         }
 
         var source = GetSource(scheme);
         var prefix = source.GetSchemePrefix();
         var pathWithoutScheme = path[prefix.Length..];
 
-        return action(source, pathWithoutScheme);
+        return action(source, pathWithoutScheme, cancellationToken);
     }
 
     private ISource GetSource(string scheme)

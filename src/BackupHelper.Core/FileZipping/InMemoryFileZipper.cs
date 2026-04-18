@@ -69,8 +69,10 @@ public class InMemoryFileZipper : FileZipperBase
 
     public override bool HasToBeSaved => true;
 
-    protected override void SaveCore()
+    public override async Task SaveAsync(CancellationToken cancellationToken = default)
     {
+        cancellationToken.ThrowIfCancellationRequested();
+
         if (OverwriteFileIfExists && File.Exists(ZipFilePath))
         {
             _logger.LogWarning("Overwriting existing file: {ZipFilePath}", ZipFilePath);
@@ -78,19 +80,35 @@ public class InMemoryFileZipper : FileZipperBase
         }
 
         _zipOutputStream.Finish();
-        using var fileStream = File.Open(ZipFilePath, FileMode.Create, FileAccess.ReadWrite);
+        await using var fileStream = File.Open(
+            ZipFilePath,
+            FileMode.Create,
+            FileAccess.ReadWrite,
+            FileShare.None
+        );
         _zipMemoryStream.Seek(0, SeekOrigin.Begin);
-        _zipMemoryStream.CopyTo(fileStream);
+        await _zipMemoryStream.CopyToAsync(fileStream, cancellationToken);
     }
 
-    public override void AddFile(string filePath, string zipPath = "", int? compressionLevel = null)
+    public override async Task AddFileAsync(
+        string filePath,
+        string zipPath = "",
+        int? compressionLevel = null,
+        CancellationToken cancellationToken = default
+    )
     {
+        cancellationToken.ThrowIfCancellationRequested();
         var newZipPath = Path.Combine(zipPath, PathHelper.GetName(filePath)).Replace('\\', '/');
+
         try
         {
+            var lastWriteTime = await _sourceManager.GetFileLastWriteTimeAsync(
+                filePath,
+                cancellationToken
+            );
             var entry = new ZipEntry(newZipPath)
             {
-                DateTime = File.GetLastWriteTime(filePath),
+                DateTime = lastWriteTime ?? DateTime.Now,
                 AESKeySize = _encrypt ? 256 : 0,
             };
 
@@ -98,8 +116,8 @@ public class InMemoryFileZipper : FileZipperBase
 
             _zipOutputStream.PutNextEntry(entry);
 
-            using var fileStream = _sourceManager.GetStream(filePath);
-            fileStream.CopyTo(_zipOutputStream);
+            await using var fileStream = await _sourceManager.GetStreamAsync(filePath, cancellationToken);
+            await fileStream.CopyToAsync(_zipOutputStream, cancellationToken);
             _zipOutputStream.CloseEntry();
         }
         catch (Exception e)
@@ -112,18 +130,25 @@ public class InMemoryFileZipper : FileZipperBase
         }
     }
 
-    public override void AddDirectory(
+    public override async Task AddDirectoryAsync(
         string directoryPath,
         string zipPath = "",
-        int? compressionLevel = null
+        int? compressionLevel = null,
+        CancellationToken cancellationToken = default
     )
     {
+        cancellationToken.ThrowIfCancellationRequested();
+
         var newZipPath =
             Path.Combine(zipPath, PathHelper.GetName(directoryPath)).Replace('\\', '/') + '/';
 
+        var lastWriteTime = await _sourceManager.GetDirectoryLastWriteTimeAsync(
+            directoryPath,
+            cancellationToken
+        );
         var entry = new ZipEntry(newZipPath)
         {
-            DateTime = Directory.GetLastWriteTime(directoryPath),
+            DateTime = lastWriteTime ?? DateTime.Now,
             AESKeySize = _encrypt ? 256 : 0,
         };
 
@@ -132,33 +157,44 @@ public class InMemoryFileZipper : FileZipperBase
         _zipOutputStream.PutNextEntry(entry);
         _zipOutputStream.CloseEntry();
 
-        AddDirectoryContent(directoryPath, newZipPath.TrimEnd('/'));
+        await AddDirectoryContentAsync(
+            directoryPath,
+            newZipPath.TrimEnd('/'),
+            compressionLevel,
+            cancellationToken
+        );
     }
 
-    public override void AddDirectoryContent(
+    public override async Task AddDirectoryContentAsync(
         string directoryPath,
         string zipPath = "",
-        int? compressionLevel = null
+        int? compressionLevel = null,
+        CancellationToken cancellationToken = default
     )
     {
-        var subDirectories = _sourceManager.GetSubDirectories(directoryPath);
-        var files = _sourceManager.GetFiles(directoryPath);
+        cancellationToken.ThrowIfCancellationRequested();
+        var subDirectories = await _sourceManager.GetSubDirectoriesAsync(
+            directoryPath,
+            cancellationToken
+        );
+        var files = await _sourceManager.GetFilesAsync(directoryPath, cancellationToken);
 
         foreach (var subDirectoryPath in subDirectories)
         {
-            AddDirectory(subDirectoryPath, zipPath);
+            await AddDirectoryAsync(subDirectoryPath, zipPath, compressionLevel, cancellationToken);
         }
 
         foreach (var filePath in files)
         {
-            AddFile(filePath, zipPath);
+            await AddFileAsync(filePath, zipPath, compressionLevel, cancellationToken);
         }
     }
 
-    public override void Dispose()
+    public override async ValueTask DisposeAsync()
     {
-        base.Dispose();
         _zipOutputStream.Dispose();
-        _zipMemoryStream.Dispose();
+        await _zipMemoryStream.DisposeAsync();
+
+        await base.DisposeAsync();
     }
 }

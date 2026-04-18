@@ -127,14 +127,14 @@ public class BackupPlanZipperTests : ZipTestsBase
     }
 
     [Test]
-    public void GivenBackupEntryWithBackupOnlyDirectory_WhenZipFileIsUnzipped_ThenUnzippedFileIsInThatDirectory()
+    public async Task GivenBackupEntryWithBackupOnlyDirectory_WhenZipFileIsUnzipped_ThenUnzippedFileIsInThatDirectory()
     {
         // Arrange
         PrepareFileStructure();
         var backupPlan = CreateSampleBackupPlan();
 
         // Act
-        _backupPlanZipper.CreateZipFile(backupPlan, ZipFilePath);
+        await _backupPlanZipper.CreateZipFileAsync(backupPlan, ZipFilePath);
         _unzipper.UnzipFile();
 
         // Assert
@@ -142,14 +142,14 @@ public class BackupPlanZipperTests : ZipTestsBase
     }
 
     [Test]
-    public void GivenBackupEntryWithCronBasedDirectory_WhenZipFileIsUnzipped_ThenUnzippedDirectoryIsResolvedWithDate()
+    public async Task GivenBackupEntryWithCronBasedDirectory_WhenZipFileIsUnzipped_ThenUnzippedDirectoryIsResolvedWithDate()
     {
         // Arrange
         PrepareFileStructure();
         var backupPlan = CreateSampleBackupPlan();
 
         // Act
-        _backupPlanZipper.CreateZipFile(backupPlan, ZipFilePath);
+        await _backupPlanZipper.CreateZipFileAsync(backupPlan, ZipFilePath);
         _unzipper.UnzipFile();
 
         // Assert
@@ -159,14 +159,14 @@ public class BackupPlanZipperTests : ZipTestsBase
     }
 
     [Test]
-    public void GivenBackupEntryWithSMBFile_WhenZipFileIsUnzipped_ThenUnzippedFileExists()
+    public async Task GivenBackupEntryWithSMBFile_WhenZipFileIsUnzipped_ThenUnzippedFileExists()
     {
         // Arrange
         PrepareFileStructure();
         var backupPlan = CreateSampleBackupPlan();
 
         // Act
-        _backupPlanZipper.CreateZipFile(backupPlan, ZipFilePath);
+        await _backupPlanZipper.CreateZipFileAsync(backupPlan, ZipFilePath);
         _unzipper.UnzipFile();
 
         // Assert
@@ -178,14 +178,14 @@ public class BackupPlanZipperTests : ZipTestsBase
     }
 
     [Test]
-    public void GivenBackupEntryWithSMBDirectory_WhenZipFileIsUnzipped_ThenUnzippedDirectoryExists()
+    public async Task GivenBackupEntryWithSMBDirectory_WhenZipFileIsUnzipped_ThenUnzippedDirectoryExists()
     {
         // Arrange
         PrepareFileStructure();
         var backupPlan = CreateSampleBackupPlan();
 
         // Act
-        _backupPlanZipper.CreateZipFile(backupPlan, ZipFilePath);
+        await _backupPlanZipper.CreateZipFileAsync(backupPlan, ZipFilePath);
         _unzipper.UnzipFile();
 
         // Assert

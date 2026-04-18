@@ -27,7 +27,17 @@ public class AzureBlobStorageSink : SinkBase<AzureBlobStorageSinkDestination>
         CancellationToken cancellationToken = default
     )
     {
-        await using var fileStream = File.OpenRead(sourceFilePath);
+        cancellationToken.ThrowIfCancellationRequested();
+
+        await using var fileStream = new FileStream(
+            sourceFilePath,
+            FileMode.Open,
+            FileAccess.Read,
+            FileShare.Read,
+            bufferSize: 81920,
+            options: FileOptions.Asynchronous | FileOptions.SequentialScan
+        );
+
         await _storage.UploadBlobAsync(
             TypedDestination.Container,
             Path.GetFileName(sourceFilePath),

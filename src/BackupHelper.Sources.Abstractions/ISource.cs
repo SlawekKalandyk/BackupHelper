@@ -13,12 +13,29 @@ public interface ISource : IDisposable
     /// Returns the scheme prefix for the source, e.g., "smb://" or "file://".
     /// </summary>
     string GetSchemePrefix() => GetScheme() + PrefixSeparator;
-    Stream GetStream(string path);
-    IEnumerable<string> GetSubDirectories(string path);
-    IEnumerable<string> GetFiles(string path);
-    bool FileExists(string path);
-    bool DirectoryExists(string path);
-    DateTime? GetFileLastWriteTime(string path);
-    DateTime? GetDirectoryLastWriteTime(string path);
-    long GetFileSize(string path);
+
+    Task<Stream> GetStreamAsync(string path, CancellationToken cancellationToken = default);
+
+    Task<IEnumerable<string>> GetSubDirectoriesAsync(
+        string path,
+        CancellationToken cancellationToken = default
+    );
+
+    Task<IEnumerable<string>> GetFilesAsync(string path, CancellationToken cancellationToken = default);
+
+    Task<bool> FileExistsAsync(string path, CancellationToken cancellationToken = default);
+
+    Task<bool> DirectoryExistsAsync(string path, CancellationToken cancellationToken = default);
+
+    Task<DateTime?> GetFileLastWriteTimeAsync(
+        string path,
+        CancellationToken cancellationToken = default
+    );
+
+    Task<DateTime?> GetDirectoryLastWriteTimeAsync(
+        string path,
+        CancellationToken cancellationToken = default
+    );
+
+    Task<long> GetFileSizeAsync(string path, CancellationToken cancellationToken = default);
 }

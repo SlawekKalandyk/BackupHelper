@@ -102,9 +102,15 @@ public class BackupPlan
     [JsonProperty("zipFileNameSuffix")]
     public string? ZipFileNameSuffix { get; set; }
 
-    public static BackupPlan FromJsonFile(string inputPath)
+    [JsonProperty("sinkUploadParallelism")]
+    public int? SinkUploadParallelism { get; set; }
+
+    public static async Task<BackupPlan> FromJsonFileAsync(
+        string inputPath,
+        CancellationToken cancellationToken = default
+    )
     {
-        var json = File.ReadAllText(inputPath);
+        var json = await File.ReadAllTextAsync(inputPath, cancellationToken);
 
         var settings = new JsonSerializerSettings();
         settings.Converters.Add(new SinkDestinationConverter());
@@ -112,7 +118,10 @@ public class BackupPlan
         return JsonConvert.DeserializeObject<BackupPlan>(json, settings)!;
     }
 
-    public void ToJsonFile(string outputPath)
+    public async Task ToJsonFileAsync(
+        string outputPath,
+        CancellationToken cancellationToken = default
+    )
     {
         var settings = new JsonSerializerSettings
         {
@@ -121,7 +130,7 @@ public class BackupPlan
         };
 
         var json = JsonConvert.SerializeObject(this, settings);
-        File.WriteAllText(outputPath, json);
+        await File.WriteAllTextAsync(outputPath, json, cancellationToken);
     }
 }
 
@@ -190,16 +199,44 @@ public class BackupEntryConverter : JsonConverter<BackupEntry>
     public override void WriteJson(JsonWriter writer, BackupEntry? value, JsonSerializer serializer)
     {
         if (value == null)
+        {
+            writer.WriteNull();
             return;
+        }
 
-        if (value is BackupFileEntry fileEntry)
+        writer.WriteStartObject();
+
+        switch (value)
         {
-            serializer.Serialize(writer, fileEntry);
+            case BackupFileEntry fileEntry:
+                writer.WritePropertyName("path");
+                writer.WriteValue(fileEntry.FilePath);
+
+                writer.WritePropertyName("cronExpression");
+                writer.WriteValue(fileEntry.CronExpression);
+
+                writer.WritePropertyName("compressionLevel");
+                writer.WriteValue(fileEntry.CompressionLevel);
+
+                writer.WritePropertyName("timeZone");
+                writer.WriteValue(fileEntry.TimeZone);
+                break;
+
+            case BackupDirectoryEntry dirEntry:
+                writer.WritePropertyName("name");
+                writer.WriteValue(dirEntry.DirectoryName);
+
+                writer.WritePropertyName("items");
+                serializer.Serialize(writer, dirEntry.Items);
+                break;
+
+            default:
+                throw new JsonSerializationException(
+                    $"Unsupported backup entry type for serialization: {value.GetType().FullName}"
+                );
         }
-        else if (value is BackupDirectoryEntry dirEntry)
-        {
-            serializer.Serialize(writer, dirEntry);
-        }
+
+        writer.WriteEndObject();
     }
 }
 
@@ -235,8 +272,40 @@ public class SinkDestinationConverter : JsonConverter<ISinkDestination>
     )
     {
         if (value == null)
+        {
+            writer.WriteNull();
             return;
+        }
 
-        serializer.Serialize(writer, value);
+        writer.WriteStartObject();
+
+        switch (value)
+        {
+            case FileSystemSinkDestination fileSystemDestination:
+                writer.WritePropertyName("kind");
+                writer.WriteValue(FileSystemSinkDestination.SinkKind);
+
+                writer.WritePropertyName("destinationDirectory");
+                writer.WriteValue(fileSystemDestination.DestinationDirectory);
+                break;
+
+            case AzureBlobStorageSinkDestination azureDestination:
+                writer.WritePropertyName("kind");
+                writer.WriteValue(AzureBlobStorageSinkDestination.SinkKind);
+
+                writer.WritePropertyName("accountName");
+                writer.WriteValue(azureDestination.AccountName);
+
+                writer.WritePropertyName("container");
+                writer.WriteValue(azureDestination.Container);
+                break;
+
+            default:
+                throw new JsonSerializationException(
+                    $"Unsupported sink destination type for serialization: {value.GetType().FullName}"
+                );
+        }
+
+        writer.WriteEndObject();
     }
 }

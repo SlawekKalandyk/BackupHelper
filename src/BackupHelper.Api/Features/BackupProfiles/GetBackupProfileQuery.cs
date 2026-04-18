@@ -15,7 +15,7 @@ public class GetBackupProfileQueryHandler : IRequestHandler<GetBackupProfileQuer
         _applicationDataHandler = applicationDataHandler;
     }
 
-    public Task<BackupProfile?> Handle(
+    public async Task<BackupProfile?> Handle(
         GetBackupProfileQuery request,
         CancellationToken cancellationToken
     )
@@ -25,12 +25,15 @@ public class GetBackupProfileQueryHandler : IRequestHandler<GetBackupProfileQuer
 
         if (!File.Exists(backupProfileFilePath))
         {
-            return Task.FromResult<BackupProfile?>(null);
+            return null;
         }
 
-        var backupProfileJson = File.ReadAllText(backupProfileFilePath);
+        var backupProfileJson = await File.ReadAllTextAsync(
+            backupProfileFilePath,
+            cancellationToken
+        );
         var backupProfile = JsonConvert.DeserializeObject<BackupProfile>(backupProfileJson);
 
-        return Task.FromResult(backupProfile);
+        return backupProfile;
     }
 }

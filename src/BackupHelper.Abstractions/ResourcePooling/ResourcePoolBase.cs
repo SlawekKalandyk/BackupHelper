@@ -106,34 +106,31 @@ public abstract class ResourcePoolBase<TResource, TResourceId> : IDisposable
         return true;
     }
 
-    private Task StartCleanupTask()
+    private async Task StartCleanupTask()
     {
-        return Task.Run(async () =>
+        try
         {
-            try
+            while (!_cleanupCancellationSource.IsCancellationRequested)
             {
-                while (!_cleanupCancellationSource.IsCancellationRequested)
-                {
-                    await Task.Delay(TimeSpan.FromSeconds(30), _cleanupCancellationSource.Token);
+                await Task.Delay(TimeSpan.FromSeconds(30), _cleanupCancellationSource.Token);
 
-                    if (_cleanupCancellationSource.IsCancellationRequested)
-                        break;
+                if (_cleanupCancellationSource.IsCancellationRequested)
+                    break;
 
-                    await CleanupIdleResources();
-                }
+                await CleanupIdleResources();
             }
-            catch (OperationCanceledException)
-            {
-                // Expected when cancellation is requested
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error occurred during resource pool cleanup.");
+        }
+        catch (OperationCanceledException)
+        {
+            // Expected when cancellation is requested
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error occurred during resource pool cleanup.");
 
-                // Restart the cleanup task in case of unexpected errors
-                _cleanupTask = StartCleanupTask();
-            }
-        });
+            // Restart the cleanup task in case of unexpected errors
+            _cleanupTask = StartCleanupTask();
+        }
     }
 
     private async Task CleanupIdleResources()

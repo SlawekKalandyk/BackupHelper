@@ -29,7 +29,7 @@ public class CreateBackupFileCommandHandler
         _backupPlanZipper = backupPlanZipper;
     }
 
-    public Task<CreateBackupFileCommandResult> Handle(
+    public async Task<CreateBackupFileCommandResult> Handle(
         CreateBackupFileCommand request,
         CancellationToken cancellationToken
     )
@@ -43,7 +43,12 @@ public class CreateBackupFileCommandHandler
 
         try
         {
-            _backupPlanZipper.CreateZipFile(request.BackupPlan, outputFilePath, request.Password);
+            await _backupPlanZipper.CreateZipFileAsync(
+                request.BackupPlan,
+                outputFilePath,
+                request.Password,
+                cancellationToken
+            );
             _logger.LogInformation("Backup created at {BackupFilePath}", outputFilePath);
         }
         catch (Exception ex)
@@ -52,6 +57,6 @@ public class CreateBackupFileCommandHandler
             throw;
         }
 
-        return Task.FromResult(new CreateBackupFileCommandResult(outputFilePath));
+        return new CreateBackupFileCommandResult(outputFilePath);
     }
 }

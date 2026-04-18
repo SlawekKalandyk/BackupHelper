@@ -23,8 +23,10 @@ public class SMBSource : ISource
 
     public string GetScheme() => Scheme;
 
-    public Stream GetStream(string path)
+    public Task<Stream> GetStreamAsync(string path, CancellationToken cancellationToken = default)
     {
+        cancellationToken.ThrowIfCancellationRequested();
+
         var shareInfo = SMBShareInfo.FromSMBPath(path);
         var smbPath = SMBHelper.StripShareInfo(path);
         var connection = _connectionPool.GetResource(shareInfo);
@@ -32,11 +34,13 @@ public class SMBSource : ISource
         try
         {
             var stream = connection.GetStream(smbPath);
-            return new PooledResourceStream<SMBConnection, SMBShareInfo>(
-                stream,
-                connection,
-                shareInfo,
-                _connectionPool
+            return Task.FromResult<Stream>(
+                new PooledResourceStream<SMBConnection, SMBShareInfo>(
+                    stream,
+                    connection,
+                    shareInfo,
+                    _connectionPool
+                )
             );
         }
         catch
@@ -46,67 +50,89 @@ public class SMBSource : ISource
         }
     }
 
-    public IEnumerable<string> GetSubDirectories(string path)
+    public Task<IEnumerable<string>> GetSubDirectoriesAsync(
+        string path,
+        CancellationToken cancellationToken = default
+    )
     {
-        return ExecuteWithConnection(
+        return ExecuteWithConnectionAsync<IEnumerable<string>>(
             path,
             (connection, smbPath, shareInfo) =>
                 connection
                     .GetSubDirectories(smbPath)
                     .Select(dir => Path.Join(shareInfo.ToString(), dir))
-                    .ToList()
+                    .ToList(),
+            cancellationToken
         );
     }
 
-    public IEnumerable<string> GetFiles(string path)
+    public Task<IEnumerable<string>> GetFilesAsync(
+        string path,
+        CancellationToken cancellationToken = default
+    )
     {
-        return ExecuteWithConnection(
+        return ExecuteWithConnectionAsync<IEnumerable<string>>(
             path,
             (connection, smbPath, shareInfo) =>
                 connection
                     .GetFiles(smbPath)
                     .Select(file => Path.Join(shareInfo.ToString(), file))
-                    .ToList()
+                    .ToList(),
+            cancellationToken
         );
     }
 
-    public bool FileExists(string path)
+    public Task<bool> FileExistsAsync(string path, CancellationToken cancellationToken = default)
     {
-        return ExecuteWithConnection(
+        return ExecuteWithConnectionAsync(
             path,
-            (connection, smbPath, _) => connection.FileExists(smbPath)
+            (connection, smbPath, _) => connection.FileExists(smbPath),
+            cancellationToken
         );
     }
 
-    public bool DirectoryExists(string path)
+    public Task<bool> DirectoryExistsAsync(
+        string path,
+        CancellationToken cancellationToken = default
+    )
     {
-        return ExecuteWithConnection(
+        return ExecuteWithConnectionAsync(
             path,
-            (connection, smbPath, _) => connection.DirectoryExists(smbPath)
+            (connection, smbPath, _) => connection.DirectoryExists(smbPath),
+            cancellationToken
         );
     }
 
-    public DateTime? GetFileLastWriteTime(string path)
+    public Task<DateTime?> GetFileLastWriteTimeAsync(
+        string path,
+        CancellationToken cancellationToken = default
+    )
     {
-        return ExecuteWithConnection(
+        return ExecuteWithConnectionAsync(
             path,
-            (connection, smbPath, _) => connection.GetFileLastWriteTime(smbPath)
+            (connection, smbPath, _) => connection.GetFileLastWriteTime(smbPath),
+            cancellationToken
         );
     }
 
-    public DateTime? GetDirectoryLastWriteTime(string path)
+    public Task<DateTime?> GetDirectoryLastWriteTimeAsync(
+        string path,
+        CancellationToken cancellationToken = default
+    )
     {
-        return ExecuteWithConnection(
+        return ExecuteWithConnectionAsync(
             path,
-            (connection, smbPath, _) => connection.GetDirectoryLastWriteTime(smbPath)
+            (connection, smbPath, _) => connection.GetDirectoryLastWriteTime(smbPath),
+            cancellationToken
         );
     }
 
-    public long GetFileSize(string path)
+    public Task<long> GetFileSizeAsync(string path, CancellationToken cancellationToken = default)
     {
-        return ExecuteWithConnection(
+        return ExecuteWithConnectionAsync(
             path,
-            (connection, smbPath, _) => connection.GetFileSize(smbPath)
+            (connection, smbPath, _) => connection.GetFileSize(smbPath),
+            cancellationToken
         );
     }
 
@@ -130,6 +156,16 @@ public class SMBSource : ISource
             _connectionPool.ReturnResource(shareInfo, connection);
             throw;
         }
+    }
+
+    private Task<T> ExecuteWithConnectionAsync<T>(
+        string path,
+        Func<SMBConnection, string, SMBShareInfo, T> operation,
+        CancellationToken cancellationToken = default
+    )
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        return Task.FromResult(ExecuteWithConnection(path, operation));
     }
 
     public void Dispose()

@@ -88,8 +88,14 @@ public class OnDiskFileZipper : FileZipperBase
         }
     }
 
-    public override void AddFile(string filePath, string zipPath = "", int? compressionLevel = null)
+    public override async Task AddFileAsync(
+        string filePath,
+        string zipPath = "",
+        int? compressionLevel = null,
+        CancellationToken cancellationToken = default
+    )
     {
+        cancellationToken.ThrowIfCancellationRequested();
         var newZipPath = Path.Combine(zipPath, PathHelper.GetName(filePath)).Replace('\\', '/');
 
 #if !DEBUG
@@ -97,7 +103,10 @@ public class OnDiskFileZipper : FileZipperBase
         {
 #endif
             var entry = new ZipEntry(newZipPath) { AESKeySize = _encrypt ? 256 : 0 };
-            var lastWriteTime = _sourceManager.GetFileLastWriteTime(filePath);
+            var lastWriteTime = await _sourceManager.GetFileLastWriteTimeAsync(
+                filePath,
+                cancellationToken
+            );
 
             if (lastWriteTime.HasValue)
             {
@@ -108,7 +117,12 @@ public class OnDiskFileZipper : FileZipperBase
             {
                 try
                 {
-                    AddEntryToZipSynchronously(entry, filePath, compressionLevel);
+                    await AddEntryToZipSynchronouslyAsync(
+                        entry,
+                        filePath,
+                        compressionLevel,
+                        cancellationToken
+                    );
                 }
                 catch
                 {
@@ -118,33 +132,35 @@ public class OnDiskFileZipper : FileZipperBase
             }
             else
             {
-                var fileSizeMB = (int)
-                    Math.Ceiling((double)_sourceManager.GetFileSize(filePath) / (1024 * 1024));
+                var fileSizeBytes = await _sourceManager.GetFileSizeAsync(filePath, cancellationToken);
+                var fileSizeMB = (int)Math.Ceiling((double)fileSizeBytes / (1024 * 1024));
                 var zipTask =
                     MemoryLimitMB <= 0 || fileSizeMB < MemoryLimitMB
                         ? new ZipTask(
                             fileSizeMB,
-                            new Task(
-                                () =>
-                                    AddEntryToZipInParallel(
-                                        entry,
-                                        filePath,
-                                        fileSizeMB,
-                                        compressionLevel
-                                    ),
-                                TaskCreationOptions.None
-                            ),
+                            ct =>
+                                AddEntryToZipInParallelAsync(
+                                    entry,
+                                    filePath,
+                                    fileSizeMB,
+                                    compressionLevel,
+                                    ct
+                                ),
                             filePath
                         )
                         : new ZipTask(
                             fileSizeMB,
-                            new Task(
-                                () => AddEntryToZipSynchronously(entry, filePath, compressionLevel),
-                                TaskCreationOptions.None
-                            ),
+                            ct =>
+                                AddEntryToZipSynchronouslyAsync(
+                                    entry,
+                                    filePath,
+                                    compressionLevel,
+                                    ct
+                                ),
                             filePath
                         );
-                ZipTaskQueue.Enqueue(zipTask);
+
+                await ZipTaskQueue.EnqueueAsync(zipTask, cancellationToken);
             }
 #if !DEBUG
         }
@@ -160,17 +176,23 @@ public class OnDiskFileZipper : FileZipperBase
 #endif
     }
 
-    public override void AddDirectory(
+    public override async Task AddDirectoryAsync(
         string directoryPath,
         string zipPath = "",
-        int? compressionLevel = null
+        int? compressionLevel = null,
+        CancellationToken cancellationToken = default
     )
     {
+        cancellationToken.ThrowIfCancellationRequested();
+
         var newZipPath =
             Path.Combine(zipPath, PathHelper.GetName(directoryPath)).Replace('\\', '/') + '/';
 
         var entry = new ZipEntry(newZipPath) { AESKeySize = _encrypt ? 256 : 0 };
-        var lastWriteTime = _sourceManager.GetDirectoryLastWriteTime(directoryPath);
+        var lastWriteTime = await _sourceManager.GetDirectoryLastWriteTimeAsync(
+            directoryPath,
+            cancellationToken
+        );
 
         if (lastWriteTime.HasValue)
         {
@@ -184,57 +206,79 @@ public class OnDiskFileZipper : FileZipperBase
             _zipOutputStream.CloseEntry();
         }
 
-        AddDirectoryContent(directoryPath, newZipPath.TrimEnd('/'), compressionLevel);
+        await AddDirectoryContentAsync(
+            directoryPath,
+            newZipPath.TrimEnd('/'),
+            compressionLevel,
+            cancellationToken
+        );
     }
 
-    public override void AddDirectoryContent(
+    public override async Task AddDirectoryContentAsync(
         string directoryPath,
         string zipPath = "",
-        int? compressionLevel = null
+        int? compressionLevel = null,
+        CancellationToken cancellationToken = default
     )
     {
-        var subDirectories = _sourceManager.GetSubDirectories(directoryPath);
-        var files = _sourceManager.GetFiles(directoryPath);
+        cancellationToken.ThrowIfCancellationRequested();
+        var subDirectories = await _sourceManager.GetSubDirectoriesAsync(
+            directoryPath,
+            cancellationToken
+        );
+        var files = await _sourceManager.GetFilesAsync(directoryPath, cancellationToken);
 
         foreach (var subDirectoryPath in subDirectories)
         {
-            AddDirectory(subDirectoryPath, zipPath, compressionLevel);
+            await AddDirectoryAsync(subDirectoryPath, zipPath, compressionLevel, cancellationToken);
         }
 
         foreach (var filePath in files)
         {
-            AddFile(filePath, zipPath, compressionLevel);
+            await AddFileAsync(filePath, zipPath, compressionLevel, cancellationToken);
         }
     }
 
-    public override void Wait()
+    public override Task SaveAsync(CancellationToken cancellationToken = default)
     {
-        ZipTaskQueue.WaitForCompletion();
+        cancellationToken.ThrowIfCancellationRequested();
+        return Task.CompletedTask;
     }
 
-    private void AddEntryToZipInParallel(
+    public override Task WaitAsync(CancellationToken cancellationToken = default)
+    {
+        return ZipTaskQueue.WaitForCompletionAsync(cancellationToken);
+    }
+
+    private async Task AddEntryToZipInParallelAsync(
         ZipEntry entry,
         string filePath,
         int fileSizeMB,
-        int? compressionLevel
+        int? compressionLevel,
+        CancellationToken cancellationToken = default
     )
     {
+        cancellationToken.ThrowIfCancellationRequested();
+
         var deflater = new Deflater(compressionLevel ?? DefaultCompressionLevel, true);
         var crc32 = new Crc32();
         long accurateSize = 0;
 
-        using var outputStream = new TemporaryZipStream(fileSizeMB);
-        using var zipStream = new DeflaterOutputStream(outputStream, deflater);
+        await using var outputStream = new TemporaryZipStream(fileSizeMB);
+        await using var zipStream = new DeflaterOutputStream(outputStream, deflater);
 
-        using (var fileStream = _sourceManager.GetStream(filePath))
+        await using (var fileStream = await _sourceManager.GetStreamAsync(filePath, cancellationToken))
         {
             var buffer = new byte[8192];
             int bytesRead;
 
-            while ((bytesRead = fileStream.Read(buffer, 0, buffer.Length)) > 0)
+            while (
+                (bytesRead = await fileStream.ReadAsync(buffer, 0, buffer.Length, cancellationToken))
+                > 0
+            )
             {
                 crc32.Update(new ArraySegment<byte>(buffer, 0, bytesRead));
-                zipStream.Write(buffer, 0, bytesRead);
+                await zipStream.WriteAsync(buffer, 0, bytesRead, cancellationToken);
                 accurateSize += bytesRead;
             }
 
@@ -256,30 +300,38 @@ public class OnDiskFileZipper : FileZipperBase
         }
     }
 
-    private void AddEntryToZipSynchronously(ZipEntry entry, string filePath, int? compressionLevel)
+    private async Task AddEntryToZipSynchronouslyAsync(
+        ZipEntry entry,
+        string filePath,
+        int? compressionLevel,
+        CancellationToken cancellationToken = default
+    )
     {
+        cancellationToken.ThrowIfCancellationRequested();
+
+        await using var fileStream = await _sourceManager.GetStreamAsync(filePath, cancellationToken);
+
         lock (_zipFileEntryLock)
         {
             _zipOutputStream.SetLevel(compressionLevel ?? DefaultCompressionLevel);
             _zipOutputStream.PutNextEntry(entry);
 
-            using var fileStream = _sourceManager.GetStream(filePath);
             fileStream.CopyTo(_zipOutputStream);
             _zipOutputStream.CloseEntry();
         }
     }
 
-    public override void Dispose()
+    public override async ValueTask DisposeAsync()
     {
-        base.Dispose();
-
         if (_zipTaskQueue != null)
         {
-            _zipTaskQueue.Stop();
-            _zipTaskQueue.WaitForCompletion();
+            await _zipTaskQueue.StopAsync();
+            await _zipTaskQueue.WaitForCompletionAsync();
         }
 
         _zipOutputStream.Dispose();
-        _zipFileStream.Dispose();
+        await _zipFileStream.DisposeAsync();
+
+        await base.DisposeAsync();
     }
 }

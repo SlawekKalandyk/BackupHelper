@@ -23,60 +23,111 @@ public class FileSystemSource : ISource
 
     public string GetScheme() => Scheme;
 
-    public Stream GetStream(string path)
+    public Task<Stream> GetStreamAsync(string path, CancellationToken cancellationToken = default)
     {
-        return GetFromFileInUseSource(
+        return GetFromFileInUseSourceAsync(
             path,
-            (p) => new FileStream(p, FileMode.Open, FileAccess.Read, FileShare.Read),
-            (fileInUseSource, p) => fileInUseSource.GetStream(p)
+            (p, _) =>
+                Task.FromResult<Stream>(
+                    new FileStream(
+                        p,
+                        FileMode.Open,
+                        FileAccess.Read,
+                        FileShare.Read,
+                        81920,
+                        FileOptions.Asynchronous | FileOptions.SequentialScan
+                    )
+                ),
+            (fileInUseSource, p, ct) => fileInUseSource.GetStreamAsync(p, ct),
+            cancellationToken
         );
     }
 
-    public IEnumerable<string> GetSubDirectories(string path)
-    {
-        return GetFromFileInUseSource(
-            path,
-            (p) => Directory.GetDirectories(p),
-            (fileInUseSource, p) => fileInUseSource.GetSubDirectories(p)
-        );
-    }
-
-    public IEnumerable<string> GetFiles(string path)
-    {
-        return GetFromFileInUseSource(
-            path,
-            (p) => Directory.GetFiles(p),
-            (fileInUseSource, p) => fileInUseSource.GetFiles(p)
-        );
-    }
-
-    public bool FileExists(string path) => File.Exists(path);
-
-    public bool DirectoryExists(string path) => Directory.Exists(path);
-
-    public DateTime? GetFileLastWriteTime(string path) => File.GetLastWriteTime(path);
-
-    public DateTime? GetDirectoryLastWriteTime(string path) => Directory.GetLastWriteTime(path);
-
-    public long GetFileSize(string path) => new FileInfo(path).Length;
-
-    private T GetFromFileInUseSource<T>(
+    public Task<IEnumerable<string>> GetSubDirectoriesAsync(
         string path,
-        Func<string, T> defaultFunc,
-        Func<IFileInUseSource, string, T> fileInUseFunc,
+        CancellationToken cancellationToken = default
+    )
+    {
+        return GetFromFileInUseSourceAsync(
+            path,
+            (p, _) => Task.FromResult<IEnumerable<string>>(Directory.GetDirectories(p)),
+            (fileInUseSource, p, ct) => fileInUseSource.GetSubDirectoriesAsync(p, ct),
+            cancellationToken
+        );
+    }
+
+    public Task<IEnumerable<string>> GetFilesAsync(
+        string path,
+        CancellationToken cancellationToken = default
+    )
+    {
+        return GetFromFileInUseSourceAsync(
+            path,
+            (p, _) => Task.FromResult<IEnumerable<string>>(Directory.GetFiles(p)),
+            (fileInUseSource, p, ct) => fileInUseSource.GetFilesAsync(p, ct),
+            cancellationToken
+        );
+    }
+
+    public Task<bool> FileExistsAsync(string path, CancellationToken cancellationToken = default)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        return Task.FromResult(File.Exists(path));
+    }
+
+    public Task<bool> DirectoryExistsAsync(
+        string path,
+        CancellationToken cancellationToken = default
+    )
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        return Task.FromResult(Directory.Exists(path));
+    }
+
+    public Task<DateTime?> GetFileLastWriteTimeAsync(
+        string path,
+        CancellationToken cancellationToken = default
+    )
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        return Task.FromResult<DateTime?>(File.GetLastWriteTime(path));
+    }
+
+    public Task<DateTime?> GetDirectoryLastWriteTimeAsync(
+        string path,
+        CancellationToken cancellationToken = default
+    )
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        return Task.FromResult<DateTime?>(Directory.GetLastWriteTime(path));
+    }
+
+    public Task<long> GetFileSizeAsync(string path, CancellationToken cancellationToken = default)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        return Task.FromResult(new FileInfo(path).Length);
+    }
+
+    private async Task<T> GetFromFileInUseSourceAsync<T>(
+        string path,
+        Func<string, CancellationToken, Task<T>> defaultFunc,
+        Func<IFileInUseSource, string, CancellationToken, Task<T>> fileInUseFunc,
+        CancellationToken cancellationToken = default,
         [CallerMemberName] string callerName = ""
     )
     {
+        cancellationToken.ThrowIfCancellationRequested();
+
         try
         {
-            return defaultFunc(path);
+            return await defaultFunc(path, cancellationToken);
         }
         catch (IOException)
         {
             try
             {
                 var fileInUseSource = _fileInUseSourceManager.GetFileInUseSource(path);
-                return fileInUseFunc(fileInUseSource, path);
+                return await fileInUseFunc(fileInUseSource, path, cancellationToken);
             }
             catch (Exception e)
             {

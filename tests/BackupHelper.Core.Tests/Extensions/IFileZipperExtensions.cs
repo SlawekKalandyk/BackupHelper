@@ -5,49 +5,60 @@ namespace BackupHelper.Core.Tests.Extensions;
 
 public static class IFileZipperExtensions
 {
-    public static IFileZipper AddFile(this IFileZipper fileZipper, TestFile testFile)
+    public static async Task<IFileZipper> AddFileAsync(this IFileZipper fileZipper, TestFile testFile)
     {
-        fileZipper.AddFile(testFile.GeneratedFilePath, testFile.ZipPath ?? string.Empty);
+        await fileZipper.AddFileAsync(testFile.GeneratedFilePath, testFile.ZipPath ?? string.Empty);
         return fileZipper;
     }
 
-    public static IFileZipper AddDirectory(this IFileZipper fileZipper, TestDirectory testDirectory)
-    {
-        fileZipper.AddDirectory(
-            testDirectory.GeneratedDirectoryPath,
-            testDirectory.ZipPath ?? string.Empty
-        );
-        return fileZipper;
-    }
-
-    public static IFileZipper AddDirectoryContent(
+    public static async Task<IFileZipper> AddDirectoryAsync(
         this IFileZipper fileZipper,
         TestDirectory testDirectory
     )
     {
-        fileZipper.AddDirectoryContent(
+        await fileZipper.AddDirectoryAsync(
             testDirectory.GeneratedDirectoryPath,
             testDirectory.ZipPath ?? string.Empty
         );
         return fileZipper;
     }
 
-    public static void AddDirectoryContent(
+    public static async Task<IFileZipper> AddDirectoryContentAsync(
         this IFileZipper fileZipper,
-        TestFileStructure testFileStructure
+        TestDirectory testDirectory
     )
     {
-        fileZipper.AddDirectoryContent(testFileStructure.ZippedFilesDirectoryRootPath);
+        await fileZipper.AddDirectoryContentAsync(
+            testDirectory.GeneratedDirectoryPath,
+            testDirectory.ZipPath ?? string.Empty
+        );
+        return fileZipper;
     }
 
-    public static void AddTopLevelFilesAndDirectoriesSeparately(
+    public static Task AddDirectoryContentAsync(
         this IFileZipper fileZipper,
         TestFileStructure testFileStructure
     )
     {
-        testFileStructure.Files.ForEach(testFile => fileZipper.AddFile(testFile));
-        testFileStructure.Directories.ForEach(testDirectory =>
-            fileZipper.AddDirectory(testDirectory)
-        );
+        return fileZipper.AddDirectoryContentAsync(testFileStructure.ZippedFilesDirectoryRootPath);
+    }
+
+    public static async Task AddTopLevelFilesAndDirectoriesSeparatelyAsync(
+        this IFileZipper fileZipper,
+        TestFileStructure testFileStructure
+    )
+    {
+        foreach (var testFile in testFileStructure.Files)
+        {
+            await fileZipper.AddFileAsync(testFile.GeneratedFilePath, testFile.ZipPath ?? string.Empty);
+        }
+
+        foreach (var testDirectory in testFileStructure.Directories)
+        {
+            await fileZipper.AddDirectoryAsync(
+                testDirectory.GeneratedDirectoryPath,
+                testDirectory.ZipPath ?? string.Empty
+            );
+        }
     }
 }

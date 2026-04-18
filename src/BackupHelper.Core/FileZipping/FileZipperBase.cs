@@ -20,36 +20,37 @@ public abstract class FileZipperBase : IFileZipper
     protected string ZipFilePath { get; }
     protected bool OverwriteFileIfExists { get; }
 
-    public abstract void AddFile(
+    public abstract Task AddFileAsync(
         string filePath,
         string zipPath = "",
-        int? compressionLevel = null
+        int? compressionLevel = null,
+        CancellationToken cancellationToken = default
     );
-    public abstract void AddDirectory(
+
+    public abstract Task AddDirectoryAsync(
         string directoryPath,
         string zipPath = "",
-        int? compressionLevel = null
+        int? compressionLevel = null,
+        CancellationToken cancellationToken = default
     );
-    public abstract void AddDirectoryContent(
+
+    public abstract Task AddDirectoryContentAsync(
         string directoryPath,
         string zipPath = "",
-        int? compressionLevel = null
+        int? compressionLevel = null,
+        CancellationToken cancellationToken = default
     );
 
-    public void Save()
+    public abstract Task SaveAsync(CancellationToken cancellationToken = default);
+
+    public virtual Task WaitAsync(CancellationToken cancellationToken = default)
     {
-        SaveCore();
+        cancellationToken.ThrowIfCancellationRequested();
+        return Task.CompletedTask;
     }
 
-    public virtual void Wait()
+    public virtual ValueTask DisposeAsync()
     {
-        // Default implementation does nothing
+        return ValueTask.CompletedTask;
     }
-
-    protected virtual void SaveCore()
-    {
-        // Default implementation does nothing
-    }
-
-    public virtual void Dispose() { }
 }
