@@ -1,6 +1,7 @@
 ﻿using BackupHelper.Sinks.Abstractions;
 using BackupHelper.Sinks.Azure;
 using BackupHelper.Sinks.FileSystem;
+using BackupHelper.Sinks.SMB;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
@@ -261,6 +262,7 @@ public class SinkDestinationConverter : JsonConverter<ISinkDestination>
             FileSystemSinkDestination.SinkKind => obj.ToObject<FileSystemSinkDestination>(),
             AzureBlobStorageSinkDestination.SinkKind =>
                 obj.ToObject<AzureBlobStorageSinkDestination>(),
+            SMBSinkDestination.SinkKind => obj.ToObject<SMBSinkDestination>(),
             _ => throw new JsonSerializationException($"Unknown sink type: {name}"),
         };
     }
@@ -298,6 +300,20 @@ public class SinkDestinationConverter : JsonConverter<ISinkDestination>
 
                 writer.WritePropertyName("container");
                 writer.WriteValue(azureDestination.Container);
+                break;
+
+            case SMBSinkDestination smbDestination:
+                writer.WritePropertyName("kind");
+                writer.WriteValue(SMBSinkDestination.SinkKind);
+
+                writer.WritePropertyName("server");
+                writer.WriteValue(smbDestination.Server);
+
+                writer.WritePropertyName("shareName");
+                writer.WriteValue(smbDestination.ShareName);
+
+                writer.WritePropertyName("destinationDirectory");
+                writer.WriteValue(smbDestination.DestinationDirectory);
                 break;
 
             default:

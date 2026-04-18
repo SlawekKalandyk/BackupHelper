@@ -1,5 +1,6 @@
 using BackupHelper.Core.BackupZipping;
 using BackupHelper.Sinks.FileSystem;
+using BackupHelper.Sinks.SMB;
 
 namespace BackupHelper.Core.Tests.BackupZipping;
 
@@ -31,7 +32,11 @@ public class BackupPlanAsyncSerializationTests
                     ],
                 },
             ],
-            Sinks = [new FileSystemSinkDestination(@"C:\\backup")],
+            Sinks =
+            [
+                new FileSystemSinkDestination(@"C:\\backup"),
+                new SMBSinkDestination("192.168.1.10", "backup-share", "nightly"),
+            ],
             LogDirectory = @"C:\\logs",
             EncryptHeaders = true,
             ThreadLimit = 2,
@@ -49,7 +54,9 @@ public class BackupPlanAsyncSerializationTests
             deserializedPlan.SinkUploadParallelism.ShouldBe(3);
             deserializedPlan.LogDirectory.ShouldBe(@"C:\\logs");
             deserializedPlan.ThreadLimit.ShouldBe(2);
-            deserializedPlan.Sinks.Count.ShouldBe(1);
+            deserializedPlan.Sinks.Count.ShouldBe(2);
+            deserializedPlan.Sinks[0].ShouldBeOfType<FileSystemSinkDestination>();
+            deserializedPlan.Sinks[1].ShouldBeOfType<SMBSinkDestination>();
             deserializedPlan.Items.Count.ShouldBe(1);
         }
         finally

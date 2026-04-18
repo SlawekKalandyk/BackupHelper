@@ -1,15 +1,15 @@
-﻿using BackupHelper.Abstractions;
-using BackupHelper.Abstractions.Credentials;
+﻿using BackupHelper.Abstractions.Credentials;
 using BackupHelper.Connectors.SMB;
 using BackupHelper.Tests.Shared;
 using Microsoft.Extensions.Configuration;
 
-namespace BackupHelper.Sources.SMB.Tests;
+namespace BackupHelper.SMB.Tests;
 
 [TestFixture]
 public abstract class SMBTestsBase : TestsBase
 {
-    protected SMBTestConfigurationProvider SMBTestConfigurationProvider { get; private set; } = null!;
+    protected SMBTestConfigurationProvider SMBTestConfigurationProvider { get; private set; } =
+        null!;
 
     protected override void AddCredentials(
         TestCredentialsProvider credentialsProvider,

@@ -11,6 +11,7 @@ using BackupHelper.Core.Utilities;
 using BackupHelper.Sinks.Abstractions;
 using BackupHelper.Sinks.Azure;
 using BackupHelper.Sinks.FileSystem;
+using BackupHelper.Sinks.SMB;
 using BackupHelper.Sources.Abstractions;
 using BackupHelper.Sources.FileSystem;
 using BackupHelper.Sources.FileSystem.FileInUseSource;
@@ -81,6 +82,7 @@ public static class ConfigureServices
         services.AddSingleton<ISinkManager, SinkManager>();
         services.AddSingleton<ISinkFactory, AzureBlobStorageSinkFactory>();
         services.AddSingleton<ISinkFactory, FileSystemSinkFactory>();
+        services.AddSingleton<ISinkFactory, SMBSinkFactory>();
 
         return services;
     }

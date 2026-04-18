@@ -1,9 +1,8 @@
 ﻿using BackupHelper.Core.Tests;
 using BackupHelper.Sources.FileSystem.FileInUseSource;
 using BackupHelper.Tests.Shared;
-using Microsoft.Extensions.DependencyInjection;
 
-namespace BackupHelper.Sources.FileSystem.Tests.FileInUseSource;
+namespace BackupHelper.FileSystem.Tests;
 
 [TestFixture]
 public abstract class FileInUseSourceTestsBase : ZipTestsBase

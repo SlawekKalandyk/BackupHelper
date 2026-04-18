@@ -1,8 +1,8 @@
-﻿using System.Text;
-using BackupHelper.Sources.Abstractions;
+﻿using BackupHelper.Sources.Abstractions;
+using BackupHelper.Sources.SMB;
 using Microsoft.Extensions.DependencyInjection;
 
-namespace BackupHelper.Sources.SMB.Tests;
+namespace BackupHelper.SMB.Tests.Source;
 
 [TestFixture]
 public class SMBSourceTests : SMBTestsBase
@@ -57,9 +57,11 @@ public class SMBSourceTests : SMBTestsBase
         CreateTestFileStructure();
 
         var smbSource = GetSMBSource();
-        var subDirectories = (await smbSource
-            .GetSubDirectoriesAsync($"{SMBTestConfigurationProvider.TestsDirectoryPath}"))
-            .ToList();
+        var subDirectories = (
+            await smbSource.GetSubDirectoriesAsync(
+                $"{SMBTestConfigurationProvider.TestsDirectoryPath}"
+            )
+        ).ToList();
         Assert.That(
             subDirectories.Contains($"{SMBTestConfigurationProvider.TestsDirectoryPath}\\SubDir1")
         );
@@ -74,9 +76,9 @@ public class SMBSourceTests : SMBTestsBase
         CreateTestFileStructure();
 
         var smbSource = GetSMBSource();
-        var files = (await smbSource
-            .GetFilesAsync($"{SMBTestConfigurationProvider.TestsDirectoryPath}"))
-            .ToList();
+        var files = (
+            await smbSource.GetFilesAsync($"{SMBTestConfigurationProvider.TestsDirectoryPath}")
+        ).ToList();
         Assert.That(
             files.Contains($"{SMBTestConfigurationProvider.TestsDirectoryPath}\\file1.txt")
         );

@@ -2,7 +2,7 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
-namespace BackupHelper.Sources.FileSystem.Tests.FileInUseSource;
+namespace BackupHelper.FileSystem.Tests;
 
 [TestFixture]
 public class VssFileInUseSourceTests : FileInUseSourceTestsBase
