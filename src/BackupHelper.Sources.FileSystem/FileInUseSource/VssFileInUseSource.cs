@@ -31,8 +31,9 @@ public class VssFileInUseSource : IFileInUseSource
         );
     }
 
-    public Stream GetStream(string path)
+    public Task<Stream> GetStreamAsync(string path, CancellationToken cancellationToken = default)
     {
+        cancellationToken.ThrowIfCancellationRequested();
         var volume = Path.GetPathRoot(path)!;
         var vssBackup = _vssBackupPool.GetResource(volume);
 
@@ -40,11 +41,20 @@ public class VssFileInUseSource : IFileInUseSource
         {
             var snapshotPath = vssBackup.GetSnapshotPath(path);
 
-            return new PooledResourceStream<VssBackup, string>(
-                new FileStream(snapshotPath, FileMode.Open, FileAccess.Read, FileShare.Read),
+            return Task.FromResult<Stream>(
+                new PooledResourceStream<VssBackup, string>(
+                new FileStream(
+                    snapshotPath,
+                    FileMode.Open,
+                    FileAccess.Read,
+                    FileShare.Read,
+                    81920,
+                    FileOptions.Asynchronous | FileOptions.SequentialScan
+                ),
                 vssBackup,
                 volume,
                 _vssBackupPool
+                )
             );
         }
         catch
@@ -55,14 +65,24 @@ public class VssFileInUseSource : IFileInUseSource
         }
     }
 
-    public IEnumerable<string> GetSubDirectories(string path)
+    public Task<IEnumerable<string>> GetSubDirectoriesAsync(
+        string path,
+        CancellationToken cancellationToken = default
+    )
     {
-        return ExecuteWithVssBackup(path, Directory.GetDirectories);
+        cancellationToken.ThrowIfCancellationRequested();
+        return Task.FromResult<IEnumerable<string>>(
+            ExecuteWithVssBackup(path, Directory.GetDirectories)
+        );
     }
 
-    public IEnumerable<string> GetFiles(string path)
+    public Task<IEnumerable<string>> GetFilesAsync(
+        string path,
+        CancellationToken cancellationToken = default
+    )
     {
-        return ExecuteWithVssBackup(path, Directory.GetFiles);
+        cancellationToken.ThrowIfCancellationRequested();
+        return Task.FromResult<IEnumerable<string>>(ExecuteWithVssBackup(path, Directory.GetFiles));
     }
 
     private T ExecuteWithVssBackup<T>(string path, Func<string, T> operation)

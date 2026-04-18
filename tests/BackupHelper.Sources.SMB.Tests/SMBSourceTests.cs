@@ -35,30 +35,30 @@ public class SMBSourceTests : SMBTestsBase
     }
 
     [Test]
-    public void GivenSMBShare_WhenReadingFileWithContent_ThenExpectedContentIsReturned()
+    public async Task GivenSMBShare_WhenReadingFileWithContent_ThenExpectedContentIsReturned()
     {
         var testFileName = "testFile.txt";
         var expectedText = "This is a test file.";
         SMBTestConfigurationProvider.CreateTestFile(testFileName, expectedText);
 
         var smbSource = GetSMBSource();
-        using var stream = smbSource.GetStream(
+        await using var stream = await smbSource.GetStreamAsync(
             $"{SMBTestConfigurationProvider.TestsDirectoryPath}\\{testFileName}"
         );
         using var streamReader = new StreamReader(stream);
-        var actualText = streamReader.ReadToEnd();
+        var actualText = await streamReader.ReadToEndAsync();
 
         Assert.That(actualText, Is.EqualTo(expectedText));
     }
 
     [Test]
-    public void GivenSMBShare_WhenListingSubDirectories_ThenCorrectSubDirectoriesAreReturned()
+    public async Task GivenSMBShare_WhenListingSubDirectories_ThenCorrectSubDirectoriesAreReturned()
     {
         CreateTestFileStructure();
 
         var smbSource = GetSMBSource();
-        var subDirectories = smbSource
-            .GetSubDirectories($"{SMBTestConfigurationProvider.TestsDirectoryPath}")
+        var subDirectories = (await smbSource
+            .GetSubDirectoriesAsync($"{SMBTestConfigurationProvider.TestsDirectoryPath}"))
             .ToList();
         Assert.That(
             subDirectories.Contains($"{SMBTestConfigurationProvider.TestsDirectoryPath}\\SubDir1")
@@ -69,13 +69,13 @@ public class SMBSourceTests : SMBTestsBase
     }
 
     [Test]
-    public void GivenSMBShare_WhenListingFiles_ThenCorrectFilesAreReturned()
+    public async Task GivenSMBShare_WhenListingFiles_ThenCorrectFilesAreReturned()
     {
         CreateTestFileStructure();
 
         var smbSource = GetSMBSource();
-        var files = smbSource
-            .GetFiles($"{SMBTestConfigurationProvider.TestsDirectoryPath}")
+        var files = (await smbSource
+            .GetFilesAsync($"{SMBTestConfigurationProvider.TestsDirectoryPath}"))
             .ToList();
         Assert.That(
             files.Contains($"{SMBTestConfigurationProvider.TestsDirectoryPath}\\file1.txt")
@@ -86,52 +86,50 @@ public class SMBSourceTests : SMBTestsBase
     }
 
     [Test]
-    public void GivenExistingSMBFile_WhenCheckingIfFileExists_ThenReturnsTrue()
+    public async Task GivenExistingSMBFile_WhenCheckingIfFileExists_ThenReturnsTrue()
     {
         CreateTestFileStructure();
 
         var smbSource = GetSMBSource();
-        Assert.That(
-            smbSource.FileExists($"{SMBTestConfigurationProvider.TestsDirectoryPath}\\file1.txt")
+        var exists = await smbSource.FileExistsAsync(
+            $"{SMBTestConfigurationProvider.TestsDirectoryPath}\\file1.txt"
         );
+        Assert.That(exists);
     }
 
     [Test]
-    public void GivenNonExistingSMBFile_WhenCheckingIfFileExists_ThenReturnsFalse()
+    public async Task GivenNonExistingSMBFile_WhenCheckingIfFileExists_ThenReturnsFalse()
     {
         CreateTestFileStructure();
 
         var smbSource = GetSMBSource();
-        Assert.That(
-            smbSource.FileExists(
-                $"{SMBTestConfigurationProvider.TestsDirectoryPath}\\nonexistent.txt"
-            ),
-            Is.False
+        var exists = await smbSource.FileExistsAsync(
+            $"{SMBTestConfigurationProvider.TestsDirectoryPath}\\nonexistent.txt"
         );
+        Assert.That(exists, Is.False);
     }
 
     [Test]
-    public void GivenExistingSMBDirectory_WhenCheckingIfDirectoryExists_ThenReturnsTrue()
+    public async Task GivenExistingSMBDirectory_WhenCheckingIfDirectoryExists_ThenReturnsTrue()
     {
         CreateTestFileStructure();
 
         var smbSource = GetSMBSource();
-        Assert.That(
-            smbSource.DirectoryExists($"{SMBTestConfigurationProvider.TestsDirectoryPath}\\SubDir1")
+        var exists = await smbSource.DirectoryExistsAsync(
+            $"{SMBTestConfigurationProvider.TestsDirectoryPath}\\SubDir1"
         );
+        Assert.That(exists);
     }
 
     [Test]
-    public void GivenNonExistingSMBDirectory_WhenCheckingIfDirectoryExists_ThenReturnsFalse()
+    public async Task GivenNonExistingSMBDirectory_WhenCheckingIfDirectoryExists_ThenReturnsFalse()
     {
         CreateTestFileStructure();
 
         var smbSource = GetSMBSource();
-        Assert.That(
-            smbSource.DirectoryExists(
-                $"{SMBTestConfigurationProvider.TestsDirectoryPath}\\NonExistentDirectory"
-            ),
-            Is.False
+        var exists = await smbSource.DirectoryExistsAsync(
+            $"{SMBTestConfigurationProvider.TestsDirectoryPath}\\NonExistentDirectory"
         );
+        Assert.That(exists, Is.False);
     }
 }

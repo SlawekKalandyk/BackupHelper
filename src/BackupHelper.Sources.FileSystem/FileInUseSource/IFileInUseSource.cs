@@ -7,7 +7,12 @@ public interface IFileInUseSourceFactory
 
 public interface IFileInUseSource : IDisposable
 {
-    Stream GetStream(string path);
-    IEnumerable<string> GetSubDirectories(string path);
-    IEnumerable<string> GetFiles(string path);
+    Task<Stream> GetStreamAsync(string path, CancellationToken cancellationToken = default);
+
+    Task<IEnumerable<string>> GetSubDirectoriesAsync(
+        string path,
+        CancellationToken cancellationToken = default
+    );
+
+    Task<IEnumerable<string>> GetFilesAsync(string path, CancellationToken cancellationToken = default);
 }

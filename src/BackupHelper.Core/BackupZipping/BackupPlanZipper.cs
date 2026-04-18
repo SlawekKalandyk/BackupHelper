@@ -27,18 +27,20 @@ public class BackupPlanZipper : IBackupPlanZipper
         _dateTimeProvider = dateTimeProvider;
     }
 
-    public void CreateZipFile(
+    public async Task CreateZipFileAsync(
         BackupPlan plan,
         string outputFilePath,
-        SensitiveString? password = null
+        SensitiveString? password = null,
+        CancellationToken cancellationToken = default
     )
     {
+        cancellationToken.ThrowIfCancellationRequested();
         _logger.LogInformation("Creating backup file at {OutputPath}", outputFilePath);
 
         using var scope = _serviceScopeFactory.CreateScope();
         var fileZipperFactory = scope.ServiceProvider.GetRequiredService<IFileZipperFactory>();
 
-        using (
+        await using (
             var fileZipper = fileZipperFactory.Create(outputFilePath, overwriteFileIfExists: true)
         )
         {
@@ -50,15 +52,22 @@ public class BackupPlanZipper : IBackupPlanZipper
 
             foreach (var entry in plan.Items)
             {
-                AddEntryToZip(fileZipper, entry, string.Empty, plan.CompressionLevel);
+                cancellationToken.ThrowIfCancellationRequested();
+                await AddEntryToZipAsync(
+                    fileZipper,
+                    entry,
+                    string.Empty,
+                    plan.CompressionLevel,
+                    cancellationToken
+                );
             }
 
-            fileZipper.Wait();
+            await fileZipper.WaitAsync(cancellationToken);
 
             if (fileZipper.HasToBeSaved)
             {
                 _logger.LogInformation("Saving zip to {OutputPath}", outputFilePath);
-                fileZipper.Save();
+                await fileZipper.SaveAsync(cancellationToken);
             }
 
             LogFailedFiles(fileZipper.FailedFiles);
@@ -66,35 +75,53 @@ public class BackupPlanZipper : IBackupPlanZipper
 
         if (password != null)
         {
-            EncryptZipFile(outputFilePath, password);
+            await EncryptZipFileAsync(outputFilePath, password, cancellationToken);
         }
     }
 
-    private void AddEntryToZip(
+    private async Task AddEntryToZipAsync(
         IFileZipper zipper,
         BackupEntry entry,
         string zipPath,
-        int? planCompressionLevel
+        int? planCompressionLevel,
+        CancellationToken cancellationToken = default
     )
     {
+        cancellationToken.ThrowIfCancellationRequested();
+
         switch (entry)
         {
             case BackupFileEntry fileEntry:
-                AddBackupFileEntryToZip(zipper, fileEntry, zipPath, planCompressionLevel);
+                await AddBackupFileEntryToZipAsync(
+                    zipper,
+                    fileEntry,
+                    zipPath,
+                    planCompressionLevel,
+                    cancellationToken
+                );
                 break;
             case BackupDirectoryEntry dirEntry:
-                AddBackupDirectoryEntryToZip(zipper, dirEntry, zipPath, planCompressionLevel);
+                await AddBackupDirectoryEntryToZipAsync(
+                    zipper,
+                    dirEntry,
+                    zipPath,
+                    planCompressionLevel,
+                    cancellationToken
+                );
                 break;
         }
     }
 
-    private void AddBackupFileEntryToZip(
+    private async Task AddBackupFileEntryToZipAsync(
         IFileZipper zipper,
         BackupFileEntry fileEntry,
         string zipPath,
-        int? planCompressionLevel
+        int? planCompressionLevel,
+        CancellationToken cancellationToken = default
     )
     {
+        cancellationToken.ThrowIfCancellationRequested();
+
         var filePath = fileEntry.FilePath;
         if (!string.IsNullOrEmpty(fileEntry.CronExpression))
         {
@@ -111,23 +138,28 @@ public class BackupPlanZipper : IBackupPlanZipper
 
         var effectiveCompressionLevel = fileEntry.CompressionLevel ?? planCompressionLevel;
 
-        if (sourceManager.FileExists(filePath))
+        if (await sourceManager.FileExistsAsync(filePath, cancellationToken))
         {
             _logger.LogInformation(
                 "Adding file to zip file '{FileEntryFilePath}' under zip path '{ZipPath}'",
                 filePath,
                 string.IsNullOrEmpty(zipPath) ? "<root>" : zipPath + '/'
             );
-            zipper.AddFile(filePath, zipPath, effectiveCompressionLevel);
+            await zipper.AddFileAsync(filePath, zipPath, effectiveCompressionLevel, cancellationToken);
         }
-        else if (sourceManager.DirectoryExists(filePath))
+        else if (await sourceManager.DirectoryExistsAsync(filePath, cancellationToken))
         {
             _logger.LogInformation(
                 "Adding directory to zip file '{FileEntryFilePath}' under zip path '{ZipPath}'",
                 filePath,
                 string.IsNullOrEmpty(zipPath) ? "<root>" : zipPath + '/'
             );
-            zipper.AddDirectory(filePath, zipPath, effectiveCompressionLevel);
+            await zipper.AddDirectoryAsync(
+                filePath,
+                zipPath,
+                effectiveCompressionLevel,
+                cancellationToken
+            );
         }
         else
         {
@@ -135,20 +167,39 @@ public class BackupPlanZipper : IBackupPlanZipper
         }
     }
 
-    private void AddBackupDirectoryEntryToZip(
+    private async Task AddBackupDirectoryEntryToZipAsync(
         IFileZipper zipper,
         BackupDirectoryEntry dirEntry,
         string zipPath,
-        int? planCompressionLevel
+        int? planCompressionLevel,
+        CancellationToken cancellationToken = default
     )
     {
+        cancellationToken.ThrowIfCancellationRequested();
+
         var newZipPath = string.IsNullOrEmpty(zipPath)
             ? dirEntry.DirectoryName
             : Path.Combine(zipPath, dirEntry.DirectoryName);
         foreach (var subEntry in dirEntry.Items)
         {
-            AddEntryToZip(zipper, subEntry, newZipPath, planCompressionLevel);
+            await AddEntryToZipAsync(
+                zipper,
+                subEntry,
+                newZipPath,
+                planCompressionLevel,
+                cancellationToken
+            );
         }
+    }
+
+    private Task EncryptZipFileAsync(
+        string zipPath,
+        SensitiveString password,
+        CancellationToken cancellationToken = default
+    )
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        return Task.Run(() => EncryptZipFile(zipPath, password), cancellationToken);
     }
 
     private void EncryptZipFile(string zipPath, SensitiveString password)

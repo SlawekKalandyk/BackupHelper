@@ -29,18 +29,18 @@ public abstract class FileZipperTestsBase : ZipTestsBase
         return fileZipperFactory.Create(ZipFilePath, true);
     }
 
-    protected void PrepareZipFile(
+    protected async Task PrepareZipFileAsync(
         TestFileStructure testFileStructure,
-        Action<IFileZipper> addFilesToFileZipper
+        Func<IFileZipper, Task> addFilesToFileZipper
     )
     {
         testFileStructure.Generate(ZippedFilesDirectoryPath, UnzippedFilesDirectoryPath);
 
-        using var fileZipper = CreateFileZipper();
+        await using var fileZipper = CreateFileZipper();
 
-        addFilesToFileZipper(fileZipper);
+        await addFilesToFileZipper(fileZipper);
         if (fileZipper.HasToBeSaved)
-            fileZipper.Save();
+            await fileZipper.SaveAsync();
     }
 
     protected IFileZipper CreateFileZipperWithPassword(string password)
@@ -52,32 +52,32 @@ public abstract class FileZipperTestsBase : ZipTestsBase
         return fileZipperFactory.Create(ZipFilePath, true, sensitivePassword);
     }
 
-    protected void PrepareZipFileWithPassword(
+    protected async Task PrepareZipFileWithPasswordAsync(
         TestFileStructure testFileStructure,
         string password,
-        Action<IFileZipper> addFilesToFileZipper
+        Func<IFileZipper, Task> addFilesToFileZipper
     )
     {
         testFileStructure.Generate(ZippedFilesDirectoryPath, UnzippedFilesDirectoryPath);
 
-        using var fileZipper = CreateFileZipperWithPassword(password);
+        await using var fileZipper = CreateFileZipperWithPassword(password);
 
-        addFilesToFileZipper(fileZipper);
+        await addFilesToFileZipper(fileZipper);
         if (fileZipper.HasToBeSaved)
-            fileZipper.Save();
+            await fileZipper.SaveAsync();
     }
 
     [Test]
-    public void GivenSingleFile_WhenAddedToZip_ThenUnzippedDirectoryContainsThatFile()
+    public async Task GivenSingleFile_WhenAddedToZip_ThenUnzippedDirectoryContainsThatFile()
     {
         var testFile = new TestFile("file1");
         using var testFileStructure = new TestFileStructure([testFile], []);
 
-        PrepareZipFile(
+        await PrepareZipFileAsync(
             testFileStructure,
-            fileZipper =>
+            async fileZipper =>
             {
-                fileZipper.AddFile(testFile);
+                await fileZipper.AddFileAsync(testFile);
             }
         );
         _unzipper.UnzipFile();
@@ -86,16 +86,16 @@ public abstract class FileZipperTestsBase : ZipTestsBase
     }
 
     [Test]
-    public void GivenFileWithCustomZipPath_WhenAddedToZip_ThenUnzippedFileIsInSpecifiedSubdirectory()
+    public async Task GivenFileWithCustomZipPath_WhenAddedToZip_ThenUnzippedFileIsInSpecifiedSubdirectory()
     {
         var testFile = new TestFile("file1", "zip-dir1");
         using var testFileStructure = new TestFileStructure([testFile], []);
 
-        PrepareZipFile(
+        await PrepareZipFileAsync(
             testFileStructure,
-            fileZipper =>
+            async fileZipper =>
             {
-                fileZipper.AddFile(testFile);
+                await fileZipper.AddFileAsync(testFile);
             }
         );
         _unzipper.UnzipFile();
@@ -104,16 +104,16 @@ public abstract class FileZipperTestsBase : ZipTestsBase
     }
 
     [Test]
-    public void GivenEmptyDirectory_WhenAddedToZip_ThenUnzippedDirectoryContainsEmptySubdirectory()
+    public async Task GivenEmptyDirectory_WhenAddedToZip_ThenUnzippedDirectoryContainsEmptySubdirectory()
     {
         var testDirectory = new TestDirectory("dir1", [], []);
         using var testFileStructure = new TestFileStructure([], [testDirectory]);
 
-        PrepareZipFile(
+        await PrepareZipFileAsync(
             testFileStructure,
-            fileZipper =>
+            async fileZipper =>
             {
-                fileZipper.AddDirectory(testDirectory);
+                await fileZipper.AddDirectoryAsync(testDirectory);
             }
         );
         _unzipper.UnzipFile();
@@ -122,16 +122,16 @@ public abstract class FileZipperTestsBase : ZipTestsBase
     }
 
     [Test]
-    public void GivenEmptyDirectoryWithCustomZipPath_WhenAddedToZip_ThenUnzippedDirectoryContainsSpecifiedEmptySubdirectory()
+    public async Task GivenEmptyDirectoryWithCustomZipPath_WhenAddedToZip_ThenUnzippedDirectoryContainsSpecifiedEmptySubdirectory()
     {
         var testDirectory = new TestDirectory("dir1", [], [], "zip-dir1");
         using var testFileStructure = new TestFileStructure([], [testDirectory]);
 
-        PrepareZipFile(
+        await PrepareZipFileAsync(
             testFileStructure,
-            fileZipper =>
+            async fileZipper =>
             {
-                fileZipper.AddDirectory(testDirectory);
+                await fileZipper.AddDirectoryAsync(testDirectory);
             }
         );
         _unzipper.UnzipFile();
@@ -140,17 +140,17 @@ public abstract class FileZipperTestsBase : ZipTestsBase
     }
 
     [Test]
-    public void GivenMultipleFiles_WhenDirectoryContentAddedToZip_ThenUnzippedDirectoryContainsAllFiles()
+    public async Task GivenMultipleFiles_WhenDirectoryContentAddedToZip_ThenUnzippedDirectoryContainsAllFiles()
     {
         var testFile1 = new TestFile("file1");
         var testFile2 = new TestFile("file2");
         using var testFileStructure = new TestFileStructure([testFile1, testFile2], []);
 
-        PrepareZipFile(
+        await PrepareZipFileAsync(
             testFileStructure,
-            fileZipper =>
+            async fileZipper =>
             {
-                fileZipper.AddDirectoryContent(testFileStructure);
+                await fileZipper.AddDirectoryContentAsync(testFileStructure);
             }
         );
         _unzipper.UnzipFile();
@@ -159,7 +159,7 @@ public abstract class FileZipperTestsBase : ZipTestsBase
     }
 
     [Test]
-    public void GivenNestedDirectoriesAndFiles_WhenDirectoryContentAddedToZip_ThenUnzippedDirectoryMatchesFullStructure()
+    public async Task GivenNestedDirectoriesAndFiles_WhenDirectoryContentAddedToZip_ThenUnzippedDirectoryMatchesFullStructure()
     {
         var testFile1 = new TestFile("file1");
         var testFile2 = new TestFile("file2");
@@ -173,11 +173,11 @@ public abstract class FileZipperTestsBase : ZipTestsBase
             [testDirectory1, testDirectory2]
         );
 
-        PrepareZipFile(
+        await PrepareZipFileAsync(
             testFileStructure,
-            fileZipper =>
+            async fileZipper =>
             {
-                fileZipper.AddDirectoryContent(testFileStructure);
+                await fileZipper.AddDirectoryContentAsync(testFileStructure);
             }
         );
         _unzipper.UnzipFile();
@@ -186,7 +186,7 @@ public abstract class FileZipperTestsBase : ZipTestsBase
     }
 
     [Test]
-    public void GivenFilesAndDirectoriesWithCustomZipPaths_WhenAddedSeparatelyToZip_ThenUnzippedStructureMatchesCustomPaths()
+    public async Task GivenFilesAndDirectoriesWithCustomZipPaths_WhenAddedSeparatelyToZip_ThenUnzippedStructureMatchesCustomPaths()
     {
         var testFile1 = new TestFile("file1");
         var testFile2 = new TestFile("file2", "zip-dir1");
@@ -200,11 +200,11 @@ public abstract class FileZipperTestsBase : ZipTestsBase
             [testDirectory1, testDirectory2]
         );
 
-        PrepareZipFile(
+        await PrepareZipFileAsync(
             testFileStructure,
-            fileZipper =>
+            async fileZipper =>
             {
-                fileZipper.AddTopLevelFilesAndDirectoriesSeparately(testFileStructure);
+                await fileZipper.AddTopLevelFilesAndDirectoriesSeparatelyAsync(testFileStructure);
             }
         );
         _unzipper.UnzipFile();
@@ -213,15 +213,15 @@ public abstract class FileZipperTestsBase : ZipTestsBase
     }
 
     [Test]
-    public void GivenSingleFile_WhenZippedWithPassword_ThenCanUnzipWithCorrectPassword()
+    public async Task GivenSingleFile_WhenZippedWithPassword_ThenCanUnzipWithCorrectPassword()
     {
         var testFile = new TestFile("file1");
         using var testFileStructure = new TestFileStructure([testFile], []);
 
-        PrepareZipFileWithPassword(
+        await PrepareZipFileWithPasswordAsync(
             testFileStructure,
             TestPassword,
-            fileZipper => fileZipper.AddFile(testFile)
+            fileZipper => fileZipper.AddFileAsync(testFile)
         );
 
         _unzipper.UnzipFile(TestPassword);
@@ -229,15 +229,15 @@ public abstract class FileZipperTestsBase : ZipTestsBase
     }
 
     [Test]
-    public void GivenSingleFile_WhenZippedWithPassword_ThenUnzippingWithWrongPasswordThrows()
+    public async Task GivenSingleFile_WhenZippedWithPassword_ThenUnzippingWithWrongPasswordThrows()
     {
         var testFile = new TestFile("file1");
         using var testFileStructure = new TestFileStructure([testFile], []);
 
-        PrepareZipFileWithPassword(
+        await PrepareZipFileWithPasswordAsync(
             testFileStructure,
             TestPassword,
-            fileZipper => fileZipper.AddFile(testFile)
+            fileZipper => fileZipper.AddFileAsync(testFile)
         );
 
         Assert.Throws<ZipException>(() => _unzipper.UnzipFile(WrongPassword));

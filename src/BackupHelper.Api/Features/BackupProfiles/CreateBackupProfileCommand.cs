@@ -20,7 +20,7 @@ public class CreateBackupProfileCommandHandler : IRequestHandler<CreateBackupPro
         _applicationDataHandler = applicationDataHandler;
     }
 
-    public Task Handle(CreateBackupProfileCommand request, CancellationToken cancellationToken)
+    public async Task Handle(CreateBackupProfileCommand request, CancellationToken cancellationToken)
     {
         var backupProfilePath = Path.Combine(
             _applicationDataHandler.GetBackupProfilesPath(),
@@ -41,11 +41,10 @@ public class CreateBackupProfileCommandHandler : IRequestHandler<CreateBackupPro
             request.WorkingDirectory
         );
 
-        File.WriteAllText(
+        await File.WriteAllTextAsync(
             backupProfilePath,
-            JsonConvert.SerializeObject(backupProfile, Formatting.Indented)
+            JsonConvert.SerializeObject(backupProfile, Formatting.Indented),
+            cancellationToken
         );
-
-        return Task.CompletedTask;
     }
 }

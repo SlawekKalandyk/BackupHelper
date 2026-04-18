@@ -12,6 +12,7 @@ internal class ZipTaskQueue
     private readonly ConcurrentQueue<ZipTask> _tasks = new();
     private readonly SemaphoreSlim _workSignal = new(0);
     private readonly Task _runnerTask;
+    private readonly ConcurrentDictionary<int, Task> _runningTasks = new();
     private int _currentThreads = 0;
     private int _currentMemoryUsageMb = 0;
     private bool _isRunning = true;
@@ -35,17 +36,20 @@ internal class ZipTaskQueue
         _runnerTask = RunAsync();
     }
 
-    public void Enqueue(ZipTask task)
+    public Task EnqueueAsync(ZipTask task, CancellationToken cancellationToken = default)
     {
+        cancellationToken.ThrowIfCancellationRequested();
         _tasks.Enqueue(task);
         _workSignal.Release();
+        return Task.CompletedTask;
     }
 
-    public void Stop()
+    public async Task StopAsync(CancellationToken cancellationToken = default)
     {
+        cancellationToken.ThrowIfCancellationRequested();
         _isRunning = false;
         _workSignal.Release();
-        _runnerTask.GetAwaiter().GetResult();
+        await _runnerTask;
     }
 
     private async Task RunAsync()
@@ -70,24 +74,8 @@ internal class ZipTaskQueue
                     Interlocked.Increment(ref _currentThreads);
                     Interlocked.Add(ref _currentMemoryUsageMb, taskToRun.FileSizeMB);
 
-                    _ = taskToRun.Task.ContinueWith(t =>
-                    {
-                        if (t.IsFaulted)
-                        {
-                            _failedFiles.Add(taskToRun.FilePath);
-                            _logger.LogError(
-                                t.Exception,
-                                "Task failed in ZipTaskQueue for {FilePath}",
-                                taskToRun.FilePath
-                            );
-                        }
-
-                        Interlocked.Decrement(ref _currentThreads);
-                        Interlocked.Add(ref _currentMemoryUsageMb, -taskToRun.FileSizeMB);
-                        _workSignal.Release();
-                    });
-
-                    taskToRun.Task.Start();
+                    var runningTask = ExecuteTaskAsync(taskToRun);
+                    _runningTasks.TryAdd(runningTask.Id, runningTask);
                 }
 
                 if (!executedTask)
@@ -102,6 +90,26 @@ internal class ZipTaskQueue
         }
     }
 
+    private async Task ExecuteTaskAsync(ZipTask taskToRun)
+    {
+        try
+        {
+            await taskToRun.Work(CancellationToken.None);
+        }
+        catch (Exception ex)
+        {
+            _failedFiles.Add(taskToRun.FilePath);
+            _logger.LogError(ex, "Task failed in ZipTaskQueue for {FilePath}", taskToRun.FilePath);
+        }
+        finally
+        {
+            _runningTasks.TryRemove(Task.CurrentId ?? -1, out _);
+            Interlocked.Decrement(ref _currentThreads);
+            Interlocked.Add(ref _currentMemoryUsageMb, -taskToRun.FileSizeMB);
+            _workSignal.Release();
+        }
+    }
+
     private bool HasSufficientMemoryFor(ZipTask nextTask)
     {
         if (_memoryLimitMb <= 0)
@@ -113,25 +121,28 @@ internal class ZipTaskQueue
             || _currentThreads == 0;
     }
 
-    public void WaitForCompletion()
+    public async Task WaitForCompletionAsync(CancellationToken cancellationToken = default)
     {
         while (_currentThreads > 0 || !_tasks.IsEmpty)
         {
-            _workSignal.Wait(TimeSpan.FromMilliseconds(100));
+            cancellationToken.ThrowIfCancellationRequested();
+            await _workSignal.WaitAsync(TimeSpan.FromMilliseconds(100), cancellationToken);
         }
+
+        await Task.WhenAll(_runningTasks.Values);
     }
 }
 
 internal class ZipTask
 {
     public int FileSizeMB { get; }
-    public Task Task { get; }
+    public Func<CancellationToken, Task> Work { get; }
     public string FilePath { get; }
 
-    public ZipTask(int fileSizeMb, Task task, string filePath)
+    public ZipTask(int fileSizeMb, Func<CancellationToken, Task> work, string filePath)
     {
         FileSizeMB = fileSizeMb;
-        Task = task;
+        Work = work;
         FilePath = filePath;
     }
 }

@@ -35,8 +35,23 @@ public class PooledResourceStream<TResource, TResourceId> : Stream
 
     public override void Flush() => _innerStream.Flush();
 
+    public override Task FlushAsync(CancellationToken cancellationToken) =>
+        _innerStream.FlushAsync(cancellationToken);
+
     public override int Read(byte[] buffer, int offset, int count) =>
         _innerStream.Read(buffer, offset, count);
+
+    public override Task<int> ReadAsync(
+        byte[] buffer,
+        int offset,
+        int count,
+        CancellationToken cancellationToken
+    ) => _innerStream.ReadAsync(buffer, offset, count, cancellationToken);
+
+    public override ValueTask<int> ReadAsync(
+        Memory<byte> buffer,
+        CancellationToken cancellationToken = default
+    ) => _innerStream.ReadAsync(buffer, cancellationToken);
 
     public override long Seek(long offset, SeekOrigin origin) => _innerStream.Seek(offset, origin);
 
@@ -44,6 +59,18 @@ public class PooledResourceStream<TResource, TResourceId> : Stream
 
     public override void Write(byte[] buffer, int offset, int count) =>
         _innerStream.Write(buffer, offset, count);
+
+    public override Task WriteAsync(
+        byte[] buffer,
+        int offset,
+        int count,
+        CancellationToken cancellationToken
+    ) => _innerStream.WriteAsync(buffer, offset, count, cancellationToken);
+
+    public override ValueTask WriteAsync(
+        ReadOnlyMemory<byte> buffer,
+        CancellationToken cancellationToken = default
+    ) => _innerStream.WriteAsync(buffer, cancellationToken);
 
     protected override void Dispose(bool disposing)
     {
@@ -57,5 +84,17 @@ public class PooledResourceStream<TResource, TResourceId> : Stream
             _disposed = true;
         }
         base.Dispose(disposing);
+    }
+
+    public override async ValueTask DisposeAsync()
+    {
+        if (!_disposed)
+        {
+            await _innerStream.DisposeAsync();
+            _resourcePoolBase.ReturnResource(_resourceId, _resource);
+            _disposed = true;
+        }
+
+        await base.DisposeAsync();
     }
 }

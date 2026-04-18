@@ -30,7 +30,7 @@ public abstract class FileInUseSourceTestsBase : ZipTestsBase
     }
 
     [Test]
-    public void GivenFileInUse_WhenGettingStream_ThenNoExceptionThrown()
+    public async Task GivenFileInUse_WhenGettingStream_ThenNoExceptionThrown()
     {
         var fileName = "file1";
         var testFile = new TestFile(fileName);
@@ -44,6 +44,8 @@ public abstract class FileInUseSourceTestsBase : ZipTestsBase
             FileShare.None
         );
 
-        using var fileInUseStream = _fileInUseSource.GetStream(testFile.GeneratedFilePath);
+        await using var fileInUseStream = await _fileInUseSource.GetStreamAsync(
+            testFile.GeneratedFilePath
+        );
     }
 }

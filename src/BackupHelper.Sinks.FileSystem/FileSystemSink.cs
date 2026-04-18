@@ -10,17 +10,38 @@ public class FileSystemSink : SinkBase<FileSystemSinkDestination>
     public override string Description =>
         $"File System Sink to {TypedDestination.DestinationDirectory}";
 
-    public override Task UploadAsync(
+    public override async Task UploadAsync(
         string sourceFilePath,
         CancellationToken cancellationToken = default
     )
     {
-        File.Copy(
-            sourceFilePath,
-            Path.Join(TypedDestination.DestinationDirectory, Path.GetFileName(sourceFilePath)),
-            overwrite: true
+        cancellationToken.ThrowIfCancellationRequested();
+
+        Directory.CreateDirectory(TypedDestination.DestinationDirectory);
+        var destinationPath = Path.Join(
+            TypedDestination.DestinationDirectory,
+            Path.GetFileName(sourceFilePath)
         );
-        return Task.CompletedTask;
+
+        await using var sourceStream = new FileStream(
+            sourceFilePath,
+            FileMode.Open,
+            FileAccess.Read,
+            FileShare.Read,
+            bufferSize: 81920,
+            options: FileOptions.Asynchronous | FileOptions.SequentialScan
+        );
+
+        await using var destinationStream = new FileStream(
+            destinationPath,
+            FileMode.Create,
+            FileAccess.Write,
+            FileShare.None,
+            bufferSize: 81920,
+            options: FileOptions.Asynchronous | FileOptions.SequentialScan
+        );
+
+        await sourceStream.CopyToAsync(destinationStream, cancellationToken);
     }
 
     public override Task<bool> IsAvailableAsync(CancellationToken cancellationToken = default)

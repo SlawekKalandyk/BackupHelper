@@ -16,18 +16,26 @@ public class GetBackupProfilesQueryHandler
         _applicationDataHandler = applicationDataHandler;
     }
 
-    public Task<IReadOnlyCollection<BackupProfile>> Handle(
+    public async Task<IReadOnlyCollection<BackupProfile>> Handle(
         GetBackupProfilesQuery request,
         CancellationToken cancellationToken
     )
     {
         var backupProfilesPath = _applicationDataHandler.GetBackupProfilesPath();
-        var backupProfiles = Directory
-            .GetFiles(backupProfilesPath)
-            .Select(path => JsonConvert.DeserializeObject<BackupProfile>(File.ReadAllText(path)))
-            .OfType<BackupProfile>()
-            .ToList();
+        var backupProfiles = new List<BackupProfile>();
 
-        return Task.FromResult<IReadOnlyCollection<BackupProfile>>(backupProfiles);
+        foreach (var path in Directory.GetFiles(backupProfilesPath))
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            var content = await File.ReadAllTextAsync(path, cancellationToken);
+            var backupProfile = JsonConvert.DeserializeObject<BackupProfile>(content);
+
+            if (backupProfile != null)
+            {
+                backupProfiles.Add(backupProfile);
+            }
+        }
+
+        return backupProfiles;
     }
 }

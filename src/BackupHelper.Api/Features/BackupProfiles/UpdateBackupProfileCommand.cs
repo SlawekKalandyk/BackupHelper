@@ -18,7 +18,7 @@ public class UpdateBackupProfileCommandHandler : IRequestHandler<UpdateBackupPro
         _applicationDataHandler = applicationDataHandler;
     }
 
-    public Task Handle(UpdateBackupProfileCommand request, CancellationToken cancellationToken)
+    public async Task Handle(UpdateBackupProfileCommand request, CancellationToken cancellationToken)
     {
         var originalBackupProfilePath = Path.Combine(
             _applicationDataHandler.GetBackupProfilesPath(),
@@ -38,9 +38,10 @@ public class UpdateBackupProfileCommandHandler : IRequestHandler<UpdateBackupPro
                 );
             }
 
-            File.WriteAllText(
+            await File.WriteAllTextAsync(
                 updatedBackupProfilePath,
-                JsonConvert.SerializeObject(request.UpdatedBackupProfile, Formatting.Indented)
+                JsonConvert.SerializeObject(request.UpdatedBackupProfile, Formatting.Indented),
+                cancellationToken
             );
             if (File.Exists(originalBackupProfilePath))
             {
@@ -49,12 +50,11 @@ public class UpdateBackupProfileCommandHandler : IRequestHandler<UpdateBackupPro
         }
         else
         {
-            File.WriteAllText(
+            await File.WriteAllTextAsync(
                 originalBackupProfilePath,
-                JsonConvert.SerializeObject(request.UpdatedBackupProfile, Formatting.Indented)
+                JsonConvert.SerializeObject(request.UpdatedBackupProfile, Formatting.Indented),
+                cancellationToken
             );
         }
-
-        return Task.CompletedTask;
     }
 }

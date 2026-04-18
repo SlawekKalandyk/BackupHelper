@@ -4,5 +4,10 @@ namespace BackupHelper.Core.BackupZipping;
 
 public interface IBackupPlanZipper
 {
-    void CreateZipFile(BackupPlan plan, string outputFilePath, SensitiveString? password = null);
+    Task CreateZipFileAsync(
+        BackupPlan plan,
+        string outputFilePath,
+        SensitiveString? password = null,
+        CancellationToken cancellationToken = default
+    );
 }

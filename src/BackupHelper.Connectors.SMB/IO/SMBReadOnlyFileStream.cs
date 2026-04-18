@@ -1,4 +1,5 @@
-﻿using SMBLibrary;
+﻿using System.Buffers;
+using SMBLibrary;
 using SMBLibrary.Client;
 
 namespace BackupHelper.Connectors.SMB.IO;
@@ -47,6 +48,49 @@ public class SMBReadOnlyFileStream : Stream
         Array.Copy(data, 0, buffer, offset, bytesRead);
         _position += bytesRead;
         return bytesRead;
+    }
+
+    public override Task<int> ReadAsync(
+        byte[] buffer,
+        int offset,
+        int count,
+        CancellationToken cancellationToken
+    )
+    {
+        if (cancellationToken.IsCancellationRequested)
+        {
+            return Task.FromCanceled<int>(cancellationToken);
+        }
+
+        return Task.FromResult(Read(buffer, offset, count));
+    }
+
+    public override ValueTask<int> ReadAsync(
+        Memory<byte> buffer,
+        CancellationToken cancellationToken = default
+    )
+    {
+        if (cancellationToken.IsCancellationRequested)
+        {
+            return ValueTask.FromCanceled<int>(cancellationToken);
+        }
+
+        if (buffer.Length == 0)
+        {
+            return ValueTask.FromResult(0);
+        }
+
+        var rentedBuffer = ArrayPool<byte>.Shared.Rent(buffer.Length);
+        try
+        {
+            var bytesRead = Read(rentedBuffer, 0, buffer.Length);
+            rentedBuffer.AsSpan(0, bytesRead).CopyTo(buffer.Span);
+            return ValueTask.FromResult(bytesRead);
+        }
+        finally
+        {
+            ArrayPool<byte>.Shared.Return(rentedBuffer);
+        }
     }
 
     public override bool CanRead => true;

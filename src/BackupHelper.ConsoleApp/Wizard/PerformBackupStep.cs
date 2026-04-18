@@ -1,4 +1,5 @@
-﻿using BackupHelper.Abstractions.Credentials;
+﻿using System.Collections.Concurrent;
+using BackupHelper.Abstractions.Credentials;
 using BackupHelper.Api.Features;
 using BackupHelper.Core.BackupZipping;
 using MediatR;
@@ -72,7 +73,10 @@ public class PerformBackupStep : IWizardStep<PerformBackupStepParameters>
                 backupPassword = GetBackupPassword();
             }
 
-            var backupPlan = BackupPlan.FromJsonFile(parameters.BackupPlanLocation);
+            var backupPlan = await BackupPlan.FromJsonFileAsync(
+                parameters.BackupPlanLocation,
+                cancellationToken
+            );
             var logDirectory = string.IsNullOrWhiteSpace(backupPlan.LogDirectory)
                 ? null
                 : AddBackupLogSink(backupPlan.LogDirectory);
@@ -89,32 +93,7 @@ public class PerformBackupStep : IWizardStep<PerformBackupStepParameters>
                 cancellationToken
             );
 
-            foreach (var sinkDestination in backupPlan.Sinks)
-            {
-                var sinkUploadResult = await _mediator.Send(
-                    new UploadBackupToSinkCommand(sinkDestination, result.OutputFilePath),
-                    cancellationToken
-                );
-
-                switch (sinkUploadResult.Status)
-                {
-                    case BackupSinkUploadStatus.Uploaded:
-                        Console.WriteLine(
-                            $"Uploaded backup to sink: {sinkUploadResult.SinkDescription}"
-                        );
-                        break;
-                    case BackupSinkUploadStatus.Failed:
-                        Console.WriteLine(
-                            $"Failed to upload backup to sink '{sinkUploadResult.SinkDescription}': {sinkUploadResult.FailureMessage}"
-                        );
-                        break;
-                    case BackupSinkUploadStatus.SkippedUnavailable:
-                        Console.WriteLine(
-                            $"Sink '{sinkUploadResult.SinkDescription}' is not available. Skipping upload."
-                        );
-                        break;
-                }
-            }
+            await UploadToSinksAsync(backupPlan, result.OutputFilePath, cancellationToken);
 
             Console.WriteLine("Backup completed successfully.");
         }
@@ -136,6 +115,72 @@ public class PerformBackupStep : IWizardStep<PerformBackupStepParameters>
         }
 
         return new MainMenuStepParameters();
+    }
+
+    private async Task UploadToSinksAsync(
+        BackupPlan backupPlan,
+        string outputFilePath,
+        CancellationToken cancellationToken
+    )
+    {
+        var sinkUploadParallelism = Math.Max(1, backupPlan.SinkUploadParallelism ?? 1);
+
+        if (sinkUploadParallelism <= 1 || backupPlan.Sinks.Count <= 1)
+        {
+            foreach (var sinkDestination in backupPlan.Sinks)
+            {
+                var sinkUploadResult = await _mediator.Send(
+                    new UploadBackupToSinkCommand(sinkDestination, outputFilePath),
+                    cancellationToken
+                );
+                PrintSinkUploadStatus(sinkUploadResult);
+            }
+
+            return;
+        }
+
+        var results = new ConcurrentBag<BackupSinkUploadResult>();
+        await Parallel.ForEachAsync(
+            backupPlan.Sinks,
+            new ParallelOptions
+            {
+                MaxDegreeOfParallelism = sinkUploadParallelism,
+                CancellationToken = cancellationToken,
+            },
+            async (sinkDestination, ct) =>
+            {
+                var sinkUploadResult = await _mediator.Send(
+                    new UploadBackupToSinkCommand(sinkDestination, outputFilePath),
+                    ct
+                );
+                results.Add(sinkUploadResult);
+            }
+        );
+
+        foreach (var sinkUploadResult in results)
+        {
+            PrintSinkUploadStatus(sinkUploadResult);
+        }
+    }
+
+    private static void PrintSinkUploadStatus(BackupSinkUploadResult sinkUploadResult)
+    {
+        switch (sinkUploadResult.Status)
+        {
+            case BackupSinkUploadStatus.Uploaded:
+                Console.WriteLine($"Uploaded backup to sink: {sinkUploadResult.SinkDescription}");
+                break;
+            case BackupSinkUploadStatus.Failed:
+                Console.WriteLine(
+                    $"Failed to upload backup to sink '{sinkUploadResult.SinkDescription}': {sinkUploadResult.FailureMessage}"
+                );
+                break;
+            case BackupSinkUploadStatus.SkippedUnavailable:
+                Console.WriteLine(
+                    $"Sink '{sinkUploadResult.SinkDescription}' is not available. Skipping upload."
+                );
+                break;
+        }
     }
 
     private string AddBackupLogSink(string logDirectory)
