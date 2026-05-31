@@ -41,6 +41,8 @@ jobs:
           dotnet_version: '10.0.x'
       - name: Restore
         run: dotnet restore BackupHelper.sln
+        env:
+          NuGetPackageSourceCredentials_gitea: Username=${{ secrets.NUGET_USER }};Password=${{ secrets.NUGET_TOKEN }}
       - uses: SlawomirKalandyk/build-tools/publish-single-file-zip@v1.0.0
         with:
           project: src/BackupHelper.ConsoleApp/BackupHelper.ConsoleApp.csproj
