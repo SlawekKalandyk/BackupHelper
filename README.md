@@ -16,6 +16,7 @@ The app runs as an interactive wizard (console UI).
 - Upload one backup to multiple destinations
 - Apply per-sink retention with automatic pruning
 - Store SMB and Azure credentials in KeePass-backed credential profiles
+- Execute backup sets (multiple backup profiles) sequentially in one run
 
 ## Requirements
 
@@ -272,12 +273,13 @@ Important: SMB source path parsing expects UNC share info in a format compatible
 }
 ```
 
-## Credential Profiles And Backup Profiles
+## Credential Profiles, Backup Profiles, And Backup Sets
 
 BackupHelper stores app data under:
 
 - `%LOCALAPPDATA%\\BackupHelper\\CredentialProfiles`
 - `%LOCALAPPDATA%\\BackupHelper\\BackupProfiles`
+- `%LOCALAPPDATA%\\BackupHelper\\BackupSets`
 
 Operational guidance:
 
@@ -286,6 +288,9 @@ Operational guidance:
   - backup plan location
   - credential profile name
   - working directory
+- Backup sets store references to one or more backup profile names.
+- Backup sets execute profile runs sequentially in set order (no profile-level parallelism).
+- When a backup profile is renamed or deleted, backup sets are updated automatically to keep references in sync.
 
 ## Troubleshooting
 
