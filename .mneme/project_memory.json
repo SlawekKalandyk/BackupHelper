@@ -1,0 +1,129 @@
+{
+  "meta": {
+    "name": "BackupHelper",
+    "description": "Windows .NET 9 backup utility that zips local and SMB sources and uploads the archive to filesystem, SMB and Azure Blob destinations.",
+    "version": "0.1.0",
+    "owner": "slawek",
+    "created": "2026-08-07"
+  },
+  "items": [
+    {
+      "id": "fact-001",
+      "type": "fact",
+      "title": "Runtime and platform",
+      "content": "Targets .NET 9 and runs on Windows only. Volume shadow copy (AlphaVSS) and the credential store both assume Windows.",
+      "tags": ["dotnet", "platform", "windows"],
+      "priority": "medium"
+    },
+    {
+      "id": "fact-002",
+      "type": "fact",
+      "title": "Solution layering",
+      "content": "Layers run: Abstractions (contracts) -> Core (orchestration, zipping, credentials, retention) -> Sources.* and Sinks.* (pluggable transports) -> Connectors.* (vendor SDK wrappers) -> ConsoleApp (wizard, composition root). Dependencies point inward toward Abstractions.",
+      "tags": ["layering", "architecture", "structure"],
+      "priority": "high"
+    },
+    {
+      "id": "fact-003",
+      "type": "fact",
+      "title": "Test stack",
+      "content": "NUnit as the runner, Shouldly for assertions, shared fakes in the Tests.Shared project. Coverage collected via coverlet.",
+      "tags": ["tests", "nunit", "shouldly"],
+      "priority": "medium"
+    },
+    {
+      "id": "rule-001",
+      "type": "rule",
+      "title": "Staging archive is transient",
+      "content": "The generated zip is a staging file. After uploads finish or fail, the wizard flow deletes it. Do not add code paths that leave staging archives behind.",
+      "tags": ["archive", "staging", "cleanup"],
+      "priority": "medium"
+    },
+    {
+      "id": "rule-002",
+      "type": "rule",
+      "title": "Secrets never land in plan files",
+      "content": "Backup plan JSON and backup profile files hold references only. Passwords and SAS tokens live exclusively in the KeePass-backed credential profiles.",
+      "tags": ["secrets", "credentials", "security"],
+      "priority": "high"
+    }
+  ],
+  "examples": [
+    {
+      "id": "ex-001",
+      "task": "Add a new upload destination type",
+      "decision": "Implement the shared sink interface in a new Sinks.* project, wrap any vendor SDK in a matching transport project, and register the kind through dependency injection.",
+      "rationale": "The kind field in the plan file is data. Orchestration must not grow a switch statement for every new destination.",
+      "tags": ["sinks", "extensibility", "destination"]
+    },
+    {
+      "id": "ex-002",
+      "task": "Persist how many archives to keep per destination",
+      "decision": "Track retention in the backups.json manifest written alongside the archives at each destination.",
+      "rationale": "A file-based manifest travels with the data and needs no install-time infrastructure.",
+      "tags": ["retention", "manifest", "pruning"]
+    }
+  ],
+  "decisions": [
+    {
+      "id": "bh_001",
+      "decision": "Tests use NUnit as the runner and Shouldly for assertions, with hand-written fakes from the shared test library.",
+      "rationale": "One runner and one assertion library keeps fixtures and CI reporting uniform. A second framework fragments both.",
+      "scope": ["tests", "testing"],
+      "constraints": ["assertions go through Shouldly"],
+      "anti_patterns": ["xunit", "fluentassertions", "mstest", "nsubstitute"],
+      "created_at": "2026-08-07",
+      "updated_at": "2026-08-07"
+    },
+    {
+      "id": "bh_002",
+      "decision": "Vendor storage SDK types stay behind the dedicated transport projects. Higher layers reach storage only through the shared interfaces.",
+      "rationale": "Swapping or upgrading a transport should touch one place, not every layer that happens to move bytes.",
+      "scope": ["core", "sinks", "sources", "abstractions"],
+      "constraints": ["storage access goes through the shared interfaces"],
+      "anti_patterns": ["smblibrary", "blobserviceclient", "blobcontainerclient"],
+      "created_at": "2026-08-07",
+      "updated_at": "2026-08-07"
+    },
+    {
+      "id": "bh_003",
+      "decision": "Library projects log through the Microsoft.Extensions.Logging abstractions. Concrete logger wiring lives only in the composition root.",
+      "rationale": "Keeping a specific logging implementation out of the libraries lets the host decide how output is rendered and shipped.",
+      "scope": ["core", "sinks", "sources", "abstractions"],
+      "constraints": ["libraries depend on ILogger only"],
+      "anti_patterns": ["serilog"],
+      "created_at": "2026-08-07",
+      "updated_at": "2026-08-07"
+    },
+    {
+      "id": "bh_004",
+      "decision": "Retention state persists as a plain manifest file written next to the archives at each destination. There is no database and no object-relational mapper.",
+      "rationale": "This ships as a self-contained utility. A datastore would add an install and migration burden that retention bookkeeping does not justify.",
+      "scope": ["retention", "manifest", "pruning", "sinks"],
+      "constraints": ["retention state stays in the manifest file"],
+      "anti_patterns": ["entityframeworkcore", "dbcontext", "dapper", "sqlite"],
+      "created_at": "2026-08-07",
+      "updated_at": "2026-08-07"
+    },
+    {
+      "id": "bh_005",
+      "decision": "Credentials live only in the KeePass-backed credential profiles under LOCALAPPDATA. Plan files and profile files carry references to them, never secret values.",
+      "rationale": "Plan files get copied, committed and shared. The credential store is the one place with password protection around it.",
+      "scope": ["credentials", "keepass", "secrets", "profiles"],
+      "constraints": ["secret values resolve at runtime from the credential store"],
+      "anti_patterns": [],
+      "created_at": "2026-08-07",
+      "updated_at": "2026-08-07"
+    },
+    {
+      "id": "bh_006",
+      "decision": "New destinations and sources are added by implementing the shared interfaces and registering the kind through dependency injection. The wizard and the orchestrator stay unaware of concrete kinds.",
+      "rationale": "The kind field in the plan file is data, so adding a transport must not require touching orchestration.",
+      "scope": ["sinks", "sources", "abstractions", "wizard"],
+      "constraints": ["new kinds register through dependency injection"],
+      "anti_patterns": [],
+      "created_at": "2026-08-07",
+      "updated_at": "2026-08-07"
+    }
+  ]
+}

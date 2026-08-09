@@ -1,0 +1,5 @@
+{
+  "env": {
+    "MNEME_HOOK_MODE": "strict"
+  }
+}
